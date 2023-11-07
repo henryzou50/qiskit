@@ -69,7 +69,7 @@ class SabreSwap(TransformationPass):
     def __init__(
         self,
         coupling_map,
-        heuristic="lookahead",
+        heuristic="basic",
         seed=None,
         fake_run=False,
     ):
