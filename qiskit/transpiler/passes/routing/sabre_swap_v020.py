@@ -295,7 +295,6 @@ class SabreSwap(TransformationPass):
                 logger.debug("qubits decay: %s", self.qubits_decay)
 
         self.property_set["final_layout"] = current_layout
-        print("--------------------------------------------------------------")
         if not self.fake_run:
             return mapped_dag
         return dag

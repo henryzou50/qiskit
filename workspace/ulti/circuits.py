@@ -64,8 +64,8 @@ def generate_and_store_ghz_circuits(start, end, directory="circuits/ghz"):
     print(f"QASM files for GHZ circuits saved in {directory}!")
 
 def generate_and_store_qv_circuits(qubit_sizes=[10,20], 
-                                   depth_ranges=[(10, 30), (30, 100)],
-                                   increments=[1, 1], 
+                                   depth_ranges=[(100, 1000)],
+                                   increments=[50], 
                                    base_path="circuits",
                                    seed=42):
     """
