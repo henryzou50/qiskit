@@ -64,7 +64,7 @@ class SabreSwap(TransformationPass):
         self,
         coupling_map,
         heuristic="basic",
-        lookahead_depth=3,
+        lookahead_depth=1,
         alpha=1,
         beta=1,
         seed=None, 
@@ -230,11 +230,9 @@ class SabreSwap(TransformationPass):
                 swap_scores[swap] = score_lookahead[swap] 
 
             min_score = min(swap_scores.values())
-            print("min_score: ", min_score)
             best_swaps = [k for k, v in swap_scores.items() if v == min_score]
             best_swaps.sort(key=lambda x: (self._bit_indices[x[0]], self._bit_indices[x[1]]))
             best_swap = rng.choice(best_swaps)
-            print("best_swap: ", best_swap[0].index, best_swap[1].index)
             swap_node = self._apply_gate(
                 mapped_dag,
                 DAGOpNode(op=SwapGate(), qargs=best_swap),
@@ -249,7 +247,6 @@ class SabreSwap(TransformationPass):
             self.zeros = 0
             self.branch_id = 0
         self.property_set["final_layout"] = current_layout
-        print("--------------------------------------------------------------")
         if not self.fake_run:
             return mapped_dag
         return dag
