@@ -72,6 +72,7 @@ class SabreSwap(TransformationPass):
         heuristic="lookahead",
         seed=None,
         fake_run=False,
+        lookahead_depth=0,
     ):
         r"""SabreSwap initializer.
 
@@ -116,6 +117,7 @@ class SabreSwap(TransformationPass):
         self.required_predecessors = None
         self._bit_indices = None
         self.dist_matrix = None
+        self.lookahead_depth = lookahead_depth
 
     def run(self, dag):
         """Run the SabreSwap pass on `dag`.
@@ -195,29 +197,51 @@ class SabreSwap(TransformationPass):
                 ops_since_progress = []
                 continue
 
-            # After all free gates are exhausted, heuristically find
-            # the best swap and insert it. When two or more swaps tie
-            # for best score, pick one randomly.
+            # After all free gates are exhausted, initialize BFS to perform lookahead exploration
+            # BFS tree will be represented by the queue
+            queue = [(front_layer, current_layout, [], 0)] # (front_layer, current_layout, sequence of swaps, depth)
+            best_swap_sequences = None
+            best_score = float("inf")
+            
+            # Start BFS lookahead
             swap_scores = {}
-            for swap_qubits in self._obtain_swaps(front_layer, current_layout):
-                trial_layout = current_layout.copy()
-                trial_layout.swap(*swap_qubits)
-                score = self._score_heuristic(
-                    self.heuristic, front_layer, trial_layout, swap_qubits
+            while queue:
+                # represents the current node in the tree
+                front_layer, current_layout, swap_sequence, depth = queue.pop(0)
+
+                if depth <= self.lookahead_depth:
+                    # obtaining the swaps for the current lookahead layer
+                    for swap_qubits in self._obtain_swaps(front_layer, current_layout):
+                        trial_layout = current_layout.copy()
+                        trial_layout.swap(*swap_qubits)
+                        new_swap_sequence = swap_sequence + [swap_qubits]
+                        queue.append((front_layer, trial_layout, new_swap_sequence, depth + 1))
+                else:
+                    # Reached lookahead depth, score this seqeuence
+                    score = self._score_heuristic(
+                            self.heuristic, front_layer, current_layout, swap_sequence[0]
+                        )
+                    if score < best_score:
+                        best_score = score
+                        best_swap_sequences = [swap_sequence]
+                    elif score == best_score:
+                        best_swap_sequences.append(swap_sequence)
+                    # Continue loop to explore all squences at the current depth
+            # Apply only the first swap of the best sequence found after lookahead 
+            if best_swap_sequences is not None:
+                best_swap_sequence = rng.choice(best_swap_sequences)
+                first_swap = best_swap_sequence[0]
+                swap_node = self._apply_gate(
+                    mapped_dag,
+                    DAGOpNode(op=SwapGate(), qargs=first_swap),
+                    current_layout,
+                    canonical_register,
                 )
-                swap_scores[swap_qubits] = score
-            min_score = min(swap_scores.values())
-            best_swaps = [k for k, v in swap_scores.items() if v == min_score]
-            best_swaps.sort(key=lambda x: (self._bit_indices[x[0]], self._bit_indices[x[1]]))
-            best_swap = rng.choice(best_swaps)
-            swap_node = self._apply_gate(
-                mapped_dag,
-                DAGOpNode(op=SwapGate(), qargs=best_swap),
-                current_layout,
-                canonical_register,
-            )
-            current_layout.swap(*best_swap)
-            ops_since_progress.append(swap_node)
+                current_layout.swap(*first_swap)
+                ops_since_progress.append(swap_node)
+            else:
+                # No swaps were found, so we need to add some to make progress.
+                self._add_greedy_swaps(front_layer, mapped_dag, current_layout, canonical_register)
         self.property_set["final_layout"] = current_layout
         if not self.fake_run:
             return mapped_dag
