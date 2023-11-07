@@ -63,9 +63,9 @@ def generate_and_store_ghz_circuits(start, end, directory="circuits/ghz"):
             
     print(f"QASM files for GHZ circuits saved in {directory}!")
 
-def generate_and_store_qv_circuits(qubit_sizes=[20], 
-                                   depth_ranges=[(10, 100), (100, 1000)],
-                                   increments=[1, 10], 
+def generate_and_store_qv_circuits(qubit_sizes=[10,20], 
+                                   depth_ranges=[(10, 30), (30, 100)],
+                                   increments=[1, 1], 
                                    base_path="circuits",
                                    seed=42):
     """
@@ -99,3 +99,18 @@ def generate_and_store_qv_circuits(qubit_sizes=[20],
                     file.write(qasm_str)
                 
                 print(f"Stored Quantum Volume circuit for size {size} and depth {depth} at {file_path}")
+
+def sort_circuits_by_depth(qc_list):
+    """
+    Sorts an array of Qiskit QuantumCircuits by their depth.
+    The smallest depth circuit will be the first in the list.
+    
+    Parameters:
+    qc_list (list): A list of Qiskit QuantumCircuit objects.
+    
+    Returns:
+    list: A new list with QuantumCircuit objects sorted by depth.
+    """
+    # Use the sorted function with a key that calls the depth method on each circuit
+    sorted_qc_list = sorted(qc_list, key=lambda x: x.decompose().depth())
+    return sorted_qc_list
