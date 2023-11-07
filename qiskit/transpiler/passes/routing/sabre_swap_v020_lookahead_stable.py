@@ -24,15 +24,9 @@ from qiskit.transpiler.basepasses import TransformationPass
 from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.layout import Layout
 from qiskit.dagcircuit import DAGOpNode
+import pprint
 
 logger = logging.getLogger(__name__)
-
-EXTENDED_SET_SIZE = 20  # Size of lookahead window. TODO: set dynamically to len(current_layout)
-EXTENDED_SET_WEIGHT = 0.5  # Weight of lookahead window compared to front_layer.
-
-DECAY_RATE = 0.001  # Decay coefficient for penalizing serial swaps.
-DECAY_RESET_INTERVAL = 5  # How often to reset all decay rates to 1.
-
 
 class SabreSwap(TransformationPass):
     r"""Map input circuit onto a backend topology via insertion of SWAPs.
@@ -69,9 +63,13 @@ class SabreSwap(TransformationPass):
     def __init__(
         self,
         coupling_map,
-        heuristic="lookahead",
-        seed=None,
+        heuristic="basic",
+        lookahead_depth=1,
+        alpha=1,
+        beta=1,
+        seed=None, 
         fake_run=False,
+        beam_width=5,
     ):
         r"""SabreSwap initializer.
 
@@ -116,6 +114,18 @@ class SabreSwap(TransformationPass):
         self.required_predecessors = None
         self._bit_indices = None
         self.dist_matrix = None
+        self.lookahead_depth = lookahead_depth
+        self.branch_id = 0
+        self.nodes = 0
+        self.skips = 0
+        self.zeros = 0
+        self.total_branches = 0
+        self.total_nodes = 0
+        self.total_skips = 0 
+        self.total_zeros = 0
+        self.alpha = alpha
+        self.beta = beta
+        self.beam_width = beam_width
 
     def run(self, dag):
         """Run the SabreSwap pass on `dag`.
@@ -155,6 +165,8 @@ class SabreSwap(TransformationPass):
         self.required_predecessors = self._build_required_predecessors(dag)
         front_layer = dag.front_layer()
 
+        gates_committed = []
+        swaps_committed = []
         while front_layer:
             execute_gate_list = []
 
@@ -183,10 +195,12 @@ class SabreSwap(TransformationPass):
                 self._undo_operations(ops_since_progress, mapped_dag, current_layout)
                 self._add_greedy_swaps(front_layer, mapped_dag, current_layout, canonical_register)
                 continue
-
+            
+            # execuate any executable gates, and update the front layer with the successor gates 
             if execute_gate_list:
                 for node in execute_gate_list:
                     self._apply_gate(mapped_dag, node, current_layout, canonical_register)
+                    gates_committed.append(node)
                     for successor in self._successors(node, dag):
                         self.required_predecessors[successor] -= 1
                         if self._is_resolved(successor):
@@ -199,13 +213,22 @@ class SabreSwap(TransformationPass):
             # the best swap and insert it. When two or more swaps tie
             # for best score, pick one randomly.
             swap_scores = {}
+            lookahead_info = []
             for swap_qubits in self._obtain_swaps(front_layer, current_layout):
                 trial_layout = current_layout.copy()
                 trial_layout.swap(*swap_qubits)
-                score = self._score_heuristic(
-                    self.heuristic, front_layer, trial_layout, swap_qubits
+                self._lookahead(
+                    self.lookahead_depth, front_layer, trial_layout, dag, self.required_predecessors,
+                    [], [swap_qubits], lookahead_info
                 )
-                swap_scores[swap_qubits] = score
+
+            #self.print_lookahead_info(lookahead_info)
+            score_lookahead = self._score_heuristic_lookahead(lookahead_info)
+
+            # update scores
+            for swap in score_lookahead:
+                swap_scores[swap] = score_lookahead[swap] 
+
             min_score = min(swap_scores.values())
             best_swaps = [k for k, v in swap_scores.items() if v == min_score]
             best_swaps.sort(key=lambda x: (self._bit_indices[x[0]], self._bit_indices[x[1]]))
@@ -216,12 +239,186 @@ class SabreSwap(TransformationPass):
                 current_layout,
                 canonical_register,
             )
+            swaps_committed.append(best_swap)
             current_layout.swap(*best_swap)
             ops_since_progress.append(swap_node)
+            self.nodes = 0   
+            self.skips = 0
+            self.zeros = 0
+            self.branch_id = 0
         self.property_set["final_layout"] = current_layout
         if not self.fake_run:
             return mapped_dag
         return dag
+
+    def _lookahead(self, lookahead, front_layer, layout, dag, successors,
+                   gates, swaps, lookahead_info):
+        """Recursive lookahead function that does exploration of depth lookahead. Will 
+        append the lookahead info to lookahead_info once we reach the base case.
+
+        Parameter:
+            lookahead (int): the depth of lookahead
+            front_layer (list): the front layer of the current branch
+            layout (Layout): the current layout
+            dag (DAGCircuit): the dag
+            successors (dict): a dict of successors of each node in dag
+            gates (list): the list of gates in the current branch
+            swaps (list): the list of swaps in the current branch
+            lookahead_info (list): a list of tuples (gates, swaps, layout, front_layer, branch_id)
+        """
+        self.nodes += 1
+        self.total_nodes += 1
+
+        # Step 1: Apply executable gates and update front_layer
+        trial_front_layer = front_layer.copy()
+        trial_successors = successors.copy()
+        while True:
+            # Find executable gates and remove them from front layer
+            new_front_layer = []
+            execute_gate_list = []
+            for node in trial_front_layer:
+                if len(node.qargs) == 2:
+                    v0, v1 = node.qargs
+                    if self.coupling_map.graph.has_edge(
+                        layout._v2p[v0], layout._v2p[v1]
+                    ):
+                        execute_gate_list.append(node)
+                    else:
+                        new_front_layer.append(node)
+            trial_front_layer = new_front_layer
+            #  Repeat until there are no executable gates
+            if not execute_gate_list:
+                break
+            # Updates front layer and successors
+            gates += execute_gate_list
+            for node in execute_gate_list:
+                    for successor in self._successors(node, dag):
+                        trial_successors[successor] -= 1
+                        if trial_successors[node] == 0:
+                            trial_front_layer.append(successor)
+      
+        # Base case
+        if lookahead == 0 or trial_front_layer == []:
+            lookahead_info.append((gates, swaps, layout, trial_front_layer, self.branch_id))
+            self.branch_id += 1
+            self.total_branches += 1
+            return 
+
+        # Step 2: Find candidate swaps and check scores
+        scored_swaps = []
+        for swap_qubits in self._obtain_swaps(trial_front_layer, layout):
+            # Skip the last swap from the swap order
+            if swaps and swap_qubits == swaps[-1]:
+                self.skips += 1
+                self.total_skips += 1
+                continue
+            
+            trial_layout = layout.copy()
+            trial_layout.swap(*swap_qubits)
+            score = self._score_heuristic(trial_front_layer, trial_layout)
+            scored_swaps.append((score, swap_qubits, trial_layout))
+        
+        # Sort the scored swaps by their scores (ascending)
+        scored_swaps.sort(key=lambda x: x[0])
+
+        # Process only the best candidates as defined by the beam width
+        for score, swap_qubits, trial_layout in scored_swaps[:self.beam_width]:
+            trial_swaps = swaps + [swap_qubits]
+            trial_gates = gates.copy()
+            
+            self._lookahead(lookahead-1, trial_front_layer, trial_layout, dag, 
+                            successors, trial_gates, trial_swaps, lookahead_info)
+        
+        return
+
+    
+    def _score_heuristic_lookahead(self, lookahead_info):
+        # get a list of all of the gates in the lookahead_info
+        all_gates = []
+        for i in range(len(lookahead_info)):
+            gates = lookahead_info[i][0]
+            for gate in gates:
+                if gate not in all_gates:
+                    all_gates.append(gate)
+
+        swap_to_score = {}
+
+        for i in range(len(lookahead_info)):
+            current_gates = lookahead_info[i][0]
+            layout = lookahead_info[i][2]
+            front_layer = lookahead_info[i][3]
+            first_swap = lookahead_info[i][1][0]
+            swaps = lookahead_info[i][1]
+
+            # gates_to_apply is all of the gates excluding the current gates
+            gates_to_apply = []
+            for gate in all_gates:
+                if gate not in current_gates:
+                    gates_to_apply.append(gate)
+
+            # score_front is the cost of applying the current gates divided by the size of front_layer
+            if len(front_layer) == 0:
+                score_front = 0
+            else:
+                score_front = self._compute_cost(front_layer, layout)/ len(front_layer)
+            score_lookahead = self._compute_cost(gates_to_apply, layout) * self.beta
+            score_depth = len(swaps) * self.alpha
+
+            score = score_front + score_depth
+            if i == 0:
+                track_front = score_front
+                track_lookahead = score_lookahead
+
+            # update first swap score with small score
+            if first_swap not in swap_to_score:
+                swap_to_score[first_swap] = score
+            else:
+                if score < swap_to_score[first_swap]:
+                    swap_to_score[first_swap] = score
+                    track_front = score_front
+                    track_lookahead = score_lookahead
+
+        #print("             Score Front: ", track_front, " Score Lookahead: ", track_lookahead)
+        #print("swap_to_score: ", swap_to_score)
+        return swap_to_score
+
+    def print_lookahead_info(self, lookahead_info):
+        """ Print the lookahead info
+
+        Parameters:
+            lookahead_info (list): a list of tuples (gates, swaps, layout, branch_id)
+        """
+        for i in range(len(lookahead_info)):
+            gates = lookahead_info[i][0]
+            swaps = lookahead_info[i][1]
+            layout = lookahead_info[i][2]
+            branch = lookahead_info[i][3]
+            print("             Branch: ", branch)
+            print("             Gate Order: ", [node.name for node in gates])
+            print("             Swap Order: ", [(node[0].index, node[1].index) for node in swaps])
+            print("             Layout:     ", [layout[i]._index for i in range(len(layout))])
+            print("**************************************************************")
+    
+    def print_step_info(self, gates_committed, swaps_committed):
+        """ Print the step info 
+        Parameters:
+            gates_committed (list): the list of gates committed
+            swaps_committed (list): the list of swaps committed 
+        """
+        print("Gates Committed: ", [node.name for node in gates_committed])
+        print("Swaps Committed: ", [(node[0].index, node[1].index) for node in swaps_committed])
+        print("Number of Branches: ", self.branch_id)
+        print("Number of Nodes: ", self.nodes)
+        print("Number of Skips: ", self.skips)
+        print("Number of Zeros: ", self.zeros)
+        print("--------------------------------------------------------------")
+
+    def print_final_info(self):
+        print("Total Branches: ", self.total_branches)
+        print("Total Nodes: ", self.total_nodes)
+        print("Total Skips: ", self.total_skips)
+        print("Total Zeros: ", self.total_zeros)
+
 
     def _apply_gate(self, mapped_dag, node, current_layout, canonical_register):
         new_node = _transform_gate_for_layout(node, current_layout, canonical_register)
@@ -291,14 +488,14 @@ class SabreSwap(TransformationPass):
             cost += self.dist_matrix[layout_map[node.qargs[0]], layout_map[node.qargs[1]]]
         return cost
 
-    def _score_heuristic(self, heuristic, front_layer, layout, swap_qubits=None):
+    def _score_heuristic(self, front_layer, layout):
         """Return a heuristic score for a trial layout.
 
         Assuming a trial layout has resulted from a SWAP, we now assign a cost
         to it. The goodness of a layout is evaluated based on how viable it makes
         the remaining virtual gates that must be applied.
         """
-        return self._compute_cost(front_layer, layout)
+        return self._compute_cost(front_layer, layout) 
 
     def _undo_operations(self, operations, dag, layout):
         """Mutate ``dag`` and ``layout`` by undoing the swap gates listed in ``operations``."""
