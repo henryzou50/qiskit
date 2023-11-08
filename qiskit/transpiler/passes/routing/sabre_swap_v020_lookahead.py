@@ -18,6 +18,7 @@ from copy import copy, deepcopy
 
 import numpy as np
 import retworkx
+import itertools
 
 from qiskit.circuit.library.standard_gates import SwapGate
 from qiskit.transpiler.basepasses import TransformationPass
@@ -110,6 +111,7 @@ class SabreSwap(TransformationPass):
         self._bit_indices = None
         self.dist_matrix = None
         self.lookahead_depth = lookahead_depth
+        self.gates_committed = []
 
     def run(self, dag):
         print("Running SabreSwap Lookahead")
@@ -129,6 +131,7 @@ class SabreSwap(TransformationPass):
         if len(dag.qubits) > self.coupling_map.size():
             raise TranspilerError("More virtual qubits exist than physical.")
 
+        self.gates_committed = []
         max_iterations_without_progress = 10 * len(dag.qubits)  # Arbitrary.
         ops_since_progress = []
 
@@ -150,7 +153,6 @@ class SabreSwap(TransformationPass):
         self.required_predecessors = self._build_required_predecessors(dag)
         front_layer = dag.front_layer()
 
-        gates_executed = []
         while front_layer:
             execute_gate_list = []
 
@@ -182,8 +184,6 @@ class SabreSwap(TransformationPass):
 
             if execute_gate_list:
                 for node in execute_gate_list:
-                    if len(node.qargs) == 2:
-                        gates_executed.append((node.qargs[0].index, node.qargs[1].index))
                     self._apply_gate(mapped_dag, node, current_layout, canonical_register)
                     for successor in self._successors(node, dag):
                         self.required_predecessors[successor] -= 1
@@ -218,7 +218,7 @@ class SabreSwap(TransformationPass):
                 else:
                     # Reached lookahead depth, score this seqeuence
                     score = self._score_heuristic(queue_front_layer, queue_layout)
-                    score_depth = gates_executed
+                    score_depth = self.gates_committed
                     if score < best_score:
                         best_score = score
                         best_score_depth = score_depth
@@ -228,9 +228,6 @@ class SabreSwap(TransformationPass):
                     # Continue loop to explore all squences at the current depth
             # Apply only the first swap of the best sequence found after lookahead 
             if best_swap_sequences is not None:
-                print("     Best score: ", best_score)
-                print("     Best score depth: ", best_score_depth)
-
                 best_swap_sequence = rng.choice(best_swap_sequences)
                 first_swap = best_swap_sequence[0]
                 swap_node = self._apply_gate(
@@ -252,13 +249,14 @@ class SabreSwap(TransformationPass):
                     )
                     current_layout.swap(*swap_qubits)
         self.property_set["final_layout"] = current_layout
-        print("         Final gates excuted: ", gates_executed)
         if not self.fake_run:
             return mapped_dag
         return dag
 
     def _apply_gate(self, mapped_dag, node, current_layout, canonical_register):
         new_node = _transform_gate_for_layout(node, current_layout, canonical_register)
+        if len(new_node.qargs) == 2:
+            self.gates_committed.append((new_node.qargs[0].index, new_node.qargs[1].index))
         if self.fake_run:
             return new_node
         return mapped_dag.apply_operation_back(new_node.op, new_node.qargs, new_node.cargs)
@@ -346,6 +344,8 @@ class SabreSwap(TransformationPass):
                 p1 = self._bit_indices[operation.qargs[1]]
                 layout.swap(p0, p1)
 
+    
+
 
 def _transform_gate_for_layout(op_node, layout, device_qreg):
     """Return node implementing a virtual op on given layout."""
@@ -369,3 +369,28 @@ def _shortest_swap_path(target_qubits, coupling_map, layout):
         yield v_start, layout._p2v[swap]
     for swap in backwards:
         yield v_goal, layout._p2v[swap]
+
+def calculate_circuit_depth(gates):
+    # Get all unique qubits in the circuit
+    nodes = set(itertools.chain(*gates))
+    
+    # Initialize depth 0 for each qubit
+    depths = {node: 0 for node in nodes} 
+
+    for gate in gates:
+        
+        # Get the max depth of the two qubits in this gate
+        depth = max(depths[gate[0]], depths[gate[1]])
+
+        # Increment the depth by 1
+        depth += 1
+
+        # Update the depth for both qubits
+        depths[gate[0]] = depth  
+        depths[gate[1]] = depth
+        
+    # Return the max depth overall 
+    if depths:
+        return max(depths.values())
+    else:
+        return 0
