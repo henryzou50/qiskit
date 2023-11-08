@@ -1,5 +1,5 @@
 from qiskit.transpiler import PassManager
-from qiskit.transpiler.passes import ApplyLayout, FullAncillaAllocation, EnlargeWithAncilla
+from qiskit.transpiler.passes import ApplyLayout, FullAncillaAllocation, EnlargeWithAncilla, TrivialLayout
 import time
 import numpy as np
 

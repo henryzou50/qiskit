@@ -266,10 +266,14 @@ class SabreSwap(TransformationPass):
                     self.heuristic, front_layer, extended_set, trial_layout, swap_qubits
                 )
                 swap_scores[swap_qubits] = score
+                #print("Swap qubits: ", swap_qubits[0].index, swap_qubits[1].index)
+                #print("Score: ", score)
             min_score = min(swap_scores.values())
             best_swaps = [k for k, v in swap_scores.items() if v == min_score]
             best_swaps.sort(key=lambda x: (self._bit_indices[x[0]], self._bit_indices[x[1]]))
             best_swap = rng.choice(best_swaps)
+            #print("     Best swap: ", best_swap[0].index, best_swap[1].index)
+            #print("     Best swap score: ", min_score)
             swap_node = self._apply_gate(
                 mapped_dag,
                 DAGOpNode(op=SwapGate(), qargs=best_swap),

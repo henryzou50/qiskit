@@ -207,20 +207,24 @@ class SabreSwap(TransformationPass):
             swap_scores = {}
             while queue:
                 # represents the current node in the tree
-                front_layer, current_layout, swap_sequence, depth = queue.pop(0)
+                front_layer, queue_layout, swap_sequence, depth = queue.pop(0)
 
                 if depth <= self.lookahead_depth:
                     # obtaining the swaps for the current lookahead layer
-                    for swap_qubits in self._obtain_swaps(front_layer, current_layout):
-                        trial_layout = current_layout.copy()
+                    swap_candidates = list(self._obtain_swaps(front_layer, queue_layout))
+                    swap_candidates.sort(key=lambda x: (self._bit_indices[x[0]], self._bit_indices[x[1]]))
+                    for swap_qubits in swap_candidates:
+                        trial_layout = queue_layout.copy()
                         trial_layout.swap(*swap_qubits)
                         new_swap_sequence = swap_sequence + [swap_qubits]
                         queue.append((front_layer, trial_layout, new_swap_sequence, depth + 1))
                 else:
                     # Reached lookahead depth, score this seqeuence
                     score = self._score_heuristic(
-                            self.heuristic, front_layer, current_layout, swap_sequence[0]
-                        )
+                            self.heuristic, front_layer, queue_layout, swap_sequence[0]
+                     )    
+                    #print("Swap sequence: ", swap_sequence[0][0].index, swap_sequence[0][1].index)
+                    #print("Score: ", score)
                     if score < best_score:
                         best_score = score
                         best_swap_sequences = [swap_sequence]
@@ -237,6 +241,8 @@ class SabreSwap(TransformationPass):
                     current_layout,
                     canonical_register,
                 )
+                #print("     Best swap sequence: ", first_swap[0].index, first_swap[1].index)
+                #print("     Best score: ", best_score)
                 current_layout.swap(*first_swap)
                 ops_since_progress.append(swap_node)
             else:
