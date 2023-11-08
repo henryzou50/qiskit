@@ -3,7 +3,7 @@ from qiskit.transpiler.passes import ApplyLayout, FullAncillaAllocation, Enlarge
 import time
 import numpy as np
 
-def build_pm(routing_pass, layout_pass, coupling_map, seed=42):
+def build_pm(routing_pass, layout_pass, coupling_map, seed=42, lookahead=0):
     """
     Builds a pass manager with the given routing pass, layout pass, coupling map.
     
@@ -18,16 +18,26 @@ def build_pm(routing_pass, layout_pass, coupling_map, seed=42):
     """
 
     # constructs a pass manager, does not consider lookahead
-    layout = layout_pass(coupling_map, routing_pass=routing_pass(coupling_map, fake_run=True, seed=seed), seed=seed)
-    return PassManager([
-        layout,
-        FullAncillaAllocation(coupling_map),
-        EnlargeWithAncilla(),
-        ApplyLayout(),
-        routing_pass(coupling_map,seed=seed)
-    ])
+    if lookahead == 0:
+        layout = layout_pass(coupling_map, routing_pass=routing_pass(coupling_map, fake_run=True, seed=seed), seed=seed)
+        return PassManager([
+            layout,
+            FullAncillaAllocation(coupling_map),
+            EnlargeWithAncilla(),
+            ApplyLayout(),
+            routing_pass(coupling_map,seed=seed)
+        ])
+    else:
+        layout = layout_pass(coupling_map, routing_pass=routing_pass(coupling_map, fake_run=True, seed=seed, lookahead_depth=lookahead), seed=seed)
+        return PassManager([
+            layout,
+            FullAncillaAllocation(coupling_map),
+            EnlargeWithAncilla(),
+            ApplyLayout(),
+            routing_pass(coupling_map,seed=seed, lookahead_depth=lookahead)
+        ])
 
-def generate_pass_managers(num_shots, routing_pass, layout_pass, coupling_map, initial_seed=42):
+def generate_pass_managers(num_shots, routing_pass, layout_pass, coupling_map, initial_seed=42, lookahead=0):
     """
     Generates a list of PassManager objects with different seeds.
     
@@ -45,7 +55,7 @@ def generate_pass_managers(num_shots, routing_pass, layout_pass, coupling_map, i
     
     for i in range(num_shots):
         seed = initial_seed + i
-        pm = build_pm(routing_pass, layout_pass, coupling_map, seed)
+        pm = build_pm(routing_pass, layout_pass, coupling_map, seed, lookahead)
         pass_managers.append(pm)
     
     return pass_managers

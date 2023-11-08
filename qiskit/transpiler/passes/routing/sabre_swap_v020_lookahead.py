@@ -25,14 +25,6 @@ from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.layout import Layout
 from qiskit.dagcircuit import DAGOpNode
 
-logger = logging.getLogger(__name__)
-
-EXTENDED_SET_SIZE = 20  # Size of lookahead window. TODO: set dynamically to len(current_layout)
-EXTENDED_SET_WEIGHT = 0.5  # Weight of lookahead window compared to front_layer.
-
-DECAY_RATE = 0.001  # Decay coefficient for penalizing serial swaps.
-DECAY_RESET_INTERVAL = 5  # How often to reset all decay rates to 1.
-
 
 class SabreSwap(TransformationPass):
     r"""Map input circuit onto a backend topology via insertion of SWAPs.
@@ -245,9 +237,16 @@ class SabreSwap(TransformationPass):
                 #print("     Best score: ", best_score)
                 current_layout.swap(*first_swap)
                 ops_since_progress.append(swap_node)
-            else:
-                # No swaps were found, so we need to add some to make progress.
-                self._add_greedy_swaps(front_layer, mapped_dag, current_layout, canonical_register)
+                # If the front_layer is empty, the circuit is done, and we can apply the whole sequence
+            if not front_layer:
+                for swap_qubits in best_swap_sequences[1:]:  # Apply the rest of the sequence
+                    swap_node = self._apply_gate(
+                        mapped_dag,
+                        DAGOpNode(op=SwapGate(), qargs=swap_qubits),
+                        current_layout,
+                        canonical_register,
+                    )
+                    current_layout.swap(*swap_qubits)
         self.property_set["final_layout"] = current_layout
         if not self.fake_run:
             return mapped_dag
