@@ -112,6 +112,7 @@ class SabreSwap(TransformationPass):
         self.lookahead_depth = lookahead_depth
 
     def run(self, dag):
+        print("Running SabreSwap Lookahead")
         """Run the SabreSwap pass on `dag`.
 
         Args:
@@ -149,6 +150,7 @@ class SabreSwap(TransformationPass):
         self.required_predecessors = self._build_required_predecessors(dag)
         front_layer = dag.front_layer()
 
+        gates_executed = []
         while front_layer:
             execute_gate_list = []
 
@@ -180,6 +182,8 @@ class SabreSwap(TransformationPass):
 
             if execute_gate_list:
                 for node in execute_gate_list:
+                    if len(node.qargs) == 2:
+                        gates_executed.append((node.qargs[0].index, node.qargs[1].index))
                     self._apply_gate(mapped_dag, node, current_layout, canonical_register)
                     for successor in self._successors(node, dag):
                         self.required_predecessors[successor] -= 1
@@ -191,40 +195,42 @@ class SabreSwap(TransformationPass):
 
             # After all free gates are exhausted, initialize BFS to perform lookahead exploration
             # BFS tree will be represented by the queue
-            queue = [(front_layer, current_layout, [], 0)] # (front_layer, current_layout, sequence of swaps, depth)
+            queue = [(front_layer, current_layout, [], 0, self.required_predecessors.copy())] # (front_layer, current_layout, sequence of swaps, depth)
             best_swap_sequences = None
             best_score = float("inf")
+            best_score_depth = float("inf")
             
             # Start BFS lookahead
             swap_scores = {}
             while queue:
                 # represents the current node in the tree
-                front_layer, queue_layout, swap_sequence, depth = queue.pop(0)
+                queue_front_layer, queue_layout, swap_sequence, depth, successors = queue.pop(0)
 
                 if depth <= self.lookahead_depth:
                     # obtaining the swaps for the current lookahead layer
-                    swap_candidates = list(self._obtain_swaps(front_layer, queue_layout))
+                    swap_candidates = list(self._obtain_swaps(queue_front_layer, queue_layout))
                     swap_candidates.sort(key=lambda x: (self._bit_indices[x[0]], self._bit_indices[x[1]]))
                     for swap_qubits in swap_candidates:
                         trial_layout = queue_layout.copy()
                         trial_layout.swap(*swap_qubits)
                         new_swap_sequence = swap_sequence + [swap_qubits]
-                        queue.append((front_layer, trial_layout, new_swap_sequence, depth + 1))
+                        queue.append((queue_front_layer, trial_layout, new_swap_sequence, depth + 1, successors))
                 else:
                     # Reached lookahead depth, score this seqeuence
-                    score = self._score_heuristic(
-                            self.heuristic, front_layer, queue_layout, swap_sequence[0]
-                     )    
-                    #print("Swap sequence: ", swap_sequence[0][0].index, swap_sequence[0][1].index)
-                    #print("Score: ", score)
+                    score = self._score_heuristic(queue_front_layer, queue_layout)
+                    score_depth = gates_executed
                     if score < best_score:
                         best_score = score
+                        best_score_depth = score_depth
                         best_swap_sequences = [swap_sequence]
                     elif score == best_score:
                         best_swap_sequences.append(swap_sequence)
                     # Continue loop to explore all squences at the current depth
             # Apply only the first swap of the best sequence found after lookahead 
             if best_swap_sequences is not None:
+                print("     Best score: ", best_score)
+                print("     Best score depth: ", best_score_depth)
+
                 best_swap_sequence = rng.choice(best_swap_sequences)
                 first_swap = best_swap_sequence[0]
                 swap_node = self._apply_gate(
@@ -233,8 +239,6 @@ class SabreSwap(TransformationPass):
                     current_layout,
                     canonical_register,
                 )
-                #print("     Best swap sequence: ", first_swap[0].index, first_swap[1].index)
-                #print("     Best score: ", best_score)
                 current_layout.swap(*first_swap)
                 ops_since_progress.append(swap_node)
                 # If the front_layer is empty, the circuit is done, and we can apply the whole sequence
@@ -248,6 +252,7 @@ class SabreSwap(TransformationPass):
                     )
                     current_layout.swap(*swap_qubits)
         self.property_set["final_layout"] = current_layout
+        print("         Final gates excuted: ", gates_executed)
         if not self.fake_run:
             return mapped_dag
         return dag
@@ -320,7 +325,7 @@ class SabreSwap(TransformationPass):
             cost += self.dist_matrix[layout_map[node.qargs[0]], layout_map[node.qargs[1]]]
         return cost
 
-    def _score_heuristic(self, heuristic, front_layer, layout, swap_qubits=None):
+    def _score_heuristic(self, front_layer, layout):
         """Return a heuristic score for a trial layout.
 
         Assuming a trial layout has resulted from a SWAP, we now assign a cost
