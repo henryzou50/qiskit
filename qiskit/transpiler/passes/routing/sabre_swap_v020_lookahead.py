@@ -65,7 +65,7 @@ class SabreSwap(TransformationPass):
         heuristic="lookahead",
         seed=None,
         fake_run=False,
-        lookahead_depth=0,
+        lookahead_depth=3,
         beam_width=5,
         alpha=1,
         beta=1,
@@ -258,34 +258,39 @@ class SabreSwap(TransformationPass):
 
                         trial_swap_sequence = swap_sequence + [swap_qubits]
                         trial_successors = successors.copy()
-                        trial_explored_gates = explored_gates.copy()
                         trial_gates = gates.copy()
+                        trial_front_layer = queue_front_layer.copy()
 
-                        trial_front_layer = []
-                        execute_gate_list = []
-
-                        # update front layer with gates that now can be executed
-                        for node in queue_front_layer:
-                            # checks only two qubit gates
-                            if len(node.qargs) == 2:
-                                v0, v1 = node.qargs
-                                if self.coupling_map.graph.has_edge(
-                                    trial_layout._v2p[v0], trial_layout._v2p[v1]
-                                ):
-                                    execute_gate_list.append(node)
-                                else:
-                                    trial_front_layer.append(node)
-                        
-                        # execute any excutable gates, and update front layer with the successor gates
-                        if execute_gate_list:
-                            for node in execute_gate_list:
-                                trial_gates.append(node)
-                                self.gates_found.add(node)
-                                trial_explored_gates += self._fake_apply_gate(node, trial_layout, canonical_register)
-                                for successor in self._successors(node, dag): # may need to check this out later
-                                    trial_successors[successor] -= 1 
-                                    if trial_successors[node] == 0:
-                                        trial_front_layer.append(successor)
+                        while True:
+                            new_front_layer = []
+                            execute_gate_list = []
+                            # update front layer with gates that now can be executed
+                            for node in trial_front_layer:
+                                # checks only two qubit gates
+                                if len(node.qargs) == 2:
+                                    v0, v1 = node.qargs
+                                    if self.coupling_map.graph.has_edge(
+                                        trial_layout._v2p[v0], trial_layout._v2p[v1]
+                                    ):
+                                        execute_gate_list.append(node)
+                                    else:
+                                        new_front_layer.append(node)
+                            trial_front_layer = new_front_layer   
+                            
+                            if not execute_gate_list:
+                                break
+                            
+                            # execute any excutable gates, and update front layer with the successor gates
+                            if execute_gate_list:
+                                for node in execute_gate_list:
+                                    trial_gates.append(node)
+                                    self.gates_found.add(node)
+                                    trial_explored_gates += self._fake_apply_gate(node, trial_layout, canonical_register)
+                                    print("     Fina: Length of explored gates: ", calculate_circuit_depth(trial_explored_gates))
+                                    for successor in self._successors(node, dag): # may need to check this out later
+                                        trial_successors[successor] -= 1 
+                                        if trial_successors[node] == 0:
+                                            trial_front_layer.append(successor)
 
                         queue.append((trial_front_layer, trial_layout, trial_swap_sequence, 
                                       depth + 1, trial_successors, trial_explored_gates, trial_gates))
@@ -295,6 +300,7 @@ class SabreSwap(TransformationPass):
                     current_depth = calculate_circuit_depth(explored_gates)
                     score_depth = current_depth - previous_depth
 
+                    '''
                     # Calculate lookahead score
                     gates_to_apply = []
                     for gate in self.gates_found:
@@ -308,8 +314,9 @@ class SabreSwap(TransformationPass):
                         score_front = 0
                     else:
                         score_front = self._compute_cost(queue_front_layer, queue_layout) / normalization_factor
-                    #score_front = 0
-                    #score_lookahead = 0
+                    '''
+                    score_front = 0
+                    score_lookahead = 0
                     score = (score_depth * self.alpha) + (score_lookahead * self.beta) + (score_front * self.charlie)
                     if score < best_score:
                         best_score = score
