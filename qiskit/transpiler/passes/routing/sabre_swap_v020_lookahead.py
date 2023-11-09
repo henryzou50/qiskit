@@ -252,8 +252,8 @@ class SabreSwap(TransformationPass):
                         trial_layout = queue_layout.copy()
                         trial_layout.swap(*swap_qubits)
                         trial_explored_gates = explored_gates.copy()
-                        trial_explored_gates.append(self._fake_apply_gate(DAGOpNode(op=SwapGate(), qargs=swap_qubits),
-                                                                          trial_layout, canonical_register))
+                        trial_explored_gates += self._fake_apply_gate(DAGOpNode(op=SwapGate(), qargs=swap_qubits),
+                                                                          trial_layout, canonical_register)
 
 
                         trial_swap_sequence = swap_sequence + [swap_qubits]
@@ -281,7 +281,7 @@ class SabreSwap(TransformationPass):
                             for node in execute_gate_list:
                                 trial_gates.append(node)
                                 self.gates_found.add(node)
-                                trial_explored_gates.append(self._fake_apply_gate(node, trial_layout, canonical_register))
+                                trial_explored_gates += self._fake_apply_gate(node, trial_layout, canonical_register)
                                 for successor in self._successors(node, dag): # may need to check this out later
                                     trial_successors[successor] -= 1 
                                     if trial_successors[node] == 0:
@@ -361,10 +361,11 @@ class SabreSwap(TransformationPass):
         new_node = _transform_gate_for_layout(node, current_layout, canonical_register)
         # if node is a swap, then need to add it 3 times, so 1 swap is 3 gates
         if new_node.name == "swap":
-            self.gates_committed.append((new_node.qargs[0].index, new_node.qargs[1].index))
-            self.gates_committed.append((new_node.qargs[0].index, new_node.qargs[1].index))
-        # assume that input is a two qubit gate
-        return (new_node.qargs[0].index, new_node.qargs[1].index)
+            return [(new_node.qargs[0].index, new_node.qargs[1].index),
+                    (new_node.qargs[0].index, new_node.qargs[1].index),
+                    (new_node.qargs[0].index, new_node.qargs[1].index)]
+        else: 
+            return [(new_node.qargs[0].index, new_node.qargs[1].index)]
 
     def _build_required_predecessors(self, dag):
         out = defaultdict(int)
