@@ -65,8 +65,11 @@ class SabreSwap(TransformationPass):
         heuristic="lookahead",
         seed=None,
         fake_run=False,
-        lookahead_depth=1,
+        lookahead_depth=0,
         beam_width=5,
+        alpha=1,
+        beta=1,
+        charlie=1,
     ):
         r"""SabreSwap initializer.
 
@@ -114,6 +117,10 @@ class SabreSwap(TransformationPass):
         self.lookahead_depth = lookahead_depth
         self.gates_committed = []
         self.beam_width = beam_width
+        self.gates_found = set()
+        self.alpha = alpha
+        self.beta = beta
+        self.charlie = charlie
 
     def run(self, dag):
         self.gates_committed = []
@@ -197,7 +204,7 @@ class SabreSwap(TransformationPass):
 
             # After all free gates are exhausted, initialize BFS to perform lookahead exploration
             # BFS tree will be represented by the queue
-            queue = [(front_layer, current_layout, [], 0, self.required_predecessors, self.gates_committed, 0)] # (front_layer, current_layout, sequence of swaps, depth)
+            queue = [(front_layer, current_layout, [], 0, self.required_predecessors, self.gates_committed, [])] # (front_layer, current_layout, sequence of swaps, depth)
             best_swap_sequences = None
             best_score = float("inf")
             best_score_depth = float("inf")
@@ -205,14 +212,15 @@ class SabreSwap(TransformationPass):
             # Start BFS lookahead
             swap_scores = {}
             previous_depth = calculate_circuit_depth(self.gates_committed)
+            self.gates_found = set()
             while queue:
                 #print("--------------------")
                 # represents the current node in the tree
-                queue_front_layer, queue_layout, swap_sequence, depth, successors, explored_gates, orig_score = queue.pop(0)
+                queue_front_layer, queue_layout, swap_sequence, depth, successors, explored_gates, gates = queue.pop(0)
                 # print all items of queue
-                #qubit_indices = []
-                #for node in queue_front_layer:
-                #    qubit_indices.append(tuple(qubit.index for qubit in node.qargs))
+                qubit_indices = []
+                for node in queue_front_layer:
+                    qubit_indices.append(tuple(qubit.index for qubit in node.qargs))
                 #index_order = []
                 #for index in queue_layout.get_virtual_bits().keys():
                 #    index_order.append(index.index)
@@ -229,7 +237,7 @@ class SabreSwap(TransformationPass):
 
                     # beam search to prune the number of swap candidates
                     scored_swaps = []
-                    for swap_qubits in self._obtain_swaps(queue_front_layer, queue_layout):
+                    for swap_qubits in swap_candidates:
                         trial_layout = queue_layout.copy()
                         trial_layout.swap(*swap_qubits)
                         score = self._score_heuristic(queue_front_layer, trial_layout)
@@ -240,19 +248,18 @@ class SabreSwap(TransformationPass):
 
                     for _, swap_qubits in scored_swaps[:self.beam_width]:
                         # for each exploration, we need a new copy of:
-                        # layout, successors, swap_sequence, explored_gates, front_layer, explored_gates
+                        # layout, successors, swap_sequence, explored_gates, front_layer, explored_gates, gates
                         trial_layout = queue_layout.copy()
                         trial_layout.swap(*swap_qubits)
-                        if depth == 0:
-                            orig_score = self._score_heuristic(queue_front_layer, trial_layout)
+                        trial_explored_gates = explored_gates.copy()
+                        trial_explored_gates.append(self._fake_apply_gate(DAGOpNode(op=SwapGate(), qargs=swap_qubits),
+                                                                          trial_layout, canonical_register))
 
 
                         trial_swap_sequence = swap_sequence + [swap_qubits]
                         trial_successors = successors.copy()
                         trial_explored_gates = explored_gates.copy()
-
-                        trial_front_layer = queue_front_layer.copy()
-                        trial_explored_gates = explored_gates.copy()
+                        trial_gates = gates.copy()
 
                         trial_front_layer = []
                         execute_gate_list = []
@@ -272,6 +279,8 @@ class SabreSwap(TransformationPass):
                         # execute any excutable gates, and update front layer with the successor gates
                         if execute_gate_list:
                             for node in execute_gate_list:
+                                trial_gates.append(node)
+                                self.gates_found.add(node)
                                 trial_explored_gates.append(self._fake_apply_gate(node, trial_layout, canonical_register))
                                 for successor in self._successors(node, dag): # may need to check this out later
                                     trial_successors[successor] -= 1 
@@ -279,15 +288,31 @@ class SabreSwap(TransformationPass):
                                         trial_front_layer.append(successor)
 
                         queue.append((trial_front_layer, trial_layout, trial_swap_sequence, 
-                                      depth + 1, trial_successors, trial_explored_gates, orig_score))
+                                      depth + 1, trial_successors, trial_explored_gates, trial_gates))
                 else:
                     # Reached lookahead depth, score this seqeuence
+                    # Calculate score depth
                     current_depth = calculate_circuit_depth(explored_gates)
                     score_depth = current_depth - previous_depth
-                    score = orig_score + score_depth
+
+                    # Calculate lookahead score
+                    gates_to_apply = []
+                    for gate in self.gates_found:
+                        if gate not in gates:
+                            gates_to_apply.append(gate)
+                    score_lookahead = self._compute_cost(gates_to_apply, queue_layout)
+
+                    # Calculate front score
+                    normalization_factor = len(queue_front_layer) 
+                    if normalization_factor == 0:
+                        score_front = 0
+                    else:
+                        score_front = self._compute_cost(queue_front_layer, queue_layout) / normalization_factor
+                    #score_front = 0
+                    #score_lookahead = 0
+                    score = (score_depth * self.alpha) + (score_lookahead * self.beta) + (score_front * self.charlie)
                     if score < best_score:
                         best_score = score
-                        best_score_depth = score_depth
                         best_swap_sequences = [swap_sequence]
                     elif score == best_score:
                         best_swap_sequences.append(swap_sequence)
@@ -323,6 +348,10 @@ class SabreSwap(TransformationPass):
         new_node = _transform_gate_for_layout(node, current_layout, canonical_register)
         #print("     Executing node:" , new_node.qargs[0].index, new_node.qargs[1].index)
         if len(new_node.qargs) == 2:
+            # if node is a swap, then need to add it 3 times, so 1 swap is 3 gates
+            if new_node.name == "swap":
+                self.gates_committed.append((new_node.qargs[0].index, new_node.qargs[1].index))
+                self.gates_committed.append((new_node.qargs[0].index, new_node.qargs[1].index))
             self.gates_committed.append((new_node.qargs[0].index, new_node.qargs[1].index))
         if self.fake_run:
             return new_node
@@ -330,6 +359,10 @@ class SabreSwap(TransformationPass):
     
     def _fake_apply_gate(self, node, current_layout, canonical_register):
         new_node = _transform_gate_for_layout(node, current_layout, canonical_register)
+        # if node is a swap, then need to add it 3 times, so 1 swap is 3 gates
+        if new_node.name == "swap":
+            self.gates_committed.append((new_node.qargs[0].index, new_node.qargs[1].index))
+            self.gates_committed.append((new_node.qargs[0].index, new_node.qargs[1].index))
         # assume that input is a two qubit gate
         return (new_node.qargs[0].index, new_node.qargs[1].index)
 
