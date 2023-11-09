@@ -65,7 +65,8 @@ class SabreSwap(TransformationPass):
         heuristic="lookahead",
         seed=None,
         fake_run=False,
-        lookahead_depth=0,
+        lookahead_depth=1,
+        beam_width=5,
     ):
         r"""SabreSwap initializer.
 
@@ -112,9 +113,10 @@ class SabreSwap(TransformationPass):
         self.dist_matrix = None
         self.lookahead_depth = lookahead_depth
         self.gates_committed = []
+        self.beam_width = beam_width
 
     def run(self, dag):
-        print("Running SabreSwap Lookahead")
+        self.gates_committed = []
         """Run the SabreSwap pass on `dag`.
 
         Args:
@@ -195,30 +197,94 @@ class SabreSwap(TransformationPass):
 
             # After all free gates are exhausted, initialize BFS to perform lookahead exploration
             # BFS tree will be represented by the queue
-            queue = [(front_layer, current_layout, [], 0, self.required_predecessors.copy())] # (front_layer, current_layout, sequence of swaps, depth)
+            queue = [(front_layer, current_layout, [], 0, self.required_predecessors, self.gates_committed, 0)] # (front_layer, current_layout, sequence of swaps, depth)
             best_swap_sequences = None
             best_score = float("inf")
             best_score_depth = float("inf")
             
             # Start BFS lookahead
             swap_scores = {}
+            previous_depth = calculate_circuit_depth(self.gates_committed)
             while queue:
+                #print("--------------------")
                 # represents the current node in the tree
-                queue_front_layer, queue_layout, swap_sequence, depth, successors = queue.pop(0)
+                queue_front_layer, queue_layout, swap_sequence, depth, successors, explored_gates, orig_score = queue.pop(0)
+                # print all items of queue
+                #qubit_indices = []
+                #for node in queue_front_layer:
+                #    qubit_indices.append(tuple(qubit.index for qubit in node.qargs))
+                #index_order = []
+                #for index in queue_layout.get_virtual_bits().keys():
+                #    index_order.append(index.index)
+                #print("Current queue front layer: ", qubit_indices) 
+                #print("Current queue layout: ", index_order)
+                #print("Current queue swap sequence: ", swap_sequence)
+                #print("Current queue depth: ", depth)
+                #print("Current queue explored gates: ", explored_gates)
 
                 if depth <= self.lookahead_depth:
                     # obtaining the swaps for the current lookahead layer
                     swap_candidates = list(self._obtain_swaps(queue_front_layer, queue_layout))
                     swap_candidates.sort(key=lambda x: (self._bit_indices[x[0]], self._bit_indices[x[1]]))
-                    for swap_qubits in swap_candidates:
+
+                    # beam search to prune the number of swap candidates
+                    scored_swaps = []
+                    for swap_qubits in self._obtain_swaps(queue_front_layer, queue_layout):
                         trial_layout = queue_layout.copy()
                         trial_layout.swap(*swap_qubits)
-                        new_swap_sequence = swap_sequence + [swap_qubits]
-                        queue.append((queue_front_layer, trial_layout, new_swap_sequence, depth + 1, successors))
+                        score = self._score_heuristic(queue_front_layer, trial_layout)
+                        scored_swaps.append((score, swap_qubits))
+                    
+                    # sort the scored swaps by score (ascending)
+                    scored_swaps.sort(key=lambda x: x[0])
+
+                    for _, swap_qubits in scored_swaps[:self.beam_width]:
+                        # for each exploration, we need a new copy of:
+                        # layout, successors, swap_sequence, explored_gates, front_layer, explored_gates
+                        trial_layout = queue_layout.copy()
+                        trial_layout.swap(*swap_qubits)
+                        if depth == 0:
+                            orig_score = self._score_heuristic(queue_front_layer, trial_layout)
+
+
+                        trial_swap_sequence = swap_sequence + [swap_qubits]
+                        trial_successors = successors.copy()
+                        trial_explored_gates = explored_gates.copy()
+
+                        trial_front_layer = queue_front_layer.copy()
+                        trial_explored_gates = explored_gates.copy()
+
+                        trial_front_layer = []
+                        execute_gate_list = []
+
+                        # update front layer with gates that now can be executed
+                        for node in queue_front_layer:
+                            # checks only two qubit gates
+                            if len(node.qargs) == 2:
+                                v0, v1 = node.qargs
+                                if self.coupling_map.graph.has_edge(
+                                    trial_layout._v2p[v0], trial_layout._v2p[v1]
+                                ):
+                                    execute_gate_list.append(node)
+                                else:
+                                    trial_front_layer.append(node)
+                        
+                        # execute any excutable gates, and update front layer with the successor gates
+                        if execute_gate_list:
+                            for node in execute_gate_list:
+                                trial_explored_gates.append(self._fake_apply_gate(node, trial_layout, canonical_register))
+                                for successor in self._successors(node, dag): # may need to check this out later
+                                    trial_successors[successor] -= 1 
+                                    if trial_successors[node] == 0:
+                                        trial_front_layer.append(successor)
+
+                        queue.append((trial_front_layer, trial_layout, trial_swap_sequence, 
+                                      depth + 1, trial_successors, trial_explored_gates, orig_score))
                 else:
                     # Reached lookahead depth, score this seqeuence
-                    score = self._score_heuristic(queue_front_layer, queue_layout)
-                    score_depth = self.gates_committed
+                    current_depth = calculate_circuit_depth(explored_gates)
+                    score_depth = current_depth - previous_depth
+                    score = orig_score + score_depth
                     if score < best_score:
                         best_score = score
                         best_score_depth = score_depth
@@ -255,11 +321,17 @@ class SabreSwap(TransformationPass):
 
     def _apply_gate(self, mapped_dag, node, current_layout, canonical_register):
         new_node = _transform_gate_for_layout(node, current_layout, canonical_register)
+        #print("     Executing node:" , new_node.qargs[0].index, new_node.qargs[1].index)
         if len(new_node.qargs) == 2:
             self.gates_committed.append((new_node.qargs[0].index, new_node.qargs[1].index))
         if self.fake_run:
             return new_node
         return mapped_dag.apply_operation_back(new_node.op, new_node.qargs, new_node.cargs)
+    
+    def _fake_apply_gate(self, node, current_layout, canonical_register):
+        new_node = _transform_gate_for_layout(node, current_layout, canonical_register)
+        # assume that input is a two qubit gate
+        return (new_node.qargs[0].index, new_node.qargs[1].index)
 
     def _build_required_predecessors(self, dag):
         out = defaultdict(int)
