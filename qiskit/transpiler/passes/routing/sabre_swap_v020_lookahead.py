@@ -192,6 +192,7 @@ class SabreSwap(TransformationPass):
             swap_scores_front = {}
             swap_scores_depth = {}
             swap_scores_gates = {}
+            swap_scores_indices = {}
             prev_depth = calculate_circuit_depth(self.gates_depth)
             for swap_qubits in self._obtain_swaps(front_layer, current_layout):
                 print("   Evaluating swap: ", swap_qubits[0].index, swap_qubits[1].index)
@@ -253,17 +254,18 @@ class SabreSwap(TransformationPass):
                 swap_scores_front[swap_qubits] = score_front
                 swap_scores_depth[swap_qubits] = delta_depth
                 swap_scores_gates[swap_qubits] = count_gate_executed
+                swap_scores_indices[swap_qubits] = (swap_qubits[0].index, swap_qubits[1].index)
             # print out all infomation from swap_scores, swap_scores_depth, swap_scores_gates
             for i in range(len(swap_scores_front)):
-                print(f"score: {list(swap_scores_front.values())[i]}, depth: {list(swap_scores_depth.values())[i]}, gates: {list(swap_scores_gates.values())[i]}")
+                print(f"score: {list(swap_scores_front.values())[i]}, depth: {list(swap_scores_depth.values())[i]}, gates: {list(swap_scores_gates.values())[i]}, indices: {list(swap_scores_indices.values())[i]}")
             sorted_swaps = sorted(swap_scores_front.keys(), 
-                      key=lambda x: (swap_scores_gates[x], 
+                      key=lambda x: (-swap_scores_gates[x], 
                                      swap_scores_depth[x],
-                                     swap_scores_front[x]),
-                      reverse=True)
-            print("sorted swaps: ", sorted_swaps)
+                                     swap_scores_front[x]))
+            for swaps in sorted_swaps:
+                print("sorted swaps: ", swaps[0].index, swaps[1].index)
             best_swap1 = sorted_swaps[0]
-            print("best swap: ", best_swap1)
+            print("best swap: ", best_swap1[0].index, best_swap1[1].index)
 
             min_score = min(swap_scores_front.values())
             best_swaps = [k for k, v in swap_scores_front.items() if v == min_score]
