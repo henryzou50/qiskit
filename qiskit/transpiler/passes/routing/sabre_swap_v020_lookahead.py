@@ -25,15 +25,6 @@ from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.layout import Layout
 from qiskit.dagcircuit import DAGOpNode
 
-logger = logging.getLogger(__name__)
-
-EXTENDED_SET_SIZE = 20  # Size of lookahead window. TODO: set dynamically to len(current_layout)
-EXTENDED_SET_WEIGHT = 0.5  # Weight of lookahead window compared to front_layer.
-
-DECAY_RATE = 0.001  # Decay coefficient for penalizing serial swaps.
-DECAY_RESET_INTERVAL = 5  # How often to reset all decay rates to 1.
-
-
 class SabreSwap(TransformationPass):
     r"""Map input circuit onto a backend topology via insertion of SWAPs.
 
@@ -69,7 +60,6 @@ class SabreSwap(TransformationPass):
     def __init__(
         self,
         coupling_map,
-        heuristic="basic",
         seed=None,
         fake_run=False,
     ):
@@ -77,8 +67,6 @@ class SabreSwap(TransformationPass):
 
         Args:
             coupling_map (CouplingMap): CouplingMap of the target backend.
-            heuristic (str): The type of heuristic to use when deciding best
-                swap strategy ('basic' or 'lookahead' or 'decay').
             seed (int): random seed used to tie-break among candidate swaps.
             fake_run (bool): if true, it only pretend to do routing, i.e., no
                 swap is effectively added.
@@ -90,41 +78,7 @@ class SabreSwap(TransformationPass):
             The goodness of a layout is evaluated based on how viable it makes
             the remaining virtual gates that must be applied. A few heuristic
             cost functions are supported
-
-            - 'basic':
-
-            The sum of distances for corresponding physical qubits of
-            interacting virtual qubits in the front_layer.
-
-            .. math::
-
                 H_{basic} = \sum_{gate \in F} D[\pi(gate.q_1)][\pi(gate.q2)]
-
-            - 'lookahead':
-
-            This is the sum of two costs: first is the same as the basic cost.
-            Second is the basic cost but now evaluated for the
-            extended set as well (i.e. :math:`|E|` number of upcoming successors to gates in
-            front_layer F). This is weighted by some amount EXTENDED_SET_WEIGHT (W) to
-            signify that upcoming gates are less important that the front_layer.
-
-            .. math::
-
-                H_{decay}=\frac{1}{\left|{F}\right|}\sum_{gate \in F} D[\pi(gate.q_1)][\pi(gate.q2)]
-                    + W*\frac{1}{\left|{E}\right|} \sum_{gate \in E} D[\pi(gate.q_1)][\pi(gate.q2)]
-
-            - 'decay':
-
-            This is the same as 'lookahead', but the whole cost is multiplied by a
-            decay factor. This increases the cost if the SWAP that generated the
-            trial layout was recently used (i.e. it penalizes increase in depth).
-
-            .. math::
-
-                H_{decay} = max(decay(SWAP.q_1), decay(SWAP.q_2)) {
-                    \frac{1}{\left|{F}\right|} \sum_{gate \in F} D[\pi(gate.q_1)][\pi(gate.q2)]\\
-                    + W *\frac{1}{\left|{E}\right|} \sum_{gate \in E} D[\pi(gate.q_1)][\pi(gate.q2)]
-                    }
         """
 
         super().__init__()
@@ -136,11 +90,9 @@ class SabreSwap(TransformationPass):
             self.coupling_map = deepcopy(coupling_map)
             self.coupling_map.make_symmetric()
 
-        self.heuristic = heuristic
         self.seed = seed
         self.fake_run = fake_run
         self.required_predecessors = None
-        self.qubits_decay = None
         self._bit_indices = None
         self.dist_matrix = None
 
@@ -163,11 +115,6 @@ class SabreSwap(TransformationPass):
 
         max_iterations_without_progress = 10 * len(dag.qubits)  # Arbitrary.
         ops_since_progress = []
-        extended_set = None
-
-        # Normally this isn't necessary, but here we want to log some objects that have some
-        # non-trivial cost to create.
-        do_expensive_logging = logger.isEnabledFor(logging.DEBUG)
 
         self.dist_matrix = self.coupling_map.distance_matrix
 
@@ -183,13 +130,8 @@ class SabreSwap(TransformationPass):
 
         self._bit_indices = {bit: idx for idx, bit in enumerate(canonical_register)}
 
-        # A decay factor for each qubit used to heuristically penalize recently
-        # used qubits (to encourage parallelism).
-        self.qubits_decay = dict.fromkeys(dag.qubits, 1)
-
         # Start algorithm from the front layer and iterate until all gates done.
         self.required_predecessors = self._build_required_predecessors(dag)
-        num_search_steps = 0
         front_layer = dag.front_layer()
 
         while front_layer:
@@ -229,51 +171,25 @@ class SabreSwap(TransformationPass):
                         if self._is_resolved(successor):
                             front_layer.append(successor)
 
-                    if node.qargs:
-                        self._reset_qubits_decay()
-
-                # Diagnostics
-                if do_expensive_logging:
-                    logger.debug(
-                        "free! %s",
-                        [
-                            (n.name if isinstance(n, DAGOpNode) else None, n.qargs)
-                            for n in execute_gate_list
-                        ],
-                    )
-                    logger.debug(
-                        "front_layer: %s",
-                        [
-                            (n.name if isinstance(n, DAGOpNode) else None, n.qargs)
-                            for n in front_layer
-                        ],
-                    )
 
                 ops_since_progress = []
-                extended_set = None
                 continue
 
             # After all free gates are exhausted, heuristically find
             # the best swap and insert it. When two or more swaps tie
             # for best score, pick one randomly.
-            if extended_set is None:
-                extended_set = self._obtain_extended_set(dag, front_layer)
             swap_scores = {}
             for swap_qubits in self._obtain_swaps(front_layer, current_layout):
                 trial_layout = current_layout.copy()
                 trial_layout.swap(*swap_qubits)
                 score = self._score_heuristic(
-                    self.heuristic, front_layer, extended_set, trial_layout, swap_qubits
+                    front_layer, trial_layout
                 )
                 swap_scores[swap_qubits] = score
-                #print("Swap qubits: ", swap_qubits[0].index, swap_qubits[1].index)
-                #print("Score: ", score)
             min_score = min(swap_scores.values())
             best_swaps = [k for k, v in swap_scores.items() if v == min_score]
             best_swaps.sort(key=lambda x: (self._bit_indices[x[0]], self._bit_indices[x[1]]))
             best_swap = rng.choice(best_swaps)
-            #print("     Best swap: ", best_swap[0].index, best_swap[1].index)
-            #print("     Best swap score: ", min_score)
             swap_node = self._apply_gate(
                 mapped_dag,
                 DAGOpNode(op=SwapGate(), qargs=best_swap),
@@ -282,21 +198,6 @@ class SabreSwap(TransformationPass):
             )
             current_layout.swap(*best_swap)
             ops_since_progress.append(swap_node)
-
-            num_search_steps += 1
-            if num_search_steps % DECAY_RESET_INTERVAL == 0:
-                self._reset_qubits_decay()
-            else:
-                self.qubits_decay[best_swap[0]] += DECAY_RATE
-                self.qubits_decay[best_swap[1]] += DECAY_RATE
-
-            # Diagnostics
-            if do_expensive_logging:
-                logger.debug("SWAP Selection...")
-                logger.debug("extended_set: %s", [(n.name, n.qargs) for n in extended_set])
-                logger.debug("swap scores: %s", swap_scores)
-                logger.debug("best swap: %s", best_swap)
-                logger.debug("qubits decay: %s", self.qubits_decay)
 
         self.property_set["final_layout"] = current_layout
         if not self.fake_run:
@@ -308,12 +209,6 @@ class SabreSwap(TransformationPass):
         if self.fake_run:
             return new_node
         return mapped_dag.apply_operation_back(new_node.op, new_node.qargs, new_node.cargs)
-
-    def _reset_qubits_decay(self):
-        """Reset all qubit decay factors to 1 upon request (to forget about
-        past penalizations).
-        """
-        self.qubits_decay = {k: 1 for k in self.qubits_decay.keys()}
 
     def _build_required_predecessors(self, dag):
         out = defaultdict(int)
@@ -337,32 +232,6 @@ class SabreSwap(TransformationPass):
     def _is_resolved(self, node):
         """Return True if all of a node's predecessors in dag are applied."""
         return self.required_predecessors[node] == 0
-
-    def _obtain_extended_set(self, dag, front_layer):
-        """Populate extended_set by looking ahead a fixed number of gates.
-        For each existing element add a successor until reaching limit.
-        """
-        extended_set = []
-        decremented = []
-        tmp_front_layer = front_layer
-        done = False
-        while tmp_front_layer and not done:
-            new_tmp_front_layer = []
-            for node in tmp_front_layer:
-                for successor in self._successors(node, dag):
-                    decremented.append(successor)
-                    self.required_predecessors[successor] -= 1
-                    if self._is_resolved(successor):
-                        new_tmp_front_layer.append(successor)
-                        if len(successor.qargs) == 2:
-                            extended_set.append(successor)
-                if len(extended_set) >= EXTENDED_SET_SIZE:
-                    done = True
-                    break
-            tmp_front_layer = new_tmp_front_layer
-        for node in decremented:
-            self.required_predecessors[node] += 1
-        return extended_set
 
     def _obtain_swaps(self, front_layer, current_layout):
         """Return a set of candidate swaps that affect qubits in front_layer.
@@ -403,32 +272,14 @@ class SabreSwap(TransformationPass):
             cost += self.dist_matrix[layout_map[node.qargs[0]], layout_map[node.qargs[1]]]
         return cost
 
-    def _score_heuristic(self, heuristic, front_layer, extended_set, layout, swap_qubits=None):
+    def _score_heuristic(self, front_layer, layout):
         """Return a heuristic score for a trial layout.
 
         Assuming a trial layout has resulted from a SWAP, we now assign a cost
         to it. The goodness of a layout is evaluated based on how viable it makes
         the remaining virtual gates that must be applied.
         """
-        first_cost = self._compute_cost(front_layer, layout)
-        if heuristic == "basic":
-            return first_cost
-
-        first_cost /= len(front_layer)
-        second_cost = 0
-        if extended_set:
-            second_cost = self._compute_cost(extended_set, layout) / len(extended_set)
-        total_cost = first_cost + EXTENDED_SET_WEIGHT * second_cost
-        if heuristic == "lookahead":
-            return total_cost
-
-        if heuristic == "decay":
-            return (
-                max(self.qubits_decay[swap_qubits[0]], self.qubits_decay[swap_qubits[1]])
-                * total_cost
-            )
-
-        raise TranspilerError("Heuristic %s not recognized." % heuristic)
+        return self._compute_cost(front_layer, layout)
 
     def _undo_operations(self, operations, dag, layout):
         """Mutate ``dag`` and ``layout`` by undoing the swap gates listed in ``operations``."""
