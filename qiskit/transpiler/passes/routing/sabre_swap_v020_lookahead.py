@@ -17,6 +17,7 @@ from copy import copy, deepcopy
 
 import numpy as np
 import retworkx
+import itertools
 
 from qiskit.circuit.library.standard_gates import SwapGate
 from qiskit.transpiler.basepasses import TransformationPass
@@ -96,6 +97,9 @@ class SabreSwap(TransformationPass):
         self._bit_indices = None
         self.dist_matrix = None
         self.lookahead_depth = lookahead_depth
+        # carries the list of all the two-qubit gates commited in order, swaps are counted 3 times
+        # used to get the depth of the circuit.decompose(["swap"])
+        self.gates_depth = []
 
     def run(self, dag):
         """Run the SabreSwap pass on `dag`.
@@ -178,12 +182,10 @@ class SabreSwap(TransformationPass):
                 ops_since_progress = []
                 continue
 
-            # After all free gates are exhausted, heuristically find
-            # the best swap and insert it. When two or more swaps tie
-            # for best score, pick one randomly.
-
-            # initialize BFS queue to perform lookahead exploration
-
+            # After all free gates are exhausted, initialize BFS queue to perform lookahead exploration.
+            # We use a BFS queue to explore the search space of SWAPs, and compute the scores of:
+            # score_front, score_depth, score_gates, score_lookahead
+            # In the queue, we store the following:
             # (front_layer, current_layouit, swap_sequence, predecessors, score_front, depth)
             queue = [(front_layer, current_layout, [], self.required_predecessors, float("inf"), 0)] 
             best_swap_sequences = None
@@ -269,6 +271,13 @@ class SabreSwap(TransformationPass):
 
     def _apply_gate(self, mapped_dag, node, current_layout, canonical_register):
         new_node = _transform_gate_for_layout(node, current_layout, canonical_register)
+        if len(new_node.qargs) == 2:
+            # may need to change this later to account for single-qubit gates
+            # if node is a swap, then need to add it 3 times to represent how 1 swap is 3 gates
+            if new_node.name == "swap":
+                self.gates_depth.append((new_node.qargs[0].index, new_node.qargs[1].index))
+                self.gates_depth.append((new_node.qargs[0].index, new_node.qargs[1].index))
+            self.gates_depth.append((new_node.qargs[0].index, new_node.qargs[1].index))
         if self.fake_run:
             return new_node
         return mapped_dag.apply_operation_back(new_node.op, new_node.qargs, new_node.cargs)
@@ -342,7 +351,8 @@ class SabreSwap(TransformationPass):
         to it. The goodness of a layout is evaluated based on how viable it makes
         the remaining virtual gates that must be applied.
         """
-        return self._compute_cost(front_layer, layout)
+        normalization = len(front_layer)
+        return self._compute_cost(front_layer, layout) / normalization
 
     def _undo_operations(self, operations, dag, layout):
         """Mutate ``dag`` and ``layout`` by undoing the swap gates listed in ``operations``."""
@@ -379,3 +389,28 @@ def _shortest_swap_path(target_qubits, coupling_map, layout):
         yield v_start, layout._p2v[swap]
     for swap in backwards:
         yield v_goal, layout._p2v[swap]
+
+def calculate_circuit_depth(gates):
+    # Get all unique qubits in the circuit
+    nodes = set(itertools.chain(*gates))
+    
+    # Initialize depth 0 for each qubit
+    depths = {node: 0 for node in nodes} 
+
+    for gate in gates:
+        
+        # Get the max depth of the two qubits in this gate
+        depth = max(depths[gate[0]], depths[gate[1]])
+
+        # Increment the depth by 1
+        depth += 1
+
+        # Update the depth for both qubits
+        depths[gate[0]] = depth  
+        depths[gate[1]] = depth
+        
+    # Return the max depth overall 
+    if depths:
+        return max(depths.values())
+    else:
+        return 0
