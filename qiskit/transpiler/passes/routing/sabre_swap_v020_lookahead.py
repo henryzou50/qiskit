@@ -184,11 +184,12 @@ class SabreSwap(TransformationPass):
 
             # initialize BFS queue to perform lookahead exploration
 
-            queue = [(front_layer, current_layout, [], 0)] # (front_layer, current_layouit, swap_sequence, depth)
+            # (front_layer, current_layouit, swap_sequence, score_front, depth)
+            queue = [(front_layer, current_layout, [], float("inf"), 0)] 
             best_swap_sequences = None
             min_score = float("inf")
             while queue:
-                q_front_layer, q_current_layout, q_swap_sequence, depth = queue.pop(0)
+                q_front_layer, q_current_layout, q_swap_sequence, score_front, depth = queue.pop(0)
 
                 # exploring all swap candidates at this depth and then adding the next layer to the queue
                 if depth <= self.lookahead_depth:
@@ -201,17 +202,21 @@ class SabreSwap(TransformationPass):
                         trial_layout = q_current_layout.copy()
                         trial_front_layer = q_front_layer.copy()
                         trial_swap_sequence = q_swap_sequence + [swap]
-
-
+                        
+                        # changing layout to reflect the swap
                         trial_layout.swap(*swap)
-                        queue.append((trial_front_layer, trial_layout, trial_swap_sequence, depth + 1))
+
+                        # changing score_front to reflect the swap
+                        trial_score_front = self._score_heuristic(trial_front_layer, trial_layout)
+
+                        queue.append((trial_front_layer, trial_layout, trial_swap_sequence, 
+                                      trial_score_front, depth + 1))
                 # reached the end of the lookahead, now we score what we have
                 else:
-                    score = self._score_heuristic(q_front_layer, q_current_layout)
-                    if score < min_score:
-                        min_score = score
+                    if score_front < min_score:
+                        min_score = score_front
                         best_swap_sequences = [q_swap_sequence]
-                    elif score == min_score: # we have a tie
+                    elif score_front == min_score: # we have a tie
                         best_swap_sequences.append(q_swap_sequence)
             
             if best_swap_sequences is not None:
