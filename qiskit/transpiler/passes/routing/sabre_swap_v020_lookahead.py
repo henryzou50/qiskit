@@ -192,7 +192,7 @@ class SabreSwap(TransformationPass):
             swap_scores_front = {}
             swap_scores_depth = {}
             swap_scores_gates = {}
-            swap_scores_indices = {}
+            #swap_scores_indices = {}
             prev_depth = calculate_circuit_depth(self.gates_depth)
 
             swap_candidates = list(self._obtain_swaps(front_layer, current_layout))
@@ -203,6 +203,8 @@ class SabreSwap(TransformationPass):
 
                 trial_layout = current_layout.copy()
                 trial_layout.swap(*swap_qubits)
+
+                # calculating front score
                 score_front = self._score_heuristic(
                     front_layer, trial_layout
                 )
@@ -211,7 +213,6 @@ class SabreSwap(TransformationPass):
                 trial_front_layer = front_layer.copy()
                 # Need copy of successors to update it for the current swap
                 trial_required_predecessors = self.required_predecessors.copy()
-
                 # Need copy of current committed gates
                 trial_gates_depth = self.gates_depth + self._fake_apply_gate(
                     DAGOpNode(op=SwapGate(), qargs=swap_qubits),
@@ -258,7 +259,7 @@ class SabreSwap(TransformationPass):
                 swap_scores_front[swap_qubits] = score_front
                 swap_scores_depth[swap_qubits] = delta_depth
                 swap_scores_gates[swap_qubits] = count_gate_executed
-                swap_scores_indices[swap_qubits] = (swap_qubits[0].index, swap_qubits[1].index)
+                #swap_scores_indices[swap_qubits] = (swap_qubits[0].index, swap_qubits[1].index)
             # print out all infomation from swap_scores, swap_scores_depth, swap_scores_gates
             
             #for i in range(len(swap_scores_front)):
@@ -267,6 +268,17 @@ class SabreSwap(TransformationPass):
                       key=lambda x: (-swap_scores_gates[x], 
                                      swap_scores_depth[x],
                                      swap_scores_front[x]))
+            #sorted_swaps = sorted(swap_scores_front.keys(), 
+            #          key=lambda x: (-swap_scores_gates[x], 
+            #                         swap_scores_depth[x],
+            #                         swap_scores_front[x]))
+
+            sorted_swaps = sorted(swap_scores_front.keys(), 
+                      key=lambda x: (-swap_scores_gates[x], 
+                                     swap_scores_front[x],
+                                     swap_scores_depth[x]))
+
+
             #for swaps in sorted_swaps:
             #    print("sorted swaps: ", swaps[0].index, swaps[1].index)
 
@@ -389,7 +401,11 @@ class SabreSwap(TransformationPass):
         to it. The goodness of a layout is evaluated based on how viable it makes
         the remaining virtual gates that must be applied.
         """
-        return self._compute_cost(front_layer, layout)
+        front_len = len(front_layer)
+        if front_len == 0:
+            return 0
+        else:
+            return self._compute_cost(front_layer, layout) / front_len 
 
     def _undo_operations(self, operations, dag, layout):
         """Mutate ``dag`` and ``layout`` by undoing the swap gates listed in ``operations``."""

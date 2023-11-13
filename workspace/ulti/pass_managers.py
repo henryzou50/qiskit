@@ -96,7 +96,7 @@ def transpiled_data(qc, pass_managers):
         time_end = time.time()
         time_elapsed = time_end - time_start
 
-        qc_tr = qc_tr.decompose()
+        qc_tr = qc_tr.decompose(["swap"])
         depth = qc_tr.depth()
         depth_ratio = round((depth / depth_orig), 2)
 
