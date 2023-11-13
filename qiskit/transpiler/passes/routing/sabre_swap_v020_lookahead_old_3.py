@@ -18,20 +18,13 @@ from copy import copy, deepcopy
 
 import numpy as np
 import retworkx
+import itertools
 
 from qiskit.circuit.library.standard_gates import SwapGate
 from qiskit.transpiler.basepasses import TransformationPass
 from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.layout import Layout
 from qiskit.dagcircuit import DAGOpNode
-
-logger = logging.getLogger(__name__)
-
-EXTENDED_SET_SIZE = 20  # Size of lookahead window. TODO: set dynamically to len(current_layout)
-EXTENDED_SET_WEIGHT = 0.5  # Weight of lookahead window compared to front_layer.
-
-DECAY_RATE = 0.001  # Decay coefficient for penalizing serial swaps.
-DECAY_RESET_INTERVAL = 5  # How often to reset all decay rates to 1.
 
 
 class SabreSwap(TransformationPass):
@@ -69,7 +62,6 @@ class SabreSwap(TransformationPass):
     def __init__(
         self,
         coupling_map,
-        heuristic="basic",
         seed=None,
         fake_run=False,
     ):
@@ -90,41 +82,6 @@ class SabreSwap(TransformationPass):
             The goodness of a layout is evaluated based on how viable it makes
             the remaining virtual gates that must be applied. A few heuristic
             cost functions are supported
-
-            - 'basic':
-
-            The sum of distances for corresponding physical qubits of
-            interacting virtual qubits in the front_layer.
-
-            .. math::
-
-                H_{basic} = \sum_{gate \in F} D[\pi(gate.q_1)][\pi(gate.q2)]
-
-            - 'lookahead':
-
-            This is the sum of two costs: first is the same as the basic cost.
-            Second is the basic cost but now evaluated for the
-            extended set as well (i.e. :math:`|E|` number of upcoming successors to gates in
-            front_layer F). This is weighted by some amount EXTENDED_SET_WEIGHT (W) to
-            signify that upcoming gates are less important that the front_layer.
-
-            .. math::
-
-                H_{decay}=\frac{1}{\left|{F}\right|}\sum_{gate \in F} D[\pi(gate.q_1)][\pi(gate.q2)]
-                    + W*\frac{1}{\left|{E}\right|} \sum_{gate \in E} D[\pi(gate.q_1)][\pi(gate.q2)]
-
-            - 'decay':
-
-            This is the same as 'lookahead', but the whole cost is multiplied by a
-            decay factor. This increases the cost if the SWAP that generated the
-            trial layout was recently used (i.e. it penalizes increase in depth).
-
-            .. math::
-
-                H_{decay} = max(decay(SWAP.q_1), decay(SWAP.q_2)) {
-                    \frac{1}{\left|{F}\right|} \sum_{gate \in F} D[\pi(gate.q_1)][\pi(gate.q2)]\\
-                    + W *\frac{1}{\left|{E}\right|} \sum_{gate \in E} D[\pi(gate.q_1)][\pi(gate.q2)]
-                    }
         """
 
         super().__init__()
@@ -136,13 +93,15 @@ class SabreSwap(TransformationPass):
             self.coupling_map = deepcopy(coupling_map)
             self.coupling_map.make_symmetric()
 
-        self.heuristic = heuristic
         self.seed = seed
         self.fake_run = fake_run
         self.required_predecessors = None
         self.qubits_decay = None
         self._bit_indices = None
         self.dist_matrix = None
+        # carries the list of all the two-qubit gates commited in order, swaps are counted 3 times
+        # used to get the depth of the circuit.decompose(["swap"])
+        self.gates_depth = [] 
 
     def run(self, dag):
         """Run the SabreSwap pass on `dag`.
@@ -160,14 +119,13 @@ class SabreSwap(TransformationPass):
 
         if len(dag.qubits) > self.coupling_map.size():
             raise TranspilerError("More virtual qubits exist than physical.")
-
+    
         max_iterations_without_progress = 10 * len(dag.qubits)  # Arbitrary.
         ops_since_progress = []
-        extended_set = None
+        self.gates_depth = []
 
         # Normally this isn't necessary, but here we want to log some objects that have some
         # non-trivial cost to create.
-        do_expensive_logging = logger.isEnabledFor(logging.DEBUG)
 
         self.dist_matrix = self.coupling_map.distance_matrix
 
@@ -183,13 +141,9 @@ class SabreSwap(TransformationPass):
 
         self._bit_indices = {bit: idx for idx, bit in enumerate(canonical_register)}
 
-        # A decay factor for each qubit used to heuristically penalize recently
-        # used qubits (to encourage parallelism).
-        self.qubits_decay = dict.fromkeys(dag.qubits, 1)
 
         # Start algorithm from the front layer and iterate until all gates done.
         self.required_predecessors = self._build_required_predecessors(dag)
-        num_search_steps = 0
         front_layer = dag.front_layer()
 
         while front_layer:
@@ -229,51 +183,116 @@ class SabreSwap(TransformationPass):
                         if self._is_resolved(successor):
                             front_layer.append(successor)
 
-                    if node.qargs:
-                        self._reset_qubits_decay()
-
-                # Diagnostics
-                if do_expensive_logging:
-                    logger.debug(
-                        "free! %s",
-                        [
-                            (n.name if isinstance(n, DAGOpNode) else None, n.qargs)
-                            for n in execute_gate_list
-                        ],
-                    )
-                    logger.debug(
-                        "front_layer: %s",
-                        [
-                            (n.name if isinstance(n, DAGOpNode) else None, n.qargs)
-                            for n in front_layer
-                        ],
-                    )
-
                 ops_since_progress = []
-                extended_set = None
                 continue
 
             # After all free gates are exhausted, heuristically find
             # the best swap and insert it. When two or more swaps tie
             # for best score, pick one randomly.
-            if extended_set is None:
-                extended_set = self._obtain_extended_set(dag, front_layer)
-            swap_scores = {}
-            for swap_qubits in self._obtain_swaps(front_layer, current_layout):
+            swap_scores_front = {}
+            swap_scores_depth = {}
+            swap_scores_gates = {}
+            #swap_scores_indices = {}
+            prev_depth = calculate_circuit_depth(self.gates_depth)
+
+            swap_candidates = list(self._obtain_swaps(front_layer, current_layout))
+            swap_candidates.sort(key=lambda x: (self._bit_indices[x[0]], self._bit_indices[x[1]]))
+
+            for swap_qubits in swap_candidates:
+                #print("   Evaluating swap: ", swap_qubits[0].index, swap_qubits[1].index)
+
                 trial_layout = current_layout.copy()
                 trial_layout.swap(*swap_qubits)
-                score = self._score_heuristic(
-                    self.heuristic, front_layer, extended_set, trial_layout, swap_qubits
+
+                # calculating front score
+                score_front = self._score_heuristic(
+                    front_layer, trial_layout
                 )
-                swap_scores[swap_qubits] = score
-                #print("Swap qubits: ", swap_qubits[0].index, swap_qubits[1].index)
-                #print("Score: ", score)
-            min_score = min(swap_scores.values())
-            best_swaps = [k for k, v in swap_scores.items() if v == min_score]
-            best_swaps.sort(key=lambda x: (self._bit_indices[x[0]], self._bit_indices[x[1]]))
+
+                # Need copy of front layer to update it for the current swap
+                trial_front_layer = front_layer.copy()
+                # Need copy of successors to update it for the current swap
+                trial_required_predecessors = self.required_predecessors.copy()
+                # Need copy of current committed gates
+                trial_gates_depth = self.gates_depth + self._fake_apply_gate(
+                    DAGOpNode(op=SwapGate(), qargs=swap_qubits),
+                    trial_layout,
+                    canonical_register
+                )
+
+                # Need to reset the count of gates executed for each branch
+                count_gate_executed = 0
+
+                # In process of updating front layer
+                while True:
+                    new_front_layer = []
+                    execute_gate_list = []
+                    for node in trial_front_layer:
+                        if len(node.qargs) == 2:
+                            v0, v1 = node.qargs
+                            if self.coupling_map.graph.has_edge(
+                                trial_layout._v2p[v0], trial_layout._v2p[v1]
+                            ):
+                                execute_gate_list.append(node)
+                            else:
+                                new_front_layer.append(node)
+                        else:  # Single-qubit gates as well as barriers are free
+                            execute_gate_list.append(node)
+                    trial_front_layer = new_front_layer
+
+                    # Done with updating front layer
+                    if not execute_gate_list:
+                        break
+                    else:
+                        # Update front layer with successors and fake apply gates
+                        for node in execute_gate_list:
+                            trial_gates_depth += self._fake_apply_gate(node, trial_layout, canonical_register)
+                            count_gate_executed += 1
+                            for successor in self._successors(node, dag):
+                                trial_required_predecessors[successor] -= 1
+                                if trial_required_predecessors[successor] == 0:
+                                    trial_front_layer.append(successor)
+                # calculating depth score
+                curr_depth = calculate_circuit_depth(trial_gates_depth)
+                delta_depth = curr_depth - prev_depth   
+                
+                swap_scores_front[swap_qubits] = score_front
+                swap_scores_depth[swap_qubits] = delta_depth
+                swap_scores_gates[swap_qubits] = count_gate_executed
+                #swap_scores_indices[swap_qubits] = (swap_qubits[0].index, swap_qubits[1].index)
+            # print out all infomation from swap_scores, swap_scores_depth, swap_scores_gates
+            
+            #for i in range(len(swap_scores_front)):
+            #    print(f"score: {list(swap_scores_front.values())[i]}, depth: {list(swap_scores_depth.values())[i]}, gates: {list(swap_scores_gates.values())[i]}, indices: {list(swap_scores_indices.values())[i]}")
+            sorted_swaps = sorted(swap_scores_front.keys(), 
+                      key=lambda x: (-swap_scores_gates[x], 
+                                     swap_scores_depth[x],
+                                     swap_scores_front[x]))
+            #sorted_swaps = sorted(swap_scores_front.keys(), 
+            #          key=lambda x: (-swap_scores_gates[x], 
+            #                         swap_scores_depth[x],
+            #                         swap_scores_front[x]))
+
+            sorted_swaps = sorted(swap_scores_front.keys(), 
+                      key=lambda x: (-swap_scores_gates[x], 
+                                     swap_scores_front[x],
+                                     swap_scores_depth[x]))
+
+
+            #for swaps in sorted_swaps:
+            #    print("sorted swaps: ", swaps[0].index, swaps[1].index)
+
+            #min_score = min(swap_scores_front.values())
+            #best_swaps = [k for k, v in swap_scores_front.items() if v == min_score]
+            #best_swaps.sort(key=lambda x: (self._bit_indices[x[0]], self._bit_indices[x[1]]))
+            #best_swap = rng.choice(best_swaps)
+
+            best_swaps = [s for s in sorted_swaps if 
+              swap_scores_gates[s] == swap_scores_gates[sorted_swaps[0]] and
+              swap_scores_depth[s] == swap_scores_depth[sorted_swaps[0]] and
+              swap_scores_front[s] == swap_scores_front[sorted_swaps[0]]]
+
             best_swap = rng.choice(best_swaps)
-            #print("     Best swap: ", best_swap[0].index, best_swap[1].index)
-            #print("     Best swap score: ", min_score)
             swap_node = self._apply_gate(
                 mapped_dag,
                 DAGOpNode(op=SwapGate(), qargs=best_swap),
@@ -283,37 +302,35 @@ class SabreSwap(TransformationPass):
             current_layout.swap(*best_swap)
             ops_since_progress.append(swap_node)
 
-            num_search_steps += 1
-            if num_search_steps % DECAY_RESET_INTERVAL == 0:
-                self._reset_qubits_decay()
-            else:
-                self.qubits_decay[best_swap[0]] += DECAY_RATE
-                self.qubits_decay[best_swap[1]] += DECAY_RATE
-
-            # Diagnostics
-            if do_expensive_logging:
-                logger.debug("SWAP Selection...")
-                logger.debug("extended_set: %s", [(n.name, n.qargs) for n in extended_set])
-                logger.debug("swap scores: %s", swap_scores)
-                logger.debug("best swap: %s", best_swap)
-                logger.debug("qubits decay: %s", self.qubits_decay)
 
         self.property_set["final_layout"] = current_layout
+        #print("Final depth of circuit: ", calculate_circuit_depth(self.gates_depth))
         if not self.fake_run:
             return mapped_dag
         return dag
 
     def _apply_gate(self, mapped_dag, node, current_layout, canonical_register):
         new_node = _transform_gate_for_layout(node, current_layout, canonical_register)
+        if len(new_node.qargs) == 2:
+            # if node is a swap, then need to add it 3 times, so 1 swap is 3 gates
+            if new_node.name == "swap":
+                self.gates_depth.append((new_node.qargs[0].index, new_node.qargs[1].index))
+                self.gates_depth.append((new_node.qargs[0].index, new_node.qargs[1].index))
+            self.gates_depth.append((new_node.qargs[0].index, new_node.qargs[1].index))
         if self.fake_run:
             return new_node
         return mapped_dag.apply_operation_back(new_node.op, new_node.qargs, new_node.cargs)
 
-    def _reset_qubits_decay(self):
-        """Reset all qubit decay factors to 1 upon request (to forget about
-        past penalizations).
-        """
-        self.qubits_decay = {k: 1 for k in self.qubits_decay.keys()}
+    def _fake_apply_gate(self, node, current_layout, canonical_register):
+        new_node = _transform_gate_for_layout(node, current_layout, canonical_register)
+        #print("     Executing gate: ", new_node.name)
+        # if node is a swap, then need to add it 3 times, so 1 swap is 3 gates
+        if new_node.name == "swap":
+            return [(new_node.qargs[0].index, new_node.qargs[1].index),
+                    (new_node.qargs[0].index, new_node.qargs[1].index),
+                    (new_node.qargs[0].index, new_node.qargs[1].index)]
+        else: 
+            return [(new_node.qargs[0].index, new_node.qargs[1].index)]
 
     def _build_required_predecessors(self, dag):
         out = defaultdict(int)
@@ -337,32 +354,6 @@ class SabreSwap(TransformationPass):
     def _is_resolved(self, node):
         """Return True if all of a node's predecessors in dag are applied."""
         return self.required_predecessors[node] == 0
-
-    def _obtain_extended_set(self, dag, front_layer):
-        """Populate extended_set by looking ahead a fixed number of gates.
-        For each existing element add a successor until reaching limit.
-        """
-        extended_set = []
-        decremented = []
-        tmp_front_layer = front_layer
-        done = False
-        while tmp_front_layer and not done:
-            new_tmp_front_layer = []
-            for node in tmp_front_layer:
-                for successor in self._successors(node, dag):
-                    decremented.append(successor)
-                    self.required_predecessors[successor] -= 1
-                    if self._is_resolved(successor):
-                        new_tmp_front_layer.append(successor)
-                        if len(successor.qargs) == 2:
-                            extended_set.append(successor)
-                if len(extended_set) >= EXTENDED_SET_SIZE:
-                    done = True
-                    break
-            tmp_front_layer = new_tmp_front_layer
-        for node in decremented:
-            self.required_predecessors[node] += 1
-        return extended_set
 
     def _obtain_swaps(self, front_layer, current_layout):
         """Return a set of candidate swaps that affect qubits in front_layer.
@@ -403,32 +394,18 @@ class SabreSwap(TransformationPass):
             cost += self.dist_matrix[layout_map[node.qargs[0]], layout_map[node.qargs[1]]]
         return cost
 
-    def _score_heuristic(self, heuristic, front_layer, extended_set, layout, swap_qubits=None):
+    def _score_heuristic(self, front_layer, layout):
         """Return a heuristic score for a trial layout.
 
         Assuming a trial layout has resulted from a SWAP, we now assign a cost
         to it. The goodness of a layout is evaluated based on how viable it makes
         the remaining virtual gates that must be applied.
         """
-        first_cost = self._compute_cost(front_layer, layout)
-        if heuristic == "basic":
-            return first_cost
-
-        first_cost /= len(front_layer)
-        second_cost = 0
-        if extended_set:
-            second_cost = self._compute_cost(extended_set, layout) / len(extended_set)
-        total_cost = first_cost + EXTENDED_SET_WEIGHT * second_cost
-        if heuristic == "lookahead":
-            return total_cost
-
-        if heuristic == "decay":
-            return (
-                max(self.qubits_decay[swap_qubits[0]], self.qubits_decay[swap_qubits[1]])
-                * total_cost
-            )
-
-        raise TranspilerError("Heuristic %s not recognized." % heuristic)
+        front_len = len(front_layer)
+        if front_len == 0:
+            return 0
+        else:
+            return self._compute_cost(front_layer, layout) / front_len 
 
     def _undo_operations(self, operations, dag, layout):
         """Mutate ``dag`` and ``layout`` by undoing the swap gates listed in ``operations``."""
@@ -465,3 +442,28 @@ def _shortest_swap_path(target_qubits, coupling_map, layout):
         yield v_start, layout._p2v[swap]
     for swap in backwards:
         yield v_goal, layout._p2v[swap]
+
+def calculate_circuit_depth(gates):
+    # Get all unique qubits in the circuit
+    nodes = set(itertools.chain(*gates))
+    
+    # Initialize depth 0 for each qubit
+    depths = {node: 0 for node in nodes} 
+
+    for gate in gates:
+        
+        # Get the max depth of the two qubits in this gate
+        depth = max(depths[gate[0]], depths[gate[1]])
+
+        # Increment the depth by 1
+        depth += 1
+
+        # Update the depth for both qubits
+        depths[gate[0]] = depth  
+        depths[gate[1]] = depth
+        
+    # Return the max depth overall 
+    if depths:
+        return max(depths.values())
+    else:
+        return 0
