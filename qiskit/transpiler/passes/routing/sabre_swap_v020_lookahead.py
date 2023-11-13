@@ -184,12 +184,12 @@ class SabreSwap(TransformationPass):
 
             # initialize BFS queue to perform lookahead exploration
 
-            # (front_layer, current_layouit, swap_sequence, score_front, depth)
-            queue = [(front_layer, current_layout, [], float("inf"), 0)] 
+            # (front_layer, current_layouit, swap_sequence, predecessors, score_front, depth)
+            queue = [(front_layer, current_layout, [], self.required_predecessors, float("inf"), 0)] 
             best_swap_sequences = None
             min_score = float("inf")
             while queue:
-                q_front_layer, q_current_layout, q_swap_sequence, score_front, depth = queue.pop(0)
+                q_front_layer, q_current_layout, q_swap_sequence, predecessors, score_front, depth = queue.pop(0)
 
                 # exploring all swap candidates at this depth and then adding the next layer to the queue
                 if depth <= self.lookahead_depth:
@@ -201,15 +201,42 @@ class SabreSwap(TransformationPass):
                         # need copies so that we don't mutate the original objects
                         trial_layout = q_current_layout.copy()
                         trial_front_layer = q_front_layer.copy()
+                        trial_predecessors = predecessors.copy() 
+
+                        # changing swap_sequence to reflect the swap
                         trial_swap_sequence = q_swap_sequence + [swap]
-                        
                         # changing layout to reflect the swap
                         trial_layout.swap(*swap)
-
                         # changing score_front to reflect the swap
                         trial_score_front = self._score_heuristic(trial_front_layer, trial_layout)
+                        
+                        # changing front_layer to reflect the swap
+                        while True: # note may need to think about single-qubit gates later
+                            new_front_layer = []
+                            execute_gate_list = []
+                            for node in trial_front_layer:
+                                if len(node.qargs) == 2:
+                                    v0, v1 == node.qargs
+                                    if self.coupling_map.graph.has_edge(
+                                        trial_layout._v2p[v0], trial_layout._v2p[v1]
+                                    ):
+                                        execute_gate_list.append(node)
+                                    else:
+                                        new_front_layer.append(node) 
+                            trial_front_layer = new_front_layer
 
-                        queue.append((trial_front_layer, trial_layout, trial_swap_sequence, 
+                            if not execute_gate_list: # done with updating front layer
+                                break
+                            else:
+                                # update front layer with successors and fake apply gates
+                                for node in execute_gate_list:
+                                    # fake apply gateshere
+                                    for successor in self._successors(node, dag):
+                                        # changing predecessors to reflect the swap
+                                        trial_predecessors[successor] -= 1
+                                        if trial_predecessors[node] == 0:
+                                            trial_front_layer.append(successor)
+                        queue.append((trial_front_layer, trial_layout, trial_swap_sequence, trial_predecessors,
                                       trial_score_front, depth + 1))
                 # reached the end of the lookahead, now we score what we have
                 else:
