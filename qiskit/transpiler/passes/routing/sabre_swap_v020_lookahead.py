@@ -186,16 +186,17 @@ class SabreSwap(TransformationPass):
             # We use a BFS queue to explore the search space of SWAPs, and compute the scores of:
             # score_front, score_depth, score_gates, score_lookahead
             # In the queue, we store the following:
-            # (front_layer, current_layouit, swap_sequence, predecessors, score_front, depth)
+            # (front_layer, current_layouit, swap_sequence, predecessors, score_front, score_gates, gates_to_execute, depth)
             queue = [(front_layer, current_layout, [], self.required_predecessors, self.gates_depth,
-                      float("inf"), 0)] 
+                      float("inf"), [], 0)] 
             best_swap_sequences = None
             min_score_front = float("inf")
             min_score_depth = float("inf")
+            max_score_gates = 0
             prev_depth = calculate_circuit_depth(self.gates_depth)
             while queue:
                 q_front_layer, q_current_layout, q_swap_sequence, predecessors, gate_order, \
-                    score_front, depth = queue.pop(0)
+                    score_front, gates_to_execute, depth = queue.pop(0)
 
                 # exploring all swap candidates at this depth and then adding the next layer to the queue
                 if depth <= self.lookahead_depth:
@@ -208,6 +209,9 @@ class SabreSwap(TransformationPass):
                         trial_layout = q_current_layout.copy()
                         trial_front_layer = q_front_layer.copy()
                         trial_predecessors = predecessors.copy() 
+                        trial_gates_to_execute = gates_to_execute.copy()
+
+                        # changing gate order to reflect the swap
                         trial_gate_order = gate_order + self._fake_apply_gate(
                             DAGOpNode(op=SwapGate(), qargs=swap), trial_layout, canonical_register
                         )
@@ -240,28 +244,31 @@ class SabreSwap(TransformationPass):
                             else:
                                 # update front layer with successors and fake apply gates
                                 for node in execute_gate_list:
-                                    # changing gate_order to reflect the swap
+                                    # changing gate_order, gates_to_execute to reflect the swap
                                     trial_gate_order += self._fake_apply_gate(node, trial_layout, canonical_register)
+                                    trial_gates_to_execute.append(node)
                                     for successor in self._successors(node, dag):
                                         # changing predecessors to reflect the swap
                                         trial_predecessors[successor] -= 1
                                         if trial_predecessors[node] == 0:
                                             trial_front_layer.append(successor)
                         queue.append((trial_front_layer, trial_layout, trial_swap_sequence, trial_predecessors, trial_gate_order,
-                                      trial_score_front, depth + 1))
+                                      trial_score_front, trial_gates_to_execute, depth + 1))
                 # reached the end of the lookahead, now we score what we have
                 else:
                     curr_depth = calculate_circuit_depth(gate_order)
                     score_depth = curr_depth - prev_depth
+                    score_gates = len(gates_to_execute)
 
-                    ''' This is the original scoring function
+                    
                     if score_front < min_score_front:
                         min_score_front = score_front
                         best_swap_sequences = [q_swap_sequence]
                     elif score_front == min_score_front: # we have a tie
                         best_swap_sequences.append(q_swap_sequence)
+                    
                     '''
-
+                    # finds best score front, then best score depth
                     if score_front < min_score_front:
                         min_score_front = score_front
                         min_score_depth = score_depth  
@@ -272,7 +279,27 @@ class SabreSwap(TransformationPass):
                             best_swap_sequences = [q_swap_sequence]
                         elif score_depth == min_score_depth:  # tie in both scores
                             best_swap_sequences.append(q_swap_sequence)
+                    '''
 
+                    '''
+                    if score_front < min_score_front:
+                        min_score_front = score_front
+                        min_score_depth = score_depth
+                        max_score_gates = score_gates  # ipdate max_score_gates
+                        best_swap_sequences = [q_swap_sequence]
+                    elif score_front == min_score_front:
+                        if score_depth < min_score_depth:
+                            min_score_depth = score_depth
+                            max_score_gates = score_gates  # update max_score_gates
+                            best_swap_sequences = [q_swap_sequence]
+                        elif score_depth == min_score_depth:
+                            if score_gates > max_score_gates:  # new check for score_gates
+                                max_score_gates = score_gates
+                                best_swap_sequences = [q_swap_sequence]
+                            elif score_gates == max_score_gates:  # tie in all scores
+                                best_swap_sequences.append(q_swap_sequence)
+                    '''
+                            
             if best_swap_sequences is not None:
                 # randomly choose one of the best swap sequences
                 best_swap_sequence = rng.choice(best_swap_sequences)
