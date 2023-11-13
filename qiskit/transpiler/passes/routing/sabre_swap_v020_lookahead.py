@@ -12,7 +12,6 @@
 
 """Routing via SWAP insertion using the SABRE method from Li et al."""
 
-import logging
 from collections import defaultdict
 from copy import copy, deepcopy
 
@@ -62,6 +61,7 @@ class SabreSwap(TransformationPass):
         coupling_map,
         seed=None,
         fake_run=False,
+        lookahead_depth=0,
     ):
         r"""SabreSwap initializer.
 
@@ -95,6 +95,7 @@ class SabreSwap(TransformationPass):
         self.required_predecessors = None
         self._bit_indices = None
         self.dist_matrix = None
+        self.lookahead_depth = lookahead_depth
 
     def run(self, dag):
         """Run the SabreSwap pass on `dag`.
@@ -137,7 +138,7 @@ class SabreSwap(TransformationPass):
         while front_layer:
             execute_gate_list = []
 
-            # Remove as many immediately applicable gates as possible
+            # Remove as many immediately applicable gates as possible, and update front layer
             new_front_layer = []
             for node in front_layer:
                 if len(node.qargs) == 2:
@@ -154,6 +155,7 @@ class SabreSwap(TransformationPass):
                     execute_gate_list.append(node)
             front_layer = new_front_layer
 
+            # Used to detect infinite loops
             if not execute_gate_list and len(ops_since_progress) > max_iterations_without_progress:
                 # Backtrack to the last time we made progress, then greedily insert swaps to route
                 # the gate with the smallest distance between its arguments.  This is a release
@@ -163,6 +165,7 @@ class SabreSwap(TransformationPass):
                 self._add_greedy_swaps(front_layer, mapped_dag, current_layout, canonical_register)
                 continue
 
+            # If there are gates to apply, do so and update the front layer, and return to top of loop
             if execute_gate_list:
                 for node in execute_gate_list:
                     self._apply_gate(mapped_dag, node, current_layout, canonical_register)
@@ -178,26 +181,54 @@ class SabreSwap(TransformationPass):
             # After all free gates are exhausted, heuristically find
             # the best swap and insert it. When two or more swaps tie
             # for best score, pick one randomly.
-            swap_scores = {}
-            for swap_qubits in self._obtain_swaps(front_layer, current_layout):
-                trial_layout = current_layout.copy()
-                trial_layout.swap(*swap_qubits)
-                score = self._score_heuristic(
-                    front_layer, trial_layout
+
+            # initialize BFS queue to perform lookahead exploration
+
+            queue = [(front_layer, current_layout, [], 0)] # (front_layer, current_layouit, swap_sequence, depth)
+            best_swap_sequences = None
+            min_score = float("inf")
+            while queue:
+                q_front_layer, q_current_layout, q_swap_sequence, depth = queue.pop(0)
+
+                # exploring all swap candidates at this depth and then adding the next layer to the queue
+                if depth <= self.lookahead_depth:
+                    swap_candidates = list(self._obtain_swaps(front_layer, current_layout))
+                    # sorting so that we always get the same order of swaps, so there is no randomness from order
+                    swap_candidates.sort(key=lambda x: (self._bit_indices[x[0]], self._bit_indices[x[1]]))
+
+                    for swap in swap_candidates:
+                        # need copies so that we don't mutate the original objects
+                        trial_layout = q_current_layout.copy()
+                        trial_front_layer = q_front_layer.copy()
+                        trial_swap_sequence = q_swap_sequence + [swap]
+
+
+                        trial_layout.swap(*swap)
+                        queue.append((trial_front_layer, trial_layout, trial_swap_sequence, depth + 1))
+                # reached the end of the lookahead, now we score what we have
+                else:
+                    score = self._score_heuristic(q_front_layer, q_current_layout)
+                    if score < min_score:
+                        min_score = score
+                        best_swap_sequences = [q_swap_sequence]
+                    elif score == min_score: # we have a tie
+                        best_swap_sequences.append(q_swap_sequence)
+            
+            if best_swap_sequences is not None:
+                # randomly choose one of the best swap sequences
+                best_swap_sequence = rng.choice(best_swap_sequences)
+                # apply and commit to the first swap in the sequence
+                first_swap = best_swap_sequence[0]
+                swap_node = self._apply_gate(
+                    mapped_dag,
+                    DAGOpNode(op=SwapGate(), qargs=first_swap),
+                    current_layout,
+                    canonical_register,
                 )
-                swap_scores[swap_qubits] = score
-            min_score = min(swap_scores.values())
-            best_swaps = [k for k, v in swap_scores.items() if v == min_score]
-            best_swaps.sort(key=lambda x: (self._bit_indices[x[0]], self._bit_indices[x[1]]))
-            best_swap = rng.choice(best_swaps)
-            swap_node = self._apply_gate(
-                mapped_dag,
-                DAGOpNode(op=SwapGate(), qargs=best_swap),
-                current_layout,
-                canonical_register,
-            )
-            current_layout.swap(*best_swap)
-            ops_since_progress.append(swap_node)
+                current_layout.swap(*first_swap)
+                ops_since_progress.append(swap_node)
+            else:
+                raise TranspilerError("No valid swap sequence found")
 
         self.property_set["final_layout"] = current_layout
         if not self.fake_run:
