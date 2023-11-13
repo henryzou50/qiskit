@@ -189,17 +189,18 @@ class SabreSwap(TransformationPass):
             # After all free gates are exhausted, heuristically find
             # the best swap and insert it. When two or more swaps tie
             # for best score, pick one randomly.
-            swap_scores = {}
+            swap_scores_front = {}
             swap_scores_depth = {}
             swap_scores_gates = {}
             prev_depth = calculate_circuit_depth(self.gates_depth)
             for swap_qubits in self._obtain_swaps(front_layer, current_layout):
+                print("   Evaluating swap: ", swap_qubits[0].index, swap_qubits[1].index)
+
                 trial_layout = current_layout.copy()
                 trial_layout.swap(*swap_qubits)
-                score = self._score_heuristic(
+                score_front = self._score_heuristic(
                     front_layer, trial_layout
                 )
-                swap_scores[swap_qubits] = score
 
                 # Need copy of front layer to update it for the current swap
                 trial_front_layer = front_layer.copy()
@@ -245,18 +246,27 @@ class SabreSwap(TransformationPass):
                                 trial_required_predecessors[successor] -= 1
                                 if trial_required_predecessors[successor] == 0:
                                     trial_front_layer.append(successor)
+                # calculating depth score
                 curr_depth = calculate_circuit_depth(trial_gates_depth)
                 delta_depth = curr_depth - prev_depth   
+                
+                swap_scores_front[swap_qubits] = score_front
                 swap_scores_depth[swap_qubits] = delta_depth
                 swap_scores_gates[swap_qubits] = count_gate_executed
             # print out all infomation from swap_scores, swap_scores_depth, swap_scores_gates
-            print("swap_scores: ", swap_scores)
-            print("swap_scores_depth: ", swap_scores_depth)
-            print("swap_scores_gates: ", swap_scores_gates)
+            for i in range(len(swap_scores_front)):
+                print(f"score: {list(swap_scores_front.values())[i]}, depth: {list(swap_scores_depth.values())[i]}, gates: {list(swap_scores_gates.values())[i]}")
+            sorted_swaps = sorted(swap_scores_front.keys(), 
+                      key=lambda x: (swap_scores_gates[x], 
+                                     swap_scores_depth[x],
+                                     swap_scores_front[x]),
+                      reverse=True)
+            print("sorted swaps: ", sorted_swaps)
+            best_swap1 = sorted_swaps[0]
+            print("best swap: ", best_swap1)
 
-
-            min_score = min(swap_scores.values())
-            best_swaps = [k for k, v in swap_scores.items() if v == min_score]
+            min_score = min(swap_scores_front.values())
+            best_swaps = [k for k, v in swap_scores_front.items() if v == min_score]
             best_swaps.sort(key=lambda x: (self._bit_indices[x[0]], self._bit_indices[x[1]]))
             best_swap = rng.choice(best_swaps)
             swap_node = self._apply_gate(
