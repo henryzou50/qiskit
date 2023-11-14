@@ -100,6 +100,7 @@ class SabreSwap(TransformationPass):
         # carries the list of all the two-qubit gates commited in order, swaps are counted 3 times
         # used to get the depth of the circuit.decompose(["swap"])
         self.gates_depth = []
+        self.gates_explored = set()
 
     def run(self, dag):
         """Run the SabreSwap pass on `dag`.
@@ -189,11 +190,16 @@ class SabreSwap(TransformationPass):
             # (front_layer, current_layouit, swap_sequence, predecessors, score_front, score_gates, gates_to_execute, depth)
             queue = [(front_layer, current_layout, [], self.required_predecessors, self.gates_depth,
                       float("inf"), [], 0)] 
+            
+            # start of new exploration, so need resets
             best_swap_sequences = None
+            self.gates_explored = set()
+            prev_depth = calculate_circuit_depth(self.gates_depth)
+
+            # setting scores to worse than any possible score
             min_score_front = float("inf")
             min_score_depth = float("inf")
             max_score_gates = 0
-            prev_depth = calculate_circuit_depth(self.gates_depth)
             while queue:
                 q_front_layer, q_current_layout, q_swap_sequence, predecessors, gate_order, \
                     score_front, gates_to_execute, depth = queue.pop(0)
@@ -247,6 +253,7 @@ class SabreSwap(TransformationPass):
                                     # changing gate_order, gates_to_execute to reflect the swap
                                     trial_gate_order += self._fake_apply_gate(node, trial_layout, canonical_register)
                                     trial_gates_to_execute.append(node)
+                                    self.gates_explored.add(node)
                                     for successor in self._successors(node, dag):
                                         # changing predecessors to reflect the swap
                                         trial_predecessors[successor] -= 1
@@ -258,7 +265,15 @@ class SabreSwap(TransformationPass):
                 else:
                     curr_depth = calculate_circuit_depth(gate_order)
                     score_depth = curr_depth - prev_depth
+
                     score_gates = len(gates_to_execute)
+
+                    # calculate lookahead score
+                    gates_remaining = []
+                    for gate in self.gates_explored:
+                        if gate not in gates_to_execute:
+                            gates_remaining.append(gate)
+                    score_lookahead = self._compute_cost(gates_remaining, q_current_layout)
                     
                     '''
                     if score_front < min_score_front:
@@ -281,8 +296,6 @@ class SabreSwap(TransformationPass):
                         elif score_depth == min_score_depth:  # tie in both scores
                             best_swap_sequences.append(q_swap_sequence)
                     '''
-                    
-
                     
                     if score_front < min_score_front:
                         min_score_front = score_front
