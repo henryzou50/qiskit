@@ -259,13 +259,14 @@ class SabreSwap(TransformationPass):
                     curr_depth = calculate_circuit_depth(gate_order)
                     score_depth = curr_depth - prev_depth
                     score_gates = len(gates_to_execute)
-
                     
+                    '''
                     if score_front < min_score_front:
                         min_score_front = score_front
                         best_swap_sequences = [q_swap_sequence]
                     elif score_front == min_score_front: # we have a tie
                         best_swap_sequences.append(q_swap_sequence)
+                    '''
                     
                     '''
                     # finds best score front, then best score depth
@@ -280,8 +281,9 @@ class SabreSwap(TransformationPass):
                         elif score_depth == min_score_depth:  # tie in both scores
                             best_swap_sequences.append(q_swap_sequence)
                     '''
+                    
 
-                    '''
+                    
                     if score_front < min_score_front:
                         min_score_front = score_front
                         min_score_depth = score_depth
@@ -298,7 +300,7 @@ class SabreSwap(TransformationPass):
                                 best_swap_sequences = [q_swap_sequence]
                             elif score_gates == max_score_gates:  # tie in all scores
                                 best_swap_sequences.append(q_swap_sequence)
-                    '''
+                    
                             
             if best_swap_sequences is not None:
                 # randomly choose one of the best swap sequences
