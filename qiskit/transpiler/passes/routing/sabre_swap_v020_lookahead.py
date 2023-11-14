@@ -199,6 +199,7 @@ class SabreSwap(TransformationPass):
             # setting scores to worse than any possible score
             min_score_front = float("inf")
             min_score_depth = float("inf")
+            min_score_looka = float("inf")
             max_score_gates = 0
             while queue:
                 q_front_layer, q_current_layout, q_swap_sequence, predecessors, gate_order, \
@@ -263,9 +264,11 @@ class SabreSwap(TransformationPass):
                                       trial_score_front, trial_gates_to_execute, depth + 1))
                 # reached the end of the lookahead, now we score what we have
                 else:
+                    # calculate lookahead score
                     curr_depth = calculate_circuit_depth(gate_order)
                     score_depth = curr_depth - prev_depth
 
+                    # calculate gate score
                     score_gates = len(gates_to_execute)
 
                     # calculate lookahead score
@@ -275,6 +278,7 @@ class SabreSwap(TransformationPass):
                             gates_remaining.append(gate)
                     score_lookahead = self._compute_cost(gates_remaining, q_current_layout)
                     
+                    # compare front score, if tie, then rng
                     '''
                     if score_front < min_score_front:
                         min_score_front = score_front
@@ -283,6 +287,7 @@ class SabreSwap(TransformationPass):
                         best_swap_sequences.append(q_swap_sequence)
                     '''
                     
+                    # compare front score, then depth score, if tie, then rng
                     '''
                     # finds best score front, then best score depth
                     if score_front < min_score_front:
@@ -297,10 +302,12 @@ class SabreSwap(TransformationPass):
                             best_swap_sequences.append(q_swap_sequence)
                     '''
                     
+                    # compare front score, then depth score, then gate score, if tie, then rng
+                    '''
                     if score_front < min_score_front:
                         min_score_front = score_front
                         min_score_depth = score_depth
-                        max_score_gates = score_gates  # ipdate max_score_gates
+                        max_score_gates = score_gates  # update max_score_gates
                         best_swap_sequences = [q_swap_sequence]
                     elif score_front == min_score_front:
                         if score_depth < min_score_depth:
@@ -308,12 +315,39 @@ class SabreSwap(TransformationPass):
                             max_score_gates = score_gates  # update max_score_gates
                             best_swap_sequences = [q_swap_sequence]
                         elif score_depth == min_score_depth:
+                            print("score_depth", score_depth)
                             if score_gates > max_score_gates:  # new check for score_gates
                                 max_score_gates = score_gates
                                 best_swap_sequences = [q_swap_sequence]
                             elif score_gates == max_score_gates:  # tie in all scores
                                 best_swap_sequences.append(q_swap_sequence)
+                    '''
                     
+                    # compare front score, then depth score, then looka score, then gate score, if tie, then rng
+                    if score_front < min_score_front:
+                        min_score_front = score_front
+                        min_score_depth = score_depth
+                        min_score_looka = score_lookahead
+                        max_score_gates = score_gates
+                        best_swap_sequences = [q_swap_sequence]
+                    elif score_front == min_score_front:
+                        if score_depth < min_score_depth:
+                            min_score_depth = score_depth
+                            min_score_looka = score_lookahead
+                            max_score_gates = score_gates
+                            best_swap_sequences = [q_swap_sequence]
+                        elif score_depth == min_score_depth:
+                            if score_lookahead < min_score_looka:
+                                min_score_looka = score_lookahead
+                                max_score_gates = score_gates
+                                best_swap_sequences = [q_swap_sequence]
+                            elif score_lookahead == min_score_looka:
+                                if score_gates > max_score_gates:
+                                    max_score_gates = score_gates
+                                    best_swap_sequences = [q_swap_sequence]
+                                elif score_gates == max_score_gates:
+                                    best_swap_sequences.append(q_swap_sequence)
+
                             
             if best_swap_sequences is not None:
                 # randomly choose one of the best swap sequences
