@@ -18,6 +18,7 @@ from copy import copy, deepcopy
 import numpy as np
 import retworkx
 import itertools
+import random
 
 from qiskit.circuit.library.standard_gates import SwapGate
 from qiskit.transpiler.basepasses import TransformationPass
@@ -62,7 +63,7 @@ class SabreSwap(TransformationPass):
         coupling_map,
         seed=None,
         fake_run=False,
-        lookahead_depth=5,
+        lookahead_depth=0,
     ):
         r"""SabreSwap initializer.
 
@@ -103,6 +104,7 @@ class SabreSwap(TransformationPass):
         self.gates_explored = set()
         self.found_end = False
         self.end_gates_info = []
+        random.seed(self.seed)
 
     def run(self, dag):
         """Run the SabreSwap pass on `dag`.
@@ -332,7 +334,7 @@ class SabreSwap(TransformationPass):
 
                 # find all sequences with the minimum depth
                 lowest_depth_sequences = [item['sequence'] for item in self.end_gates_info if item['depth'] == min_depth]
-                sequence = rng.choice(lowest_depth_sequences)
+                sequence = random.choice(lowest_depth_sequences)
 
                 for gate in sequence:
                     self._apply_gate(mapped_dag, gate, current_layout, canonical_register)
