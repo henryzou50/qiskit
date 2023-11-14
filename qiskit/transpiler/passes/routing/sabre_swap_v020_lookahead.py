@@ -62,7 +62,7 @@ class SabreSwap(TransformationPass):
         coupling_map,
         seed=None,
         fake_run=False,
-        lookahead_depth=4,
+        lookahead_depth=0,
     ):
         r"""SabreSwap initializer.
 
@@ -101,6 +101,7 @@ class SabreSwap(TransformationPass):
         # used to get the depth of the circuit.decompose(["swap"])
         self.gates_depth = []
         self.gates_explored = set()
+        self.found_end = False
 
     def run(self, dag):
         """Run the SabreSwap pass on `dag`.
@@ -118,6 +119,10 @@ class SabreSwap(TransformationPass):
 
         if len(dag.qubits) > self.coupling_map.size():
             raise TranspilerError("More virtual qubits exist than physical.")
+
+        self.gates_depth = []
+        self.gates_explored = set()
+        self.found_end = False
 
         max_iterations_without_progress = 10 * len(dag.qubits)  # Arbitrary.
         ops_since_progress = []
