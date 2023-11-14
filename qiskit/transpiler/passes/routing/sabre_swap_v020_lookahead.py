@@ -62,7 +62,7 @@ class SabreSwap(TransformationPass):
         coupling_map,
         seed=None,
         fake_run=False,
-        lookahead_depth=0,
+        lookahead_depth=2,
     ):
         r"""SabreSwap initializer.
 
@@ -227,8 +227,12 @@ class SabreSwap(TransformationPass):
                         trial_swap_sequence = q_swap_sequence + [swap]
                         # changing layout to reflect the swap
                         trial_layout.swap(*swap)
+
+                        trial_score_front = score_front
                         # changing score_front to reflect the swap
-                        trial_score_front = self._score_heuristic(trial_front_layer, trial_layout)
+                        if depth == 0:
+                            # only getting the front score at the initial step
+                            trial_score_front = self._score_heuristic(trial_front_layer, trial_layout)
                         
                         
                         # changing front_layer to reflect the swap
@@ -462,6 +466,8 @@ class SabreSwap(TransformationPass):
         to it. The goodness of a layout is evaluated based on how viable it makes
         the remaining virtual gates that must be applied.
         """
+        if len(front_layer) == 0:
+            return 0
         normalization = len(front_layer)
         return self._compute_cost(front_layer, layout) / normalization
 
