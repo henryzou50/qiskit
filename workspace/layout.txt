@@ -1,0 +1,14 @@
+before trial_layout Layout({
+0: Qubit(QuantumRegister(5, 'q'), 0),
+1: Qubit(QuantumRegister(5, 'q'), 1),
+2: Qubit(QuantumRegister(5, 'q'), 2),
+3: Qubit(QuantumRegister(5, 'q'), 3),
+4: Qubit(QuantumRegister(5, 'q'), 4)
+})
+after trial_layout Layout({
+2: Qubit(QuantumRegister(5, 'q'), 2),
+3: Qubit(QuantumRegister(5, 'q'), 3),
+4: Qubit(QuantumRegister(5, 'q'), 4),
+1: Qubit(QuantumRegister(5, 'q'), 0),
+0: Qubit(QuantumRegister(5, 'q'), 1)
+})
