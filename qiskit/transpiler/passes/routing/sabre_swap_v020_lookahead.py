@@ -279,7 +279,7 @@ class SabreSwap(TransformationPass):
                                         if trial_predecessors[node] == 0:
                                             trial_front_layer.append(successor)
 
-                        if new_front_layer == []: # reached a potential point of end of the lookahead
+                        if trial_front_layer == []: # reached a potential point of end of the lookahead
                             self.found_end = True
                             curr_depth = calculate_circuit_depth(trial_gate_order)
                             self.end_gates_info.append({"sequence": trial_all_gates, "depth": curr_depth - prev_depth})
