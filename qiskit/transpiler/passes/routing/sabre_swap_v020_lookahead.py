@@ -250,8 +250,8 @@ class SabreSwap(TransformationPass):
                         
                         # changing front_layer to reflect the swap
                         while True: # note may need to think about single-qubit gates later
-                            new_front_layer = []
                             execute_gate_list = []
+                            new_front_layer = []
                             for node in trial_front_layer:
                                 if len(node.qargs) == 2:
                                     v0, v1 = node.qargs
@@ -267,20 +267,29 @@ class SabreSwap(TransformationPass):
                             else:
                                 # update front layer with successors and fake apply gates
                                 for node in execute_gate_list:
-                                    # changing gate_order, gates_to_execute to reflect the swap
                                     trial_gate_order += self._fake_apply_gate(node, trial_layout, canonical_register)
                                     trial_gates_to_execute.append(node)
                                     self.gates_explored.add(node)
 
                                     trial_all_gates.append(node)
                                     for successor in self._successors(node, dag):
-                                        # changing predecessors to reflect the swap
                                         trial_predecessors[successor] -= 1
-                                        if trial_predecessors[node] == 0:
+                                        if trial_predecessors[successor] == 0:
                                             trial_front_layer.append(successor)
 
                         if trial_front_layer == []: # reached a potential point of end of the lookahead
                             self.found_end = True
+
+
+                            '''
+                            # confirm that we reached an end solution
+                            all_values_zero = all(value == 0 for value in trial_predecessors.values())
+                            if not all_values_zero:
+                                print("ERROR: did not reach end solution")
+                            else:
+                                print("Reached end solution")
+                            '''
+
                             curr_depth = calculate_circuit_depth(trial_gate_order)
                             self.end_gates_info.append({"sequence": trial_all_gates, "depth": curr_depth - prev_depth})
 
