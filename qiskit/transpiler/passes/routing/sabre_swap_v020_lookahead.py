@@ -63,7 +63,7 @@ class SabreSwap(TransformationPass):
         coupling_map,
         seed=None,
         fake_run=False,
-        lookahead_depth=1,
+        lookahead_depth=0,
     ):
         r"""SabreSwap initializer.
 
@@ -271,7 +271,8 @@ class SabreSwap(TransformationPass):
                                         if trial_predecessors[successor] == 0:
                                             trial_front_layer.append(successor)
 
-                        if trial_front_layer == []: # reached a potential point of end of the lookahead
+                         # reached a potential point of end of the lookahead
+                        if trial_front_layer == []:
                             self.found_end = True
                             curr_depth = calculate_circuit_depth(trial_gate_order)
                             self.end_gates_info.append({"sequence": trial_all_gates, "depth": curr_depth - prev_depth})

@@ -1,4 +1,5 @@
 from qiskit.transpiler import PassManager
+from qiskit.transpiler.passes import SabreSwap
 from qiskit.transpiler.passes import ApplyLayout, FullAncillaAllocation, EnlargeWithAncilla, TrivialLayout
 import time
 import numpy as np
@@ -36,6 +37,41 @@ def build_pm(routing_pass, layout_pass, coupling_map, seed=42, lookahead=0):
             ApplyLayout(),
             routing_pass(coupling_map,seed=seed, lookahead_depth=lookahead)
         ])
+    
+    
+def build_pm_fast(routing_pass, layout_pass, coupling_map, seed=42, lookahead=0):
+    """
+    Builds a pass manager with the given routing pass, layout pass, coupling map.
+    
+    Parameters:
+    routing_pass (TransformationPass): Routing pass to use
+    layout_pass (TransformationPAss): Layout pass to use
+    coupling_map (CouplingMap): Coupling map to use
+    seed (int): Seed to use for the layout pass and routing pass
+
+    Returns:
+    PassManager: A PassManager object with the given routing pass and layout pass
+    """
+
+    # constructs a pass manager, does not consider lookahead
+    if lookahead == 0:
+        layout = layout_pass(coupling_map, routing_pass=SabreSwap(coupling_map, fake_run=True, seed=seed), seed=seed)
+        return PassManager([
+            layout,
+            FullAncillaAllocation(coupling_map),
+            EnlargeWithAncilla(),
+            ApplyLayout(),
+            routing_pass(coupling_map,seed=seed)
+        ])
+    else:
+        layout = layout_pass(coupling_map, routing_pass=SabreSwap(coupling_map, fake_run=True, seed=seed), seed=seed)
+        return PassManager([
+            layout,
+            FullAncillaAllocation(coupling_map),
+            EnlargeWithAncilla(),
+            ApplyLayout(),
+            routing_pass(coupling_map,seed=seed, lookahead_depth=lookahead)
+        ])
 
 def generate_pass_managers(num_shots, routing_pass, layout_pass, coupling_map, initial_seed=42, lookahead=0):
     """
@@ -56,6 +92,29 @@ def generate_pass_managers(num_shots, routing_pass, layout_pass, coupling_map, i
     for i in range(num_shots):
         seed = initial_seed + i
         pm = build_pm(routing_pass, layout_pass, coupling_map, seed, lookahead)
+        pass_managers.append(pm)
+    
+    return pass_managers
+
+def generate_pass_managers_fast(num_shots, routing_pass, layout_pass, coupling_map, initial_seed=42, lookahead=0):
+    """
+    Generates a list of PassManager objects with different seeds.
+    
+    Parameters:
+    num_shots (int): The number of PassManager instances to create.
+    routing_pass (callable): Routing pass class to use
+    layout_pass (callable): Layout pass class to use
+    coupling_map (CouplingMap): Coupling map to use
+    init_seed (int): Initial seed to use for the PassManager objects
+    
+    Returns:
+    list: A list of PassManager objects with incrementing seeds starting from 42.
+    """
+    pass_managers = []
+    
+    for i in range(num_shots):
+        seed = initial_seed + i
+        pm = build_pm_fast(routing_pass, layout_pass, coupling_map, seed, lookahead)
         pass_managers.append(pm)
     
     return pass_managers
