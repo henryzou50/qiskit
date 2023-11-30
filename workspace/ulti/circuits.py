@@ -3,6 +3,7 @@
 from qiskit import QuantumCircuit
 from qiskit.circuit.library import QuantumVolume
 import os
+import re
 
 def get_circuit_list(directory):
     """
@@ -114,3 +115,31 @@ def sort_circuits_by_depth(qc_list):
     # Use the sorted function with a key that calls the depth method on each circuit
     sorted_qc_list = sorted(qc_list, key=lambda x: x.decompose().depth())
     return sorted_qc_list
+
+def update_qasm_file(file_path):
+    """
+    Updates the QASM file at the given path by adding a unique identifier to each unitary gate.
+    
+    Parameters:
+    file_path (str): Path to the QASM file
+    
+    Returns:
+    None
+    """
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+
+    unitary_counter = 0
+    updated_lines = []
+    for line in lines:
+        if line.startswith("gate unitary"):
+            updated_line = re.sub(r"gate unitary[_\d]*", f"gate unitary_{unitary_counter}", line)
+            unitary_counter += 1
+            updated_lines.append(updated_line)
+        else:
+            updated_lines.append(line)
+
+    with open(file_path, 'w') as file:
+        file.writelines(updated_lines)
+
+    print(f"Updated .qasm file: {file_path}")
