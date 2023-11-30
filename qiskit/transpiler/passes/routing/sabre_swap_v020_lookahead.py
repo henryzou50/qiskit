@@ -64,6 +64,8 @@ class SabreSwap(TransformationPass):
         seed=None,
         fake_run=False,
         lookahead_depth=0,
+        beam_width=2,
+        beam_depth=3
     ):
         r"""SabreSwap initializer.
 
@@ -102,6 +104,8 @@ class SabreSwap(TransformationPass):
         self.gates_explored = set() # keep track of all gates explored in the lookahead branching
         self.found_end = False # flag to indicate if we have found an end solution
         self.end_gates_info = [] # list of all end solutions found, with their depth and sequence of gates
+        self.beam_width = beam_width # number of branches to explore at each step
+        self.beam_depth = beam_depth # number of steps before applying beam search
         random.seed(self.seed)
 
     def run(self, dag):
@@ -221,10 +225,28 @@ class SabreSwap(TransformationPass):
                     # sorting so that we always get the same order of swaps, so there is no randomness from order
                     swap_candidates.sort(key=lambda x: (self._bit_indices[x[0]], self._bit_indices[x[1]]))
 
-                    for swap in swap_candidates:
-                        # need copies so that we don't mutate the original objects
+                    # score each swap candidate to only explore the best ones for the beam search
+                    scored_swaps = []
+                    for swap_qubits in swap_candidates:
+                        
                         trial_layout = q_current_layout.copy()
-                        trial_layout.swap(*swap)
+                        trial_layout.swap(*swap_qubits)
+                        score = self._score_heuristic(q_front_layer, trial_layout)
+                        scored_swaps.append((score, swap_qubits, trial_layout))
+                    
+                    # Sort the scored swaps by their scores (ascending)
+                    scored_swaps.sort(key=lambda x: x[0])
+
+                    if depth > self.beam_depth:
+                        # Apply beam search - only explore the top candidates as per beam_width
+                        swaps_to_explore = scored_swaps[:self.beam_width]
+                    else:
+                        # Regular exploration - explore all candidates
+                        swaps_to_explore = scored_swaps
+
+                    # Iterate through the chosen swaps
+                    for score, swap, trial_layout in swaps_to_explore:
+                        # need copies so that we don't mutate the original objects
                         trial_front_layer = q_front_layer.copy()
                         trial_predecessors = predecessors.copy() 
                         trial_gates_to_execute = gates_to_execute.copy()
@@ -236,11 +258,10 @@ class SabreSwap(TransformationPass):
                             DAGOpNode(op=SwapGate(), qargs=swap), trial_layout, canonical_register
                         )
                         trial_swap_sequence = q_swap_sequence + [swap]
-
                         trial_score_front = score_front
                         if depth == 0:
                             # only getting the front score at the initial step
-                            trial_score_front = self._score_heuristic(trial_front_layer, trial_layout)
+                            trial_score_front = score
                         
                         # changing front_layer to reflect the swap
                         while True: # note may need to think about single-qubit gates later
