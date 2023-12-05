@@ -4,8 +4,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import numpy as np
-from scipy.optimize import curve_fit
 import ast
 import os
 
@@ -134,68 +132,3 @@ def analyze_metric(data_dir, metric, baseline_filename, plot_title, x_axis_label
     return sum_table
 
 
-
-def analyze_lookahead_times(directory):
-    """ Function to analyze the average time taken for each lookahead number and fit an exponential
-    curve to the data.
-
-    Args:
-        directory (str): Path to the directory containing the csv files
-    Returns:
-        None
-    """
-
-    
-    # Function to extract and calculate average time from a file
-    def extract_average_time(file_path):
-        df = pd.read_csv(file_path)
-        time_values = df['best_data'].apply(lambda x: eval(x)['time'])
-        return time_values.mean()
-
-    # Function to define the exponential curve
-    def exponential_curve(x, a, b):
-        return a * np.exp(b * x)
-
-    # Dictionary to store average times for each file
-    average_times = {}
-
-    # Looping through each file in the directory
-    for filename in os.listdir(directory):
-        if filename.endswith(".csv"):
-            file_path = os.path.join(directory, filename)
-            lookahead_number = int(filename.split('_')[-1].split('.')[0])
-            average_times[lookahead_number] = extract_average_time(file_path)
-
-    # Creating a DataFrame for plotting and summarizing
-    average_time_df = pd.DataFrame(list(average_times.items()), columns=['Lookahead Number', 
-                                                                         'Average Time'])
-    sorted_average_time_df = average_time_df.sort_values('Lookahead Number')
-
-    # Extracting x and y data for curve fitting
-    x_data = sorted_average_time_df['Lookahead Number']
-    y_data = sorted_average_time_df['Average Time']
-
-    # Performing the curve fit
-    params, params_covariance = curve_fit(exponential_curve, x_data, y_data, maxfev=10000)
-
-    # Generating y values from the fitted curve
-    fitted_y_data = exponential_curve(x_data, *params)
-
-    # Plotting the original data and the fitted curve
-    plt.figure(figsize=(10, 6))
-    plt.scatter(x_data, y_data, label='Data Points', color='blue')
-    plt.plot(x_data, fitted_y_data, label='Fitted Curve', color='red', linewidth=2)
-    plt.title('Exponential Curve Fit for Time vs Lookahead Number')
-    plt.xlabel('Lookahead Number')
-    plt.ylabel('Average Time')
-    plt.legend()
-    plt.show()
-
-    # Adding a column to show increase in time from the previous lookahead number
-    sorted_average_time_df['Percentage Increase in Time'] = \
-                                        sorted_average_time_df['Average Time'].pct_change() * 100
-
-    # Printing the parameters of the fitted curve and the summary table
-    print('Parameters of the fitted exponential curve:', params)
-    print('\nSummary Table:')
-    print(sorted_average_time_df)
