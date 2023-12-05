@@ -29,13 +29,13 @@ def build_pm(routing_pass, layout_pass, coupling_map, seed=42, lookahead=0):
             routing_pass(coupling_map,seed=seed)
         ])
     else:
-        layout = layout_pass(coupling_map, routing_pass=routing_pass(coupling_map, fake_run=True, seed=seed, lookahead_depth=lookahead), seed=seed)
+        layout = layout_pass(coupling_map, routing_pass=routing_pass(coupling_map, fake_run=True, seed=seed, lookahead_steps=lookahead), seed=seed)
         return PassManager([
             layout,
             FullAncillaAllocation(coupling_map),
             EnlargeWithAncilla(),
             ApplyLayout(),
-            routing_pass(coupling_map,seed=seed, lookahead_depth=lookahead)
+            routing_pass(coupling_map,seed=seed, lookahead_steps=lookahead)
         ])
     
     
@@ -70,7 +70,7 @@ def build_pm_fast(routing_pass, layout_pass, coupling_map, seed=42, lookahead=0)
             FullAncillaAllocation(coupling_map),
             EnlargeWithAncilla(),
             ApplyLayout(),
-            routing_pass(coupling_map,seed=seed, lookahead_depth=lookahead)
+            routing_pass(coupling_map,seed=seed, lookahead_steps=lookahead)
         ])
 
 def generate_pass_managers(num_shots, routing_pass, layout_pass, coupling_map, initial_seed=42, lookahead=0):

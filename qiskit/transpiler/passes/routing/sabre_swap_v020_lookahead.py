@@ -63,9 +63,9 @@ class SabreSwap(TransformationPass):
         coupling_map,
         seed=None,
         fake_run=False,
-        lookahead_depth=0,
-        beam_width=2,
-        beam_depth=5
+        lookahead_steps=0,
+        beam_size=2,
+        beam_start_iteration=5
     ):
         r"""SabreSwap initializer.
 
@@ -99,13 +99,13 @@ class SabreSwap(TransformationPass):
         self.required_predecessors = None
         self._bit_indices = None
         self.dist_matrix = None
-        self.lookahead_depth = lookahead_depth # amount of more swaps to explore
+        self.lookahead_steps = lookahead_steps # number of steps to look ahead
         self.gates_order = [] # list of all 2-qubit gates committed in order, depth of the circuit.decompose(["swap"])
         self.gates_explored = set() # keep track of all gates explored in the lookahead branching
         self.found_end = False # flag to indicate if we have found an end solution
         self.end_gates_info = [] # list of all end solutions found, with their depth and sequence of gates
-        self.beam_width = beam_width # number of branches to explore at each step
-        self.beam_depth = beam_depth # number of steps before applying beam search
+        self.beam_size = beam_size # number of branches to explore at each step
+        self.beam_start_iteration = beam_start_iteration # number of steps before applying beam search
         random.seed(self.seed)
 
     def run(self, dag):
@@ -199,7 +199,7 @@ class SabreSwap(TransformationPass):
             # We use a BFS queue to explore the search space of SWAPs. 
             # In the queue, we store the following:
             # (front_layer, current_layout, swap_sequence, predecessors, gates_to_execute, gates_order,
-            #  score_front, gates_to_execute, all_gates, depth)
+            #  score_front, gates_to_execute, all_gates, step)
             queue = [(front_layer, current_layout, [], self.required_predecessors, self.gates_order,
                       float("inf"), [], [], 0)] 
             
@@ -217,10 +217,10 @@ class SabreSwap(TransformationPass):
                 # length of gates_to_execute is the gate score (does not contain swaps)
                 # all_gate contains all of the gates in DAGOpNode form
                 q_front_layer, q_current_layout, q_swap_sequence, predecessors, gates_order, \
-                    score_front, gates_to_execute, all_gates, depth = queue.pop(0)
+                    score_front, gates_to_execute, all_gates, step = queue.pop(0)
 
                 # exploring all swap candidates at this depth and then adding the next layer to the queue
-                if depth <= self.lookahead_depth:
+                if step <= self.lookahead_steps:
                     swap_candidates = list(self._obtain_swaps(q_front_layer, q_current_layout))
                     # sorting so that we always get the same order of swaps, so there is no randomness from order
                     swap_candidates.sort(key=lambda x: (self._bit_indices[x[0]], self._bit_indices[x[1]]))
@@ -237,9 +237,9 @@ class SabreSwap(TransformationPass):
                     # Sort the scored swaps by their scores (ascending)
                     scored_swaps.sort(key=lambda x: x[0])
 
-                    if depth > self.beam_depth:
-                        # Apply beam search - only explore the top candidates as per beam_width
-                        swaps_to_explore = scored_swaps[:self.beam_width]
+                    if step > self.beam_start_iteration:
+                        # Apply beam search - only explore the top candidates as per beam_size
+                        swaps_to_explore = scored_swaps[:self.beam_size]
                     else:
                         # Regular exploration - explore all candidates
                         swaps_to_explore = scored_swaps
@@ -259,7 +259,7 @@ class SabreSwap(TransformationPass):
                         )
                         trial_swap_sequence = q_swap_sequence + [swap]
                         trial_score_front = score_front
-                        if depth == 0:
+                        if step == 0:
                             # only getting the front score at the initial step
                             trial_score_front = score
                         
@@ -299,7 +299,7 @@ class SabreSwap(TransformationPass):
                             self.end_gates_info.append({"sequence": trial_all_gates, "depth": curr_depth - prev_depth})
 
                         queue.append((trial_front_layer, trial_layout, trial_swap_sequence, trial_predecessors, trial_gates_order,
-                                      trial_score_front, trial_gates_to_execute, trial_all_gates, depth + 1))
+                                      trial_score_front, trial_gates_to_execute, trial_all_gates, step + 1))
                 # reached the end of the lookahead, now we score what we have
                 else:
                     # calculate lookahead score
