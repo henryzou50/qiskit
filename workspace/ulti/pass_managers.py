@@ -2,6 +2,7 @@
 
 from qiskit.transpiler import PassManager
 from qiskit.transpiler.passes import SabreSwap
+from qiskit.transpiler.passes import SabreLayout
 from qiskit.transpiler.passes import ApplyLayout, FullAncillaAllocation, \
                                      EnlargeWithAncilla, TrivialLayout  
 import time
@@ -30,14 +31,14 @@ def build_pm(routing_pass, layout_pass, coupling_map, seed=42, lookahead=0, fast
     if lookahead > 0:
         routing_args['lookahead_steps'] = lookahead
 
-    # Determine the routing pass for layout
+    # Determine the routing pass for layout and build the layout pass
     if fast_layout:
         layout_routing_pass = SabreSwap(coupling_map, fake_run=True, seed=seed)
+        layout = SabreLayout(coupling_map, routing_pass=layout_routing_pass, 
+                             seed=seed)
     else:
         layout_routing_pass = routing_pass(fake_run=True, **routing_args)
-
-    # Construct the layout pass
-    layout = layout_pass(coupling_map, routing_pass=layout_routing_pass, 
+        layout = layout_pass(coupling_map, routing_pass=layout_routing_pass, 
                          seed=seed)
 
     # Build and return the pass manager
