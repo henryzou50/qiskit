@@ -64,8 +64,8 @@ class SabreSwap(TransformationPass):
         seed=None,
         fake_run=False,
         lookahead_steps=0,
-        beam_size=5,
-        beam_start_iteration=5
+        beam_size=2,
+        beam_start_iteration=1
     ):
         r"""SabreSwap initializer.
 
@@ -237,7 +237,7 @@ class SabreSwap(TransformationPass):
                     # Sort the scored swaps by their scores (ascending)
                     scored_swaps.sort(key=lambda x: x[0])
 
-                    if step > self.beam_start_iteration:
+                    if step >= self.beam_start_iteration:
                         # Apply beam search - only explore the top candidates as per beam_size
                         swaps_to_explore = scored_swaps[:self.beam_size]
                     else:
