@@ -5,12 +5,14 @@ from qiskit.circuit.library import QuantumVolume
 import os
 import re
 
-def get_circuit_list(directory):
-    """
-    Get a list of circuits from the given directory.
 
-    Parameters:
-    directory (list of a str): Directory where the circuits are stored
+def get_circuit_list(directory):
+    """ Get a list of circuits from the given directory.
+
+    Args:
+        directory (str): Path to the directory containing the QASM files.
+    Returns:
+        list: A list of QuantumCircuit objects.
     """
     qc_list = [] 
     for path in directory:
@@ -22,12 +24,14 @@ def get_circuit_list(directory):
             qc_list.sort(key=lambda x: x.num_qubits)
     return qc_list
 
-def ghz_circuit(n): 
-    """
-    Generate a GHZ circuit of size n.
 
-    Parameters:
-    n (int): Size of the GHZ state
+def ghz_circuit(n): 
+    """ Generate a GHZ circuit of size n.
+
+    Args:
+        n (int): Size of the GHZ state.
+    Returns:    
+        QuantumCircuit: A GHZ circuit of size n.
     """   
     if n <= 0:
         raise ValueError("n should be a positive integer")
@@ -39,15 +43,15 @@ def ghz_circuit(n):
 
     return qc
 
+
 def generate_and_store_ghz_circuits(start, end, directory="circuits/ghz"):
-    """
-    Generate GHZ circuits from 'start' to 'end' qubits and save them as QASM files 
+    """ Generate GHZ circuits from 'start' to 'end' qubits and save them as QASM files 
     in the specified directory.
 
-    Parameters:
-    start (int): Start size of the GHZ state
-    end (int): End size of the GHZ state
-    directory (str): Directory where the QASM files should be saved
+    Args:
+        start (int): Starting number of qubits.
+        end (int): Ending number of qubits.
+        directory (str): Directory to save the QASM files.
     """
 
     # Create the directory if it doesn't exist
@@ -69,16 +73,19 @@ def generate_and_store_qv_circuits(qubit_sizes=[5],
                                    increments=[10], 
                                    base_path="circuits",
                                    seed=42):
-    """
-    Generates Quantum Volume circuits with specified qubit sizes and depth ranges, 
-    and stores them in the specified directory structure.
+    """ Generate Quantum Volume circuits for the given qubit sizes and depth ranges and save them
+    as QASM files in the specified directory.
 
-    Parameters:
-    qubit_sizes (list of int): Sizes of the Quantum Volume circuits
-    depth_ranges (list of tuples): Depth ranges for the Quantum Volume circuits
-    increments (list of int): Increments for the depth ranges
-    base_path (str): Base directory where the circuits should be stored
-    seed (int): Seed for generating the Quantum Volume circuits
+    Args:
+        qubit_sizes (list): A list of qubit sizes.
+        depth_ranges (list): A list of tuples representing the start and stop values for the depth
+            of the circuits.
+        increments (list): A list of integers representing the increment between the start and stop
+            values for the depth of the circuits.
+        base_path (str): Directory to save the QASM files.
+        seed (int): Seed for the random number generator.
+    Returns:    
+        None
     """
 
     os.makedirs(base_path, exist_ok=True)
@@ -99,32 +106,31 @@ def generate_and_store_qv_circuits(qubit_sizes=[5],
                 with open(file_path, "w") as file:
                     file.write(qasm_str)
                 
-                print(f"Stored Quantum Volume circuit for size {size} and depth {depth} at {file_path}")
+                print(f"Stored Quantum Volume circuit for size {size} and depth {depth} at \
+                        {file_path}")
+
 
 def sort_circuits_by_depth(qc_list):
-    """
-    Sorts an array of Qiskit QuantumCircuits by their depth.
-    The smallest depth circuit will be the first in the list.
-    
-    Parameters:
-    qc_list (list): A list of Qiskit QuantumCircuit objects.
-    
+    """ Sorts an array of Qiskit QuantumCircuits by their depth. The smallest depth circuit will 
+    be the first in the list.
+
+    Args:
+        qc_list (list): A list of QuantumCircuit objects.   
     Returns:
-    list: A new list with QuantumCircuit objects sorted by depth.
+        list: A list of QuantumCircuit objects sorted by their depth.
     """
     # Use the sorted function with a key that calls the depth method on each circuit
     sorted_qc_list = sorted(qc_list, key=lambda x: x.decompose().depth())
     return sorted_qc_list
 
+
 def update_qasm_file(file_path):
-    """
-    Updates the QASM file at the given path by adding a unique identifier to each unitary gate.
-    
-    Parameters:
-    file_path (str): Path to the QASM file
-    
+    """ Updates the .qasm file by adding an underscore and a number to the unitary gate name.
+
+    Args:   
+        file_path (str): Path to the .qasm file to update.
     Returns:
-    None
+        None
     """
     with open(file_path, 'r') as file:
         lines = file.readlines()

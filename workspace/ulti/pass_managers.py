@@ -1,3 +1,5 @@
+""" This module contains functions for generating and using PassManager objects. """
+
 from qiskit.transpiler import PassManager
 from qiskit.transpiler.passes import SabreSwap
 from qiskit.transpiler.passes import ApplyLayout, FullAncillaAllocation, \
@@ -5,9 +7,9 @@ from qiskit.transpiler.passes import ApplyLayout, FullAncillaAllocation, \
 import time
 import numpy as np
 
+
 def build_pm(routing_pass, layout_pass, coupling_map, seed=42, lookahead=0, fast_layout=False):
-    """
-    Builds a pass manager with the given routing pass, layout pass, coupling map, and optionally 
+    """ Builds a pass manager with the given routing pass, layout pass, coupling map, and optionally 
     modifies behavior for a fast run.
     
     Args:
@@ -19,7 +21,6 @@ def build_pm(routing_pass, layout_pass, coupling_map, seed=42, lookahead=0, fast
         Defaults to 0.
         fast_layout (bool, optional): If True, modifies the behavior for a faster run. Defaults to 
         False.
-
     Returns:
         PassManager: A PassManager object with the given routing pass and 
         layout pass.
@@ -48,10 +49,10 @@ def build_pm(routing_pass, layout_pass, coupling_map, seed=42, lookahead=0, fast
         routing_pass(**routing_args)
     ])
 
+
 def generate_pass_managers(num_shots, routing_pass, layout_pass, coupling_map, initial_seed=42, 
                            lookahead=0, fast_layout=False):
-    """
-    Generates a list of PassManager objects with different seeds.
+    """ Generates a list of PassManager objects with different seeds.
     
     Args:
         num_shots (int): The number of PassManager instances to create.
@@ -62,7 +63,6 @@ def generate_pass_managers(num_shots, routing_pass, layout_pass, coupling_map, i
         lookahead (int, optional): The number of lookahead steps to use for the routing pass. 
         Defaults to 0.
         fast (bool, optional): If True, modifies the behavior for a faster run. Defaults to False.
-    
     Returns:
         list: A list of PassManager objects with incrementing seeds starting from 42.
     """
@@ -84,16 +84,14 @@ def generate_pass_managers(num_shots, routing_pass, layout_pass, coupling_map, i
     
     return pass_managers
 
+
 def transpiled_data(qc, pass_managers):
-    """
-    Returns a dictionary of transpiled data for the best transpiled circuit 
-    (with the lowest depth) after transpiling it with each pass manager in the 
-    list.
+    """ Returns a dictionary of transpiled data for the best transpiled circuit (with the lowest 
+    depth) after transpiling it with each pass manager in the list.
 
     Args:
         qc (QuantumCircuit): Quantum circuit to transpile
         pass_managers (list): List of PassManager objects to use for transpilation
-
     Returns:
         dict: A dictionary containing the best transpiled data and standard 
         deviations of the transpiled data
@@ -157,15 +155,14 @@ def transpiled_data(qc, pass_managers):
 
     return result
 
+
 def round_to_significant_figures(num, n=4):
-    """ 
-    Round a number to n significant figures.
+    """ Round a number to n significant figures.
     
     Args:
-    num (float): Number to round
-    
+        num (float): Number to round
     Returns:
-    float: Rounded number"""
+        float: Rounded number"""
     if num == 0:
         return 0
     else:

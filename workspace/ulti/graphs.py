@@ -1,3 +1,6 @@
+""" This module contains functions to generate graphs and tables for the results of the experiments.
+"""
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -8,23 +11,37 @@ import os
 
 
 def process_csv(file_name, metric):
-    """
-    Function to process a csv file and extract the metric of interest and the
-    circuit label.
+    """ Function to process a csv file and extract the metric of interest and the circuit label.
     
-    Parameters:
+    Args:
         file_name (str): Name of the csv file
-        metric (str): Metric of interest"""
+        metric (str): Metric of interest
+    Returns:
+        df (pandas.DataFrame): Dataframe with the metric and circuit label
+    """
     df = pd.read_csv(file_name)
     # Convert the string representation of dictionary to actual dictionary
     df['best_data'] = df['best_data'].apply(ast.literal_eval)
     # Extract the metric of interest and the circuit label
     df[metric] = df['best_data'].apply(lambda x: x[metric])
-    df['circuit_label'] = df['circuit label'].astype(int)  # Ensure circuit label is integer for color mapping
+    df['circuit_label'] = df['circuit label'].astype(int)  
     return df[['circuit_label', metric]]
 
-# Function to compare a single metric between two data files with color coding for circuit labels using Seaborn
+
 def compare_single_metric(metric, file1, file2, x_label, y_label, plot_title, labelling):
+    """ Function to compare a single metric between two files.
+    
+    Args:
+        metric (str): Metric of interest
+        file1 (str): Name of the first csv file
+        file2 (str): Name of the second csv file
+        x_label (str): Label for the x-axis
+        y_label (str): Label for the y-axis
+        plot_title (str): Title for the plot
+        labelling (str): Label for the color bar
+    Returns:
+        None
+    """
     df1 = process_csv(file1, metric)
     df2 = process_csv(file2, metric)
     
@@ -64,7 +81,20 @@ def compare_single_metric(metric, file1, file2, x_label, y_label, plot_title, la
     plt.grid(True)
     plt.show()
 
+
 def analyze_metric(data_dir, metric, baseline_filename, plot_title, x_axis_label):
+    """ Function to analyze a metric across multiple files.
+
+    Args:
+        data_dir (str): Path to the directory containing the csv files
+        metric (str): Metric of interest
+        baseline_filename (str): Name of the file to use as baseline
+        plot_title (str): Title for the plot
+        x_axis_label (str): Label for the x-axis
+    Returns:
+        sum_table (pandas.DataFrame): A dataframe containing the average of the metric for each
+        file and the percentage difference compared to the baseline
+    """
     data_files = [f for f in os.listdir(data_dir) if f.endswith('.csv')]
     all_data = []
 
@@ -98,14 +128,24 @@ def analyze_metric(data_dir, metric, baseline_filename, plot_title, x_axis_label
 
     # Calculate percentage difference compared to baseline
     baseline = average_metrics[baseline_filename]
-    summary_table = pd.DataFrame(average_metrics)
-    summary_table['% Difference from Baseline'] = ((summary_table[metric] - baseline) / baseline) * 100
+    sum_table = pd.DataFrame(average_metrics)
+    sum_table['% Difference from Baseline'] = ((sum_table[metric] - baseline) / baseline) * 100
 
-    return summary_table
+    return sum_table
 
 
 
 def analyze_lookahead_times(directory):
+    """ Function to analyze the average time taken for each lookahead number and fit an exponential
+    curve to the data.
+
+    Args:
+        directory (str): Path to the directory containing the csv files
+    Returns:
+        None
+    """
+
+    
     # Function to extract and calculate average time from a file
     def extract_average_time(file_path):
         df = pd.read_csv(file_path)
@@ -127,7 +167,8 @@ def analyze_lookahead_times(directory):
             average_times[lookahead_number] = extract_average_time(file_path)
 
     # Creating a DataFrame for plotting and summarizing
-    average_time_df = pd.DataFrame(list(average_times.items()), columns=['Lookahead Number', 'Average Time'])
+    average_time_df = pd.DataFrame(list(average_times.items()), columns=['Lookahead Number', 
+                                                                         'Average Time'])
     sorted_average_time_df = average_time_df.sort_values('Lookahead Number')
 
     # Extracting x and y data for curve fitting
@@ -151,7 +192,8 @@ def analyze_lookahead_times(directory):
     plt.show()
 
     # Adding a column to show increase in time from the previous lookahead number
-    sorted_average_time_df['Percentage Increase in Time'] = sorted_average_time_df['Average Time'].pct_change() * 100
+    sorted_average_time_df['Percentage Increase in Time'] = \
+                                        sorted_average_time_df['Average Time'].pct_change() * 100
 
     # Printing the parameters of the fitted curve and the summary table
     print('Parameters of the fitted exponential curve:', params)
