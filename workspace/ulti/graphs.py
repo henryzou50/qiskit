@@ -8,6 +8,13 @@ import os
 
 
 def process_csv(file_name, metric):
+    """
+    Function to process a csv file and extract the metric of interest and the
+    circuit label.
+    
+    Parameters:
+        file_name (str): Name of the csv file
+        metric (str): Metric of interest"""
     df = pd.read_csv(file_name)
     # Convert the string representation of dictionary to actual dictionary
     df['best_data'] = df['best_data'].apply(ast.literal_eval)
