@@ -65,7 +65,7 @@ class SabreSwap(TransformationPass):
         fake_run=False,
         lookahead_steps=0,
         beam_size=5,
-        beam_start_iteration=3
+        beam_start_iteration=5
     ):
         r"""SabreSwap initializer.
 

@@ -62,7 +62,7 @@ def generate_pass_managers(num_shots, routing_pass, layout_pass, coupling_map, i
         init_seed (int, optional): Initial seed to use for the PassManager objects
         lookahead (int, optional): The number of lookahead steps to use for the routing pass. 
         Defaults to 0.
-        fast (bool, optional): If True, modifies the behavior for a faster run. Defaults to False.
+        fast_layout (bool, optional): If True, modifies the behavior for a faster run. Defaults to False.
     Returns:
         list: A list of PassManager objects with incrementing seeds starting from 42.
     """
