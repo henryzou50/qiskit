@@ -1,6 +1,0 @@
-best_data,std_dev,routing pass,layout pass,coupling map,circuit label
-"{'depth': 433, 'depth_ratio': 4.33, 'time': 0.3073599338531494, 'cx_gates': 312, 'num_gates': 512}","{'depth': 12.04, 'depth_ratio': 0.1204, 'time': 0.04599, 'cx_gates': 10.11, 'num_gates': 10.11}",sabre_v0.20,sabre_0.20,hex_7,0
-"{'depth': 854, 'depth_ratio': 4.27, 'time': 0.559190034866333, 'cx_gates': 603, 'num_gates': 1003}","{'depth': 20.81, 'depth_ratio': 0.1047, 'time': 0.03589, 'cx_gates': 19.35, 'num_gates': 19.35}",sabre_v0.20,sabre_0.20,hex_7,1
-"{'depth': 1323, 'depth_ratio': 4.41, 'time': 0.8937830924987793, 'cx_gates': 978, 'num_gates': 1578}","{'depth': 20.74, 'depth_ratio': 0.07127, 'time': 0.07862, 'cx_gates': 87.66, 'num_gates': 87.66}",sabre_v0.20,sabre_0.20,hex_7,2
-"{'depth': 1781, 'depth_ratio': 4.45, 'time': 1.18184494972229, 'cx_gates': 1332, 'num_gates': 2132}","{'depth': 48.44, 'depth_ratio': 0.1195, 'time': 0.07316, 'cx_gates': 32.28, 'num_gates': 32.28}",sabre_v0.20,sabre_0.20,hex_7,3
-"{'depth': 2237, 'depth_ratio': 4.47, 'time': 1.3893170356750488, 'cx_gates': 1680, 'num_gates': 2680}","{'depth': 47.46, 'depth_ratio': 0.09521, 'time': 0.03533, 'cx_gates': 191.0, 'num_gates': 191.0}",sabre_v0.20,sabre_0.20,hex_7,4

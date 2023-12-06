@@ -68,9 +68,9 @@ def generate_and_store_ghz_circuits(start, end, directory="circuits/ghz"):
             
     print(f"QASM files for GHZ circuits saved in {directory}!")
 
-def generate_and_store_qv_circuits(qubit_sizes=[5], 
-                                   depth_ranges=[(100, 501)],
-                                   increments=[100], 
+def generate_and_store_qv_circuits(qubit_sizes=[25], 
+                                   depth_ranges=[(10, 20)],
+                                   increments=[5], 
                                    base_path="circuits",
                                    seed=42):
     """ Generate Quantum Volume circuits for the given qubit sizes and depth ranges and save them
