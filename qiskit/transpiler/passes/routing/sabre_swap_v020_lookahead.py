@@ -198,7 +198,7 @@ class SabreSwap(TransformationPass):
             # After all free gates are exhausted, initialize BFS queue to perform lookahead exploration.
             # We use a BFS queue to explore the search space of SWAPs. 
             # In the queue, we store the following:
-            # (front_layer, current_layout, swap_sequence, predecessors, gates_to_execute, gates_order,
+            # (front_layer, current_layout, swap_sequence, predecessors, gates_order,
             #  score_front, gates_to_execute, all_gates, step)
             queue = [(front_layer, current_layout, [], self.required_predecessors, self.gates_order,
                       float("inf"), [], [], 0)] 
@@ -302,7 +302,7 @@ class SabreSwap(TransformationPass):
                                       trial_score_front, trial_gates_to_execute, trial_all_gates, step + 1))
                 # reached the end of the lookahead, now we score what we have
                 else:
-                    # calculate lookahead score
+                    # calculate depth score
                     curr_depth = calculate_circuit_depth(gates_order)
                     score_depth = curr_depth - prev_depth
 
@@ -311,7 +311,7 @@ class SabreSwap(TransformationPass):
 
                     # calculate lookahead score
                     gates_remaining = []
-                    for gate in self.gates_explored:
+                    for gate in self.gates_explored: 
                         if gate not in gates_to_execute:
                             gates_remaining.append(gate)
                     score_lookahead = self._compute_cost(gates_remaining, q_current_layout)

@@ -1,0 +1,10 @@
+best_data,std_dev,routing pass,layout pass,coupling map,circuit label
+"{'depth': 1, 'depth_ratio': 1.0, 'time': 0.005776882171630859, 'cx_gates': 0, 'num_gates': 2}","{'depth': 1.96, 'depth_ratio': 1.96, 'time': 0.0004031, 'cx_gates': 1.47, 'num_gates': 1.47}",sabre_depth_v0.20,sabre_0.20,hex_7,0
+"{'depth': 2, 'depth_ratio': 1.0, 'time': 0.006682872772216797, 'cx_gates': 0, 'num_gates': 4}","{'depth': 1.744, 'depth_ratio': 0.8718, 'time': 0.01066, 'cx_gates': 2.4, 'num_gates': 2.4}",sabre_depth_v0.20,sabre_0.20,hex_7,1
+"{'depth': 3, 'depth_ratio': 1.0, 'time': 0.008758783340454102, 'cx_gates': 0, 'num_gates': 6}","{'depth': 3.6, 'depth_ratio': 1.202, 'time': 0.0007282, 'cx_gates': 4.069, 'num_gates': 4.069}",sabre_depth_v0.20,sabre_0.20,hex_7,2
+"{'depth': 7, 'depth_ratio': 1.75, 'time': 0.011775016784667969, 'cx_gates': 3, 'num_gates': 11}","{'depth': 2.332, 'depth_ratio': 0.5831, 'time': 0.0003978, 'cx_gates': 1.47, 'num_gates': 1.47}",sabre_depth_v0.20,sabre_0.20,hex_7,3
+"{'depth': 15, 'depth_ratio': 3.0, 'time': 0.017444133758544922, 'cx_gates': 15, 'num_gates': 25}","{'depth': 1.6, 'depth_ratio': 0.32, 'time': 0.0003229, 'cx_gates': 1.2, 'num_gates': 1.2}",sabre_depth_v0.20,sabre_0.20,hex_7,4
+"{'depth': 12, 'depth_ratio': 2.0, 'time': 0.017551183700561523, 'cx_gates': 6, 'num_gates': 18}","{'depth': 4.8, 'depth_ratio': 0.8, 'time': 0.0005225, 'cx_gates': 3.6, 'num_gates': 3.6}",sabre_depth_v0.20,sabre_0.20,hex_7,5
+"{'depth': 19, 'depth_ratio': 2.71, 'time': 0.02140498161315918, 'cx_gates': 15, 'num_gates': 29}","{'depth': 3.124, 'depth_ratio': 0.4488, 'time': 0.01096, 'cx_gates': 4.49, 'num_gates': 4.49}",sabre_depth_v0.20,sabre_0.20,hex_7,6
+"{'depth': 22, 'depth_ratio': 2.75, 'time': 0.026648998260498047, 'cx_gates': 18, 'num_gates': 34}","{'depth': 3.225, 'depth_ratio': 0.4044, 'time': 0.0009691, 'cx_gates': 2.245, 'num_gates': 2.245}",sabre_depth_v0.20,sabre_0.20,hex_7,7
+"{'depth': 21, 'depth_ratio': 2.33, 'time': 0.027760982513427734, 'cx_gates': 12, 'num_gates': 30}","{'depth': 6.0, 'depth_ratio': 0.668, 'time': 0.01109, 'cx_gates': 4.8, 'num_gates': 4.8}",sabre_depth_v0.20,sabre_0.20,hex_7,8
