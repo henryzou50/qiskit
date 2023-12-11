@@ -176,7 +176,6 @@ class SabreSwap(TransformationPass):
 
         # Start algorithm from the front layer and iterate until all gates done.
         self.required_predecessors = self._build_required_predecessors(dag)
-        num_search_steps = 0
         front_layer = dag.front_layer()
 
         while front_layer:
@@ -245,8 +244,7 @@ class SabreSwap(TransformationPass):
             )
             current_layout.swap(*best_swap)
             ops_since_progress.append(swap_node)
-
-            num_search_steps += 1
+            
         circuit_depth = max(self.qubits_decay.values())
         print("Circuit depth: ", circuit_depth)
 
