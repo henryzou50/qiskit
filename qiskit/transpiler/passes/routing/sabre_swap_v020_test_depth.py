@@ -12,6 +12,7 @@
 
 """Routing via SWAP insertion using the SABRE method from Li et al."""
 
+import time
 import logging
 from collections import defaultdict
 from copy import copy, deepcopy
@@ -100,7 +101,7 @@ class SabreSwap(TransformationPass):
         self.dist_matrix = None
 
     def run(self, dag):
-        print("SabreSwap run")
+        #print("SabreSwap run")
         """Run the SabreSwap pass on `dag`.
 
         Args:
@@ -210,7 +211,11 @@ class SabreSwap(TransformationPass):
             ops_since_progress.append(swap_node)
 
         circuit_depth = max(self.qubits_depth.values())
-        print("Circuit depth: ", circuit_depth)
+        #print("Circuit depth: ", circuit_depth)
+
+        print(self.qubits_depth)
+        depth_copy = self.qubits_depth.copy()
+
 
         self.property_set["final_layout"] = current_layout
         if not self.fake_run:
