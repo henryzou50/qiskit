@@ -190,14 +190,12 @@ class SabreSwap(TransformationPass):
 
             # Start bfs search for lookahead
             initial_node = Node(current_layout, front_layer, self.required_predecessors, 
-                                self.qubits_depth, [])
+                                self.qubits_depth, [], [])
             best_node = self.lookahead_search(initial_node)
             
             # temp section to ensure we don't get stuck in an infinite loop
             swap_scores = {}
 
-            swap_candidates = self._obtain_swaps(front_layer, current_layout)
-            print("swap candidates: ", swap_candidates)
             for swap_qubits in self._obtain_swaps(front_layer, current_layout):
                 trial_layout = current_layout.copy()
                 trial_layout.swap(*swap_qubits)
@@ -238,7 +236,18 @@ class SabreSwap(TransformationPass):
 
         # Find the swap candidates for this node's front layer and current_layout
         swap_candidates = self._obtain_swaps(initial_node.front_layer, initial_node.layout)
-        print("swap candidates: ", swap_candidates)
+        
+        for swap_qubits in swap_candidates:
+            # Create a new layout and apply the swap
+            trial_layout = initial_node.layout.copy()
+            trial_layout.swap(*swap_qubits)
+
+            # Create a new swap sequence and add the swap
+            trial_swap_sequence = initial_node.swap_sequence + [swap_qubits]
+            print("trial_swap_sequence", trial_swap_sequence)
+            print("trial_layout", trial_layout)
+
+
 
         best_node = initial_node
         return best_node
@@ -401,10 +410,11 @@ def _shortest_swap_path(target_qubits, coupling_map, layout):
         yield v_goal, layout._p2v[swap]
 
 class Node():
-    def __init__(self, layout, front_layer, successors, qubit_depth, gates):
+    def __init__(self, layout, front_layer, successors, qubit_depth, gates, swap_sequence):
         self.layout =layout
         self.front_layer = front_layer
         self.successors = successors
         self.qubit_depth = qubit_depth
         self.gates = gates
+        self.swap_sequence = swap_sequence
         
