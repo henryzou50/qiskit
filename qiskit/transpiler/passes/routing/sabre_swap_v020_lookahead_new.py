@@ -231,6 +231,7 @@ class SabreSwap(TransformationPass):
         end_solutions = []
         current_level = [initial_node]
         for i in range(self.lookahead_steps):
+            print("lookahead step: ", i)
             next_level = []
             for node in current_level:
                 if node.front_layer == []: # already added, avoid double counting
@@ -293,15 +294,26 @@ class SabreSwap(TransformationPass):
                                     trial_qubit_depth, trial_gate_seq, trial_swap_seq)
                     trial_node.score_front = trial_score_front
                     trial_node.score_depth = max(trial_node.qubit_depth.values())
+                    trial_node.score_gates = len(trial_swap_seq) + len(trial_gate_seq)
                     next_level.append(trial_node)
                     
                     # Reached a potential point of end of the lookahead
                     if trial_front_layer == []:
                         end_solutions.append(trial_node)
+                # Update the lookahead score for each node 
+                for node in next_level:
+                    gates_remaining = []
+                    for gate in all_gate_seq:
+                        if gate not in node.gate_seq:
+                            gates_remaining.append(gate)
+                    node.score_looka = self._compute_cost(gates_remaining, node.layout)
+                    print("     score_front: ", node.score_front, "score_looka: ", node.score_looka)
+                    node.score_total_1 = node.score_front + node.score_looka 
+                    node.score_total_2 = node.score_depth + node.score_gates
 
             # Sort the next level by score first, then by depth, if equal, then random tie-break
             # print each node's score front with their score_depth
-            next_level.sort(key=lambda x: (x.score_front, x.score_depth))
+            next_level.sort(key=lambda x: (x.score_total_1, x.score_total_2))
             current_level = next_level[:self.beam_width]
         
         # If there is an end solution, return the one with the best score
@@ -436,6 +448,12 @@ class SabreSwap(TransformationPass):
         layout_map = layout._v2p
         for node in layer:
             cost += self.dist_matrix[layout_map[node.qargs[0]], layout_map[node.qargs[1]]]
+
+        # normalize by the number of gates
+        if len(layer) == 0:
+            return 0
+        cost /= len(layer)
+        cost *= 3
         return cost
 
     def _score_heuristic(self, front_layer, layout):
@@ -497,5 +515,7 @@ class Node():
         self.score_depth = 0
         self.score_looka = 0
         self.score_gates = 0
+        self.score_total_1 = 0
+        self.score_total_2 = 0
     
         

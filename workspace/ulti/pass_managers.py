@@ -9,7 +9,8 @@ import time
 import numpy as np
 
 
-def build_pm(routing_pass, layout_pass, coupling_map, seed=42, lookahead=0, fast_layout=False):
+def build_pm(routing_pass, layout_pass, coupling_map, seed=42, lookahead=0, beam_width=1, 
+             fast_layout=False):
     """ Builds a pass manager with the given routing pass, layout pass, coupling map, and optionally 
     modifies behavior for a fast run.
     
@@ -20,6 +21,7 @@ def build_pm(routing_pass, layout_pass, coupling_map, seed=42, lookahead=0, fast
         seed (int, optional): The seed to use for the layout pass and routing pass. Defaults to 42.
         lookahead (int, optional): The number of lookahead steps to use for the routing pass. 
         Defaults to 0.
+        beam_width (int, optional): The beam width to use for the routing pass. Defaults to 1.
         fast_layout (bool, optional): If True, modifies the behavior for a faster run. Defaults to 
         False.
     Returns:
@@ -30,6 +32,7 @@ def build_pm(routing_pass, layout_pass, coupling_map, seed=42, lookahead=0, fast
     routing_args = {'coupling_map': coupling_map, 'seed': seed}
     if lookahead > 0:
         routing_args['lookahead_steps'] = lookahead
+        routing_args['beam_width']      = beam_width
 
     # Determine the routing pass for layout and build the layout pass
     if fast_layout:
@@ -52,7 +55,7 @@ def build_pm(routing_pass, layout_pass, coupling_map, seed=42, lookahead=0, fast
 
 
 def generate_pass_managers(num_shots, routing_pass, layout_pass, coupling_map, initial_seed=42, 
-                           lookahead=0, fast_layout=False):
+                           lookahead=0, beam_width=1, fast_layout=False):
     """ Generates a list of PassManager objects with different seeds.
     
     Args:
@@ -80,7 +83,8 @@ def generate_pass_managers(num_shots, routing_pass, layout_pass, coupling_map, i
     # Build the PassManager objects
     for i in range(num_shots):
         seed = initial_seed + i
-        pm = build_pm(routing_pass, layout_pass, coupling_map, seed, lookahead, fast_layout)
+        pm = build_pm(routing_pass, layout_pass, coupling_map, seed, lookahead, beam_width, 
+                      fast_layout)
         pass_managers.append(pm)
     
     return pass_managers
