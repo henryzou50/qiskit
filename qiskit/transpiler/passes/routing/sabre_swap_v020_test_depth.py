@@ -65,6 +65,7 @@ class SabreSwap(TransformationPass):
         coupling_map,
         seed=None,
         fake_run=False,
+        lookahead_steps=1
     ):
         r"""SabreSwap initializer.
 
@@ -99,6 +100,7 @@ class SabreSwap(TransformationPass):
         self.qubits_depth = None
         self._bit_indices = None
         self.dist_matrix = None
+        self._lookahead_steps = 1
 
     def run(self, dag):
         #print("SabreSwap run")
@@ -186,10 +188,16 @@ class SabreSwap(TransformationPass):
                 ops_since_progress = []
                 continue
 
-            # After all free gates are exhausted, heuristically find
-            # the best swap and insert it. When two or more swaps tie
-            # for best score, pick one randomly.
+            # Start bfs search for lookahead
+            initial_node = Node(current_layout, front_layer, self.required_predecessors, 
+                                self.qubits_depth, [])
+            best_node = self.lookahead_search(initial_node)
+            
+            # temp section to ensure we don't get stuck in an infinite loop
             swap_scores = {}
+
+            swap_candidates = self._obtain_swaps(front_layer, current_layout)
+            print("swap candidates: ", swap_candidates)
             for swap_qubits in self._obtain_swaps(front_layer, current_layout):
                 trial_layout = current_layout.copy()
                 trial_layout.swap(*swap_qubits)
@@ -197,6 +205,7 @@ class SabreSwap(TransformationPass):
                     front_layer, trial_layout
                 )
                 swap_scores[swap_qubits] = score
+
             min_score = min(swap_scores.values())
             best_swaps = [k for k, v in swap_scores.items() if v == min_score]
             best_swaps.sort(key=lambda x: (self._bit_indices[x[0]], self._bit_indices[x[1]]))
@@ -210,17 +219,32 @@ class SabreSwap(TransformationPass):
             current_layout.swap(*best_swap)
             ops_since_progress.append(swap_node)
 
-        circuit_depth = max(self.qubits_depth.values())
-        #print("Circuit depth: ", circuit_depth)
-
-        print(self.qubits_depth)
-        depth_copy = self.qubits_depth.copy()
-
-
+        
         self.property_set["final_layout"] = current_layout
         if not self.fake_run:
             return mapped_dag
         return dag
+    
+    def lookahead_search(self, initial_node):
+        """ Performs a breadth-first search of the swap exploration to find the best swap. 
+        The length of the swap sequence explore is equal to the length of self.lookahead_steps.
+
+        Args:
+            initial_node (Node): The initial node to start the search from.
+
+        Returns:
+            Node: The node with the best score.
+        """
+
+        # Find the swap candidates for this node's front layer and current_layout
+        swap_candidates = self._obtain_swaps(initial_node.front_layer, initial_node.layout)
+        print("swap candidates: ", swap_candidates)
+
+        best_node = initial_node
+        return best_node
+
+        
+
 
     def _apply_gate(self, mapped_dag, node, current_layout, canonical_register):
         new_node = _transform_gate_for_layout(node, current_layout, canonical_register)
@@ -375,3 +399,12 @@ def _shortest_swap_path(target_qubits, coupling_map, layout):
         yield v_start, layout._p2v[swap]
     for swap in backwards:
         yield v_goal, layout._p2v[swap]
+
+class Node():
+    def __init__(self, layout, front_layer, successors, qubit_depth, gates):
+        self.layout =layout
+        self.front_layer = front_layer
+        self.successors = successors
+        self.qubit_depth = qubit_depth
+        self.gates = gates
+        
