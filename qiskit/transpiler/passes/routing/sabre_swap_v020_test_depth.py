@@ -65,7 +65,8 @@ class SabreSwap(TransformationPass):
         coupling_map,
         seed=None,
         fake_run=False,
-        lookahead_steps=1
+        lookahead_steps=1,
+        beam_width=1
     ):
         r"""SabreSwap initializer.
 
@@ -100,7 +101,8 @@ class SabreSwap(TransformationPass):
         self.qubits_depth = None
         self._bit_indices = None
         self.dist_matrix = None
-        self._lookahead_steps = 1
+        self.lookahead_steps = lookahead_steps
+        self.beam_width = beam_width
 
     def run(self, dag):
         #print("SabreSwap run")
@@ -238,62 +240,64 @@ class SabreSwap(TransformationPass):
         Returns:
             Node: The node with the best score.
         """
-        all_gate_seq = [] # exclude swaps
+        all_gate_seq = set() # exclude swaps
+        current_node = [initial_node]
+        for _ in range(self.lookahead_steps):
+            next_level = []
+            for node in current_node:
+                # Find the swap candidates for this node's front layer and current_layout
+                swap_candidates = self._obtain_swaps(node.front_layer, node.layout)
+                for swap_qubits in swap_candidates:
+                    print("swap_qubits", swap_qubits)
+                    # Create a new layout and apply the swap
+                    trial_layout = node.layout.copy()
+                    trial_layout.swap(*swap_qubits)
 
-        for _ in range(self._lookahead_steps):
-            # Find the swap candidates for this node's front layer and current_layout
-            swap_candidates = self._obtain_swaps(initial_node.front_layer, initial_node.layout)
-            
-            for swap_qubits in swap_candidates:
-                print("swap_qubits", swap_qubits)
-                # Create a new layout and apply the swap
-                trial_layout = initial_node.layout.copy()
-                trial_layout.swap(*swap_qubits)
+                    # Update score front
+                    trial_score_front = self._score_heuristic(node.front_layer, trial_layout)
 
-                # Update score front
-                trial_score_front = self._score_heuristic(
-                    initial_node.front_layer, trial_layout
-                )
+                    # Create a new swap sequence and add the swap
+                    swap_node = DAGOpNode(op=SwapGate(), qargs=swap_qubits)
+                    trial_swap_seq = node.swap_seq + [swap_node]
 
-                # Create a new swap sequence and add the swap
-                swap_node = DAGOpNode(op=SwapGate(), qargs=swap_qubits)
-                trial_swap_seq = initial_node.swap_seq + [swap_node]
+                    # Create variables that need to be updated when applying gates
+                    trial_gate_seq    = node.gate_seq.copy()
+                    trial_successors  = node.successors.copy()
+                    trial_front_layer = node.front_layer.copy()
+                    trial_qubit_depth = node.qubit_depth.copy()
 
-                # Create variables that need to be updated when applying gates
-                trial_gate_seq = initial_node.gate_seq.copy()
-                trial_successors = initial_node.successors.copy()
-                trial_front_layer = initial_node.front_layer.copy()
-                trial_qubit_depth = initial_node.qubit_depth.copy()
+                    while True: # continue to update until no more gates can be applied
+                        new_front_layer = []
+                        execute_gate_list = []
+                        for gate in trial_front_layer:
+                            if len(gate.qargs) == 2:
+                                v0, v1 = gate.qargs
+                                if self.coupling_map.graph.has_edge(
+                                    trial_layout._v2p[v0], trial_layout._v2p[v1]
+                                ):
+                                    execute_gate_list.append(gate)
+                                else:
+                                    new_front_layer.append(gate) # later fix for single and barrier
+                        trial_front_layer = new_front_layer
+                        if not execute_gate_list: # no more gates can be applied
+                            break
+                        else:
+                            # Apply the gates that can be applied
+                            for gate in execute_gate_list:
+                                trial_gate_seq.append(gate)
+                                all_gate_seq.add(gate)
+                                trial_qubit_depth = self._update_qubit_depth(gate, trial_qubit_depth)
+                                
+                                for successor in self._successors(gate, dag):
+                                    trial_successors[successor] -= 1
+                                    if trial_successors[successor] == 0:
+                                        trial_front_layer.append(successor)
 
-                print("     before depth", trial_qubit_depth)
-                while True: # continue to update until no more gates can be applied
-                    new_front_layer = []
-                    execute_gate_list = []
-                    for node in trial_front_layer:
-                        if len(node.qargs) == 2:
-                            v0, v1 = node.qargs
-                            if self.coupling_map.graph.has_edge(
-                                trial_layout._v2p[v0], trial_layout._v2p[v1]
-                            ):
-                                execute_gate_list.append(node)
-                            else:
-                                new_front_layer.append(node) # later fix for single and barrier
-                    trial_front_layer = new_front_layer
-                    if not execute_gate_list: # no more gates can be applied
-                        break
-                    else:
-                        # Apply the gates that can be applied
-                        for node in execute_gate_list:
-                            trial_gate_seq.append(node)
-                            all_gate_seq.append(node)
-                            trial_qubit_depth = self._update_qubit_depth(node, trial_qubit_depth)
-                            
-                            for successor in self._successors(node, dag):
-                                trial_successors[successor] -= 1
-                                if trial_successors[successor] == 0:
-                                    trial_front_layer.append(successor)
-
-                print("     afterr depth", trial_qubit_depth)
+                    trial_node = Node(trial_layout, trial_front_layer, trial_successors, 
+                                    trial_qubit_depth, trial_gate_seq, trial_swap_seq)
+                    trial_node.score_front = trial_score_front
+                    trial_node.score_depth = max(trial_node.qubit_depth.values())
+                    next_level.append(trial_node)
 
         best_node = initial_node
         return best_node
