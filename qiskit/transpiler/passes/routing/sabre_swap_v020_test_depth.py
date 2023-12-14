@@ -228,24 +228,39 @@ class SabreSwap(TransformationPass):
         The length of the swap sequence explore is equal to the length of self.lookahead_steps.
 
         Args:
-            initial_node (Node): The initial node to start the search from.
-
+            initial_node (Node): The initial node to start the search from. Includes:
+                layout (Layout): The current layout of the circuit.
+                front_layer (list): The current front layer of the circuit.
+                successors (dict): The current successors of the circuit.
+                qubit_depth (dict): The current depth of the qubits.
+                gate_seq (list): The current gate sequence (excluding swaps).
+                swap_seq (list): The current swap sequence.
         Returns:
             Node: The node with the best score.
         """
+        all_gate_seq = [] # exclude swaps
 
-        # Find the swap candidates for this node's front layer and current_layout
-        swap_candidates = self._obtain_swaps(initial_node.front_layer, initial_node.layout)
-        
-        for swap_qubits in swap_candidates:
-            # Create a new layout and apply the swap
-            trial_layout = initial_node.layout.copy()
-            trial_layout.swap(*swap_qubits)
+        for _ in range(self._lookahead_steps):
+            # Find the swap candidates for this node's front layer and current_layout
+            swap_candidates = self._obtain_swaps(initial_node.front_layer, initial_node.layout)
+            
+            for swap_qubits in swap_candidates:
+                # Create a new layout and apply the swap
+                trial_layout = initial_node.layout.copy()
+                trial_layout.swap(*swap_qubits)
 
-            # Create a new swap sequence and add the swap
-            trial_swap_sequence = initial_node.swap_sequence + [swap_qubits]
-            print("trial_swap_sequence", trial_swap_sequence)
-            print("trial_layout", trial_layout)
+                # Update score front
+                trial_score_front = self._score_heuristic(
+                    initial_node.front_layer, trial_layout
+                )
+                print("trial_score_front: ", trial_score_front)
+
+                # Create a new swap sequence and add the swap
+                swap_node = DAGOpNode(op=SwapGate(), qargs=swap_qubits)
+                trial_swap_seq = initial_node.swap_seq + [swap_node]
+
+                # Create a new front layer and add the gates that can be applied
+                trial_front_layer = []
 
 
 
@@ -410,11 +425,15 @@ def _shortest_swap_path(target_qubits, coupling_map, layout):
         yield v_goal, layout._p2v[swap]
 
 class Node():
-    def __init__(self, layout, front_layer, successors, qubit_depth, gates, swap_sequence):
+    def __init__(self, layout, front_layer, successors, qubit_depth, gate_seq, swap_seq):
         self.layout =layout
         self.front_layer = front_layer
         self.successors = successors
         self.qubit_depth = qubit_depth
-        self.gates = gates
-        self.swap_sequence = swap_sequence
+        self.gate_seq = gate_seq
+        self.swap_seq = swap_seq
+        self.score_front = 0
+        self.score_depth = 0
+        self.score_looka = 0
+        self.score_gates = 0
         
