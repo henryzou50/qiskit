@@ -106,7 +106,6 @@ class SabreSwap(TransformationPass):
         self.beam_width = beam_width
 
     def run(self, dag):
-        #print("SabreSwap run")
         """Run the SabreSwap pass on `dag`.
 
         Args:
@@ -231,7 +230,6 @@ class SabreSwap(TransformationPass):
         end_solutions = []
         current_level = [initial_node]
         for i in range(self.lookahead_steps):
-            print("lookahead step: ", i)
             next_level = []
             for node in current_level:
                 if node.front_layer == []: # already added, avoid double counting
@@ -294,7 +292,7 @@ class SabreSwap(TransformationPass):
                                     trial_qubit_depth, trial_gate_seq, trial_swap_seq)
                     trial_node.score_front = trial_score_front
                     trial_node.score_depth = max(trial_node.qubit_depth.values())
-                    trial_node.score_gates = len(trial_swap_seq) + len(trial_gate_seq)
+                    trial_node.score_gates = len(trial_swap_seq) - len(trial_gate_seq)
                     next_level.append(trial_node)
                     
                     # Reached a potential point of end of the lookahead
@@ -307,7 +305,6 @@ class SabreSwap(TransformationPass):
                         if gate not in node.gate_seq:
                             gates_remaining.append(gate)
                     node.score_looka = self._compute_cost(gates_remaining, node.layout)
-                    print("     score_front: ", node.score_front, "score_looka: ", node.score_looka)
                     node.score_total_1 = node.score_front + node.score_looka 
                     node.score_total_2 = node.score_depth + node.score_gates
 
