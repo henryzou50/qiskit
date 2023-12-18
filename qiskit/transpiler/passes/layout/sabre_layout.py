@@ -175,11 +175,13 @@ class SabreLayout(TransformationPass):
         self.max_iterations = max_iterations
         self.trials = swap_trials
         if swap_trials is None:
-            self.swap_trials = CPU_COUNT
+            #self.swap_trials = CPU_COUNT
+            self.swap_trials = 1
         else:
             self.swap_trials = swap_trials
         if layout_trials is None:
-            self.layout_trials = CPU_COUNT
+            #self.layout_trials = CPU_COUNT
+            self.layout_trials = 1
         else:
             self.layout_trials = layout_trials
         self.skip_routing = skip_routing

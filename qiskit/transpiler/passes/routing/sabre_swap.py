@@ -168,7 +168,8 @@ class SabreSwap(TransformationPass):
         self.heuristic = heuristic
         self.seed = seed
         if trials is None:
-            self.trials = CPU_COUNT
+            # self.trials = CPU_COUNT
+            self.trials = 1
         else:
             self.trials = trials
 
