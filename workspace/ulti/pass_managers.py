@@ -10,7 +10,7 @@ import numpy as np
 
 
 def build_pm(routing_pass, layout_pass, coupling_map, seed=42, lookahead=0, beam_width=1, 
-             fast_layout=False):
+             heuristic="basic", fast_layout=False):
     """ Builds a pass manager with the given routing pass, layout pass, coupling map, and optionally 
     modifies behavior for a fast run.
     
@@ -22,6 +22,7 @@ def build_pm(routing_pass, layout_pass, coupling_map, seed=42, lookahead=0, beam
         lookahead (int, optional): The number of lookahead steps to use for the routing pass. 
         Defaults to 0.
         beam_width (int, optional): The beam width to use for the routing pass. Defaults to 1.
+        heuristic (string, optional): Heuristic function to use for the routing pass.
         fast_layout (bool, optional): If True, modifies the behavior for a faster run. Defaults to 
         False.
     Returns:
@@ -33,6 +34,8 @@ def build_pm(routing_pass, layout_pass, coupling_map, seed=42, lookahead=0, beam
     if lookahead > 0:
         routing_args['lookahead_steps'] = lookahead
         routing_args['beam_width']      = beam_width
+    if heuristic != "basic":
+        routing_args['heuristic'] = heuristic
 
     # Determine the routing pass for layout and build the layout pass
     if fast_layout:
@@ -55,7 +58,7 @@ def build_pm(routing_pass, layout_pass, coupling_map, seed=42, lookahead=0, beam
 
 
 def generate_pass_managers(num_shots, routing_pass, layout_pass, coupling_map, initial_seed=42, 
-                           lookahead=0, beam_width=1, fast_layout=False):
+                           lookahead=0, beam_width=1, heuristic = "basic", fast_layout=False):
     """ Generates a list of PassManager objects with different seeds.
     
     Args:
@@ -66,7 +69,11 @@ def generate_pass_managers(num_shots, routing_pass, layout_pass, coupling_map, i
         init_seed (int, optional): Initial seed to use for the PassManager objects
         lookahead (int, optional): The number of lookahead steps to use for the routing pass. 
         Defaults to 0.
-        fast_layout (bool, optional): If True, modifies the behavior for a faster run. Defaults to False.
+        beam_width (int, optional): The beam width to use for the routing pass. Defaults to 1.
+        heuristic (string, optional): Heuristic function to use for the routing pass. 
+        Defaults to "basic"
+        fast_layout (bool, optional): If True, modifies the behavior for a faster run. 
+        Defaults to False.
     Returns:
         list: A list of PassManager objects with incrementing seeds starting from 42.
     """
@@ -84,7 +91,7 @@ def generate_pass_managers(num_shots, routing_pass, layout_pass, coupling_map, i
     for i in range(num_shots):
         seed = initial_seed + i
         pm = build_pm(routing_pass, layout_pass, coupling_map, seed, lookahead, beam_width, 
-                      fast_layout)
+                      heuristic, fast_layout)
         pass_managers.append(pm)
     
     return pass_managers
@@ -109,8 +116,8 @@ def transpiled_data(qc, pass_managers):
         'cx_gates': 0,
         'num_gates': 0
     }
-    qc = qc.decompose()
-    depth_orig = qc.depth()
+    qc_decomposed = qc.decompose()
+    depth_orig = qc_decomposed.depth()
     
     depths = []
     depth_ratios = []
@@ -120,7 +127,7 @@ def transpiled_data(qc, pass_managers):
 
     for pm in pass_managers:
         time_start = time.time()
-        qc_tr = pm.run(qc)
+        qc_tr = pm.run(qc_decomposed)
         time_end = time.time()
         time_elapsed = time_end - time_start
 
