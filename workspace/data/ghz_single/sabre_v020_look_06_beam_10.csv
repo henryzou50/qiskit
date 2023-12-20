@@ -1,0 +1,2 @@
+best_data,std_dev,routing pass,layout pass,coupling map,circuit label
+"{'depth': 314, 'depth_ratio': 3.14, 'time': 10.182959079742432, 'cx_gates': 1344, 'num_gates': 1345}","{'depth': 10.4, 'depth_ratio': 0.104, 'time': 0.6928, 'cx_gates': 239.0, 'num_gates': 239.0}",sabre_v020_look_06_beam_10,sabre_v020,hex_127,0
