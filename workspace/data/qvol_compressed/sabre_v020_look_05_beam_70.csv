@@ -1,0 +1,6 @@
+best_data,std_dev,routing pass,layout pass,coupling map,circuit label
+"{'depth': 172, 'depth_ratio': 3.44, 'time': 37.80977010726929, 'cx_gates': 162, 'num_gates': 262}","{'depth': 13.75, 'depth_ratio': 0.2749, 'time': 1.365, 'cx_gates': 6.681, 'num_gates': 6.681}",sabre_v020_look_05_beam_70,sabre_v020,hex_7,0
+"{'depth': 345, 'depth_ratio': 3.45, 'time': 76.26546096801758, 'cx_gates': 315, 'num_gates': 515}","{'depth': 15.8, 'depth_ratio': 0.158, 'time': 2.945, 'cx_gates': 21.33, 'num_gates': 21.33}",sabre_v020_look_05_beam_70,sabre_v020,hex_7,1
+"{'depth': 513, 'depth_ratio': 3.42, 'time': 118.31703686714172, 'cx_gates': 453, 'num_gates': 753}","{'depth': 31.38, 'depth_ratio': 0.2087, 'time': 5.801, 'cx_gates': 27.67, 'num_gates': 27.67}",sabre_v020_look_05_beam_70,sabre_v020,hex_7,2
+"{'depth': 672, 'depth_ratio': 3.36, 'time': 164.01524996757507, 'cx_gates': 594, 'num_gates': 994}","{'depth': 34.74, 'depth_ratio': 0.1761, 'time': 658.1, 'cx_gates': 38.77, 'num_gates': 38.77}",sabre_v020_look_05_beam_70,sabre_v020,hex_7,3
+"{'depth': 891, 'depth_ratio': 3.56, 'time': 205.62530183792114, 'cx_gates': 801, 'num_gates': 1301}","{'depth': 28.4, 'depth_ratio': 0.116, 'time': 365.9, 'cx_gates': 43.2, 'num_gates': 43.2}",sabre_v020_look_05_beam_70,sabre_v020,hex_7,4
