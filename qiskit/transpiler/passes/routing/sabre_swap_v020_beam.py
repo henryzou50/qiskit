@@ -118,11 +118,9 @@ class SabreSwap(TransformationPass):
             raise TranspilerError("More virtual qubits exist than physical.")
 
         max_iterations_without_progress = 10 * len(dag.qubits)  # Arbitrary.
-        ops_since_progress = []
 
         self.dist_matrix = self.coupling_map.distance_matrix
 
-        rng = np.random.default_rng(self.seed)
 
         # Preserve input DAG's name, regs, wire_map, etc. but replace the graph.
         mapped_dag = None
@@ -141,6 +139,24 @@ class SabreSwap(TransformationPass):
         self.required_predecessors = self._build_required_predecessors(dag)
         front_layer = dag.front_layer()
 
+        gate_seq = self._get_sabre_result(current_layout, front_layer, dag)
+        
+        # apply the gates in the order they were found
+        current_layout = Layout.generate_trivial_layout(canonical_register)
+        for gate in gate_seq:
+            # if gate is a swap, need to update the layout
+            if gate.name == "swap":
+                current_layout.swap(*gate.qargs)
+            self._apply_gate(mapped_dag, gate, current_layout, canonical_register)
+
+        circuit_depth = max(self.qubits_depth.values())
+        self.property_set["final_layout"] = current_layout
+        if not self.fake_run:
+            return mapped_dag
+        return dag
+    
+    def _get_sabre_result(self, current_layout, front_layer, dag):
+        rng = np.random.default_rng(self.seed)
         gate_seq = []
 
         while front_layer:
@@ -163,23 +179,14 @@ class SabreSwap(TransformationPass):
                     execute_gate_list.append(node)
             front_layer = new_front_layer
 
-            if not execute_gate_list and len(ops_since_progress) > max_iterations_without_progress:
-                # Backtrack to the last time we made progress, then greedily insert swaps to route
-                # the gate with the smallest distance between its arguments.  This is a release
-                # valve for the algorithm to avoid infinite loops only, and should generally not
-                # come into play for most circuits.
-                self._undo_operations(ops_since_progress, mapped_dag, current_layout)
-                self._add_greedy_swaps(front_layer, mapped_dag, current_layout, canonical_register)
-                continue
-
             if execute_gate_list:
                 for node in execute_gate_list:
-                    self._apply_gate(mapped_dag, node, current_layout, canonical_register)
+                    gate_seq.append(node)
+                    # self._apply_gate(mapped_dag, node, current_layout, canonical_register)
                     for successor in self._successors(node, dag):
                         self.required_predecessors[successor] -= 1
                         if self._is_resolved(successor):
                             front_layer.append(successor)
-                ops_since_progress = []
                 continue
 
             # After all free gates are exhausted, heuristically find
@@ -197,21 +204,10 @@ class SabreSwap(TransformationPass):
             best_swaps = [k for k, v in swap_scores.items() if v == min_score]
             best_swaps.sort(key=lambda x: (self._bit_indices[x[0]], self._bit_indices[x[1]]))
             best_swap = rng.choice(best_swaps)
-            swap_node = self._apply_gate(
-                mapped_dag,
-                DAGOpNode(op=SwapGate(), qargs=best_swap),
-                current_layout,
-                canonical_register,
-            )
-
+            swap = DAGOpNode(op=SwapGate(), qargs=best_swap)
+            gate_seq.append(swap)
             current_layout.swap(*best_swap)
-            ops_since_progress.append(swap_node)
-
-        circuit_depth = max(self.qubits_depth.values())
-        self.property_set["final_layout"] = current_layout
-        if not self.fake_run:
-            return mapped_dag
-        return dag
+        return gate_seq
 
     def _apply_gate(self, mapped_dag, node, current_layout, canonical_register):
         new_node = _transform_gate_for_layout(node, current_layout, canonical_register)
