@@ -66,6 +66,8 @@ class SabreSwap(TransformationPass):
         coupling_map,
         seed=None,
         fake_run=False,
+        lookahead_steps=1,
+        beam_width=1,
     ):
         r"""SabreSwap initializer.
 
@@ -98,6 +100,8 @@ class SabreSwap(TransformationPass):
         self.qubits_depth = None
         self._bit_indices = None
         self.dist_matrix = None
+        self.lookahead_steps = lookahead_steps
+        self.beam_width = beam_width
 
     def run(self, dag):
         """Run the SabreSwap pass on `dag`.
@@ -146,8 +150,10 @@ class SabreSwap(TransformationPass):
         for gate in gate_seq:
             self._apply_gate(mapped_dag, gate, current_layout, canonical_register)
 
-        results = []
+        # Obtain next set of candidates, let each candidate represent a branch
+        branches = []
         swap_candidates = self._obtain_swaps(front_layer, current_layout)
+        # For each candidate, apply the sabre algorithm
         for swap_qubits in swap_candidates:
             trial_layout = current_layout.copy()
             trial_layout.swap(*swap_qubits)
@@ -155,20 +161,30 @@ class SabreSwap(TransformationPass):
             node =  Node(trial_layout.copy(), front_layer.copy(), 
                          predecessors.copy(), self.qubits_depth.copy())
             
-            trial_gate_seq, trial_depth = self._get_sabre_result(node, dag, canonical_register)
-            results.append((trial_gate_seq, trial_depth, swap_qubits))
+            trial_gate_seq, trial_depth = self._get_sabre_result(node, dag, canonical_register,
+                                                                 swap_qubits)
+            branches.append([trial_gate_seq, trial_depth, node, None])
+        # Sort the branches by depth
+        branches.sort(key=lambda x: x[1])
 
-        for res in results:
-            print(res[1])
-        
-
-        # apply the gate of the sabre result
-        for gate in gate_seq:
-            if gate.name == "swap": # if gate is a swap, need to update the layout
-                current_layout.swap(*gate.qargs)
-            self._apply_gate(mapped_dag, gate, current_layout, canonical_register)
-
+        # Create a beam of the best branches
+        beam = branches[:self.beam_width]
+        # Create a branch with copy of mapped dag and apply the gates that were executed
+        for branch in beam:
+            initial_layout = current_layout.copy()
+            initial_dag = deepcopy(mapped_dag)
+            branch[3] = initial_dag
+            gate_seq = branch[0]
+            for gate in gate_seq:
+                # if swap need to update the layout
+                if gate.name == "swap":
+                    initial_layout.swap(*gate.qargs)
+                self._apply_gate(branch[3], gate, initial_layout, canonical_register)
+            mapped_dag = branch[3]
+            self.qubits_depth = branch[2].qubit_depth
+                        
         circuit_depth = max(self.qubits_depth.values())
+        print("Circuit depth: ", circuit_depth)
         self.property_set["final_layout"] = current_layout
         if not self.fake_run:
             return mapped_dag
@@ -210,17 +226,30 @@ class SabreSwap(TransformationPass):
 
         return gate_seq, front_layer, predecessors
     
-    def _get_sabre_result(self, node, dag, canonical_register):
+    def _get_sabre_result(self, node, dag, canonical_register, swap_qubit):
+        """ Run the sabre algorithm on the given node and return the gate sequence and depth
+        
+        Args:
+            node (Node): node containing the layout, front layer, predecessors, and qubit depth
+            dag (DAGCircuit): the directed acyclic graph to be mapped.
+            canonical_register (QuantumRegister): the canonical register of the circuit
+            swap_qubit (tuple): the qubits to swap
+        Returns:
+            gate_seq (list): the gate sequence of the sabre algorithm
+            trial_depth (int): the depth of the sabre algorithm
+        """
         rng = np.random.default_rng(self.seed)
-        gate_seq = []
         current_layout = node.layout
         front_layer    = node.front_layer
         qubits_depth   = node.qubit_depth
         predecessors   = node.predecessors
+        swap = DAGOpNode(op=SwapGate(), qargs=swap_qubit)
+        gate_seq = [swap]
+
+        self._fake_apply_gate(qubits_depth, swap, current_layout, canonical_register)
         
         while front_layer:
             execute_gate_list = []
-
             # Remove as many immediately applicable gates as possible
             new_front_layer = []
             for node in front_layer:
@@ -280,6 +309,13 @@ class SabreSwap(TransformationPass):
                 depth += 2
             self.qubits_depth[node.qargs[0]] = depth
             self.qubits_depth[node.qargs[1]] = depth
+
+        if self.fake_run:
+            return new_node
+        return mapped_dag.apply_operation_back(new_node.op, new_node.qargs, new_node.cargs)
+    
+    def _branch_apply_gate(self, mapped_dag, node, current_layout, canonical_register):
+        new_node = _transform_gate_for_layout(node, current_layout, canonical_register)
 
         if self.fake_run:
             return new_node
