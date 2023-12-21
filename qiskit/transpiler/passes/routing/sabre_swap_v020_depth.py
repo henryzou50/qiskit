@@ -206,6 +206,8 @@ class SabreSwap(TransformationPass):
             )
             current_layout.swap(*best_swap)
             ops_since_progress.append(swap_node)
+        print("Depth: ", max(self.qubits_depth.values()))
+        print("Dag depth: ", mapped_dag.depth())
         
         self.property_set["final_layout"] = current_layout
         if not self.fake_run:
