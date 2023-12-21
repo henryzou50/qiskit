@@ -1,4 +1,4 @@
-best_data,std_dev,routing pass,layout pass,coupling map,circuit label
+best_data,std_dev,routing pass,layout pass,coupling map,lookahead
 "{'depth': 1105, 'depth_ratio': 4.42, 'time': 0.8781869411468506, 'cx_gates': 1002, 'num_gates': 1502}","{'depth': 27.61, 'depth_ratio': 0.1105, 'time': 0.03917, 'cx_gates': 85.12, 'num_gates': 85.12}",sabre_v020,sabre_v020,hex_27,0
 "{'depth': 975, 'depth_ratio': 3.9, 'time': 0.9625740051269531, 'cx_gates': 963, 'num_gates': 1463}","{'depth': 15.4, 'depth_ratio': 0.05987, 'time': 0.03175, 'cx_gates': 84.39, 'num_gates': 84.39}",sabre_v020_look_01_beam_10,sabre_v020,hex_27,1
 "{'depth': 969, 'depth_ratio': 3.88, 'time': 1.9689772129058838, 'cx_gates': 750, 'num_gates': 1250}","{'depth': 24.79, 'depth_ratio': 0.09831, 'time': 0.1348, 'cx_gates': 61.59, 'num_gates': 61.59}",sabre_v020_look_02_beam_10,sabre_v020,hex_27,2
