@@ -249,7 +249,7 @@ class SabreSwap(TransformationPass):
         qubits_depth   = node.qubit_depth
         predecessors   = node.predecessors
         swap = DAGOpNode(op=SwapGate(), qargs=swap_qubit)
-        gate_seq = [swap]
+        gate_seq = []
         first_run = True
 
         first_layout       = None
