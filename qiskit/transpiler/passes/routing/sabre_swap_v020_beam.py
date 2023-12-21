@@ -159,8 +159,19 @@ class SabreSwap(TransformationPass):
         return dag
     
     def _lookahead_search(self, initial_node, dag, canonical_register):
+        """ Run the lookahead search algorithm on the given node and return the mapped dag
+        
+        Args:
+            initial_node (Node): node containing the layout, front layer, predecessors, and qubit depth
+            dag (DAGCircuit): the directed acyclic graph to be mapped.
+            canonical_register (QuantumRegister): the canonical register of the dag
+        Returns:
+            mapped_dag (DAGCircuit): the mapped dag
+        """
         current_level = [initial_node]
         end_solution = []
+
+        # Runs Sabre algorithm with lookahead
         for i in range(self.lookahead_steps):
             next_level = []
             for node in current_level:
@@ -190,7 +201,7 @@ class SabreSwap(TransformationPass):
             beam = next_level[:self.beam_width]
             # Update the nodes mapped dag with the gates that were executed
 
-            # Storing end solution for later
+            # Store the end solution
             for branch in beam:
                 branch_copy = deepcopy(branch)
                 initial_layout = branch_copy.layout
@@ -202,27 +213,22 @@ class SabreSwap(TransformationPass):
                     if gate.name == "swap":
                         initial_layout.swap(*gate.qargs)
                     self._branch_apply_gate(initial_dag, gate, initial_layout, canonical_register)
-                # note that we do not need to update the qubit depth as it was already calculated
                 end_solution.append(initial_dag)
 
-            # Continuing
+            # Makes the node ready for the next iteration
             for branch in beam:
                 initial_layout = branch.layout
                 initial_dag = deepcopy(branch.mapped_dag)
-
                 gate_seq = branch.first_gates_seq 
                 for gate in gate_seq:
                     # if swap need to update the layout
                     if gate.name == "swap":
                         initial_layout.swap(*gate.qargs)
                     self._branch_apply_gate(initial_dag, gate, initial_layout, canonical_register)
-                # note that we do not need to update the qubit depth as it was already calculated
                 branch.mapped_dag = initial_dag
-                # confirm depth with mapped_dag
-            
             current_level = beam
         
-        # find the end solution with the lowest depth
+        # Find the end solution with the lowest depth
         lowest_depth = float("inf")
         best_dag = None
         for solution in end_solution:
@@ -252,6 +258,7 @@ class SabreSwap(TransformationPass):
         gate_seq = []
         first_run = True
 
+        # Info to be stored in the node
         first_layout       = None
         first_front_layer  = None
         first_predecessors = None
@@ -322,18 +329,31 @@ class SabreSwap(TransformationPass):
         trial_depth = max(qubits_depth.values())
 
         # update node info with the first run
-
         node.layout       = first_layout
         node.front_layer  = first_front_layer
         node.predecessors = first_predecessors
         node.qubit_depth  = first_qubit_depth
 
+        # remove node that are already finished
         if node.layout == None:
             return [], None
 
+        # returns the full gate seq and end depth
         return gate_seq, trial_depth
     
     def _update_front_layer(self, current_layout, dag, front_layer, predecessors):
+        """Update the front layer and predecessors of the node
+
+        Args:
+            current_layout (Layout): the current layout of the dag
+            dag (DAGCircuit): the directed acyclic graph to be mapped.
+            front_layer (list): the front layer of the dag
+            predecessors (dict): the predecessors of the front layer
+        Returns:
+            gate_seq (list): the gate sequence of the sabre algorithm
+            front_layer (list): the front layer of the dag
+            predecessors (dict): the predecessors of the front layer
+        """
         gate_seq = []
 
         while front_layer:
@@ -370,6 +390,7 @@ class SabreSwap(TransformationPass):
         return gate_seq, front_layer, predecessors
 
     def _apply_gate(self, mapped_dag, node, current_layout, canonical_register):
+        """Apply a gate to the mapped dag and update the depth of the qubits"""
         new_node = _transform_gate_for_layout(node, current_layout, canonical_register)
         # Updates the depth of the wires, only considers 2 qubit gates
         if len(node.qargs) == 2:
@@ -384,12 +405,14 @@ class SabreSwap(TransformationPass):
         return mapped_dag.apply_operation_back(new_node.op, new_node.qargs, new_node.cargs)
     
     def _branch_apply_gate(self, mapped_dag, node, current_layout, canonical_register):
+        """ Applys a gate to the branch DAGs, does not update depth """
         new_node = _transform_gate_for_layout(node, current_layout, canonical_register)
         if self.fake_run:
             return new_node
         return mapped_dag.apply_operation_back(new_node.op, new_node.qargs, new_node.cargs)
     
     def _fake_apply_gate(self, qubits_depth, node):
+        """ Applys a gate to update the depth of the qubits, nothing else """
         # Updates the depth of the wires, only considers 2 qubit gates
         if len(node.qargs) == 2:
             depth = max(qubits_depth[node.qargs[0]], qubits_depth[node.qargs[1]]) + 1
