@@ -67,7 +67,7 @@ class SabreSwap(TransformationPass):
         seed=None,
         fake_run=False,
         lookahead_steps=5,
-        beam_width=6,
+        beam_width=1,
     ):
         r"""SabreSwap initializer.
 
@@ -153,8 +153,6 @@ class SabreSwap(TransformationPass):
                             mapped_dag)
         mapped_dag = self._lookahead_search(initial_node, dag, canonical_register)
     
-        circuit_depth = max(self.qubits_depth.values())
-        print("Circuit depth: ", circuit_depth)
         self.property_set["final_layout"] = current_layout
         if not self.fake_run:
             return mapped_dag
@@ -164,14 +162,10 @@ class SabreSwap(TransformationPass):
         current_level = [initial_node]
         end_solutions = []
         for i in range(self.lookahead_steps):
-            print("Lookahead step: ", i)
             next_level = []
             for node in current_level:
                 if node.front_layer == []:
-                    print("     End solution")
                     continue
-                # Obtain next set of candidates 
-                print("Front layer: ", node.front_layer)
                 swap_candidates = self._obtain_swaps(node.front_layer, node.layout)
                 # For each candidate, apply the sabre algorithm
                 for swap_qubits in swap_candidates:
@@ -185,20 +179,25 @@ class SabreSwap(TransformationPass):
                     trial_gate_seq, trial_depth = self._get_sabre_result(trial_node, 
                                                                          dag, 
                                                                          swap_qubits)
+                    if trial_gate_seq == []: # already ended 
+                        continue
                     trial_node.gate_seq = trial_gate_seq
-                    trial_node.depth = trial_depth
+                    trial_node.depth    = trial_depth
                     next_level.append(trial_node)
-                    print("     Trial front layer", trial_node.front_layer)
-                    print("     Trial depth: ", trial_node.depth)
             # Sort the branches by depth
             next_level.sort(key=lambda x: x.depth)
             # Create a beam of the best branches
             beam = next_level[:self.beam_width]
             # Update the nodes mapped dag with the gates that were executed
+
             for branch in beam:
                 initial_layout = branch.layout
                 initial_dag = deepcopy(branch.mapped_dag)
-                gate_seq = branch.gate_seq
+
+                if i == self.lookahead_steps - 1:
+                    gate_seq = branch.gate_seq
+                else: 
+                    gate_seq = branch.first_gates_seq 
                 for gate in gate_seq:
                     # if swap need to update the layout
                     if gate.name == "swap":
@@ -234,9 +233,10 @@ class SabreSwap(TransformationPass):
         gate_seq = [swap]
         first_run = True
 
-        first_layout = None
-        first_front_layer = None
+        first_layout       = None
+        first_front_layer  = None
         first_predecessors = None
+        first_qubit_depth  = None
 
         self._fake_apply_gate(qubits_depth, swap)
         while front_layer:
@@ -273,6 +273,9 @@ class SabreSwap(TransformationPass):
                 first_front_layer  = front_layer.copy()
                 first_predecessors = predecessors.copy()
                 first_layout       = current_layout.copy()
+                first_qubit_depth  = qubits_depth.copy()
+                node.first_gates_seq = gate_seq.copy()
+
                 first_run = False
             # end of first run
 
@@ -304,8 +307,10 @@ class SabreSwap(TransformationPass):
         node.layout       = first_layout
         node.front_layer  = first_front_layer
         node.predecessors = first_predecessors
+        node.qubit_depth  = first_qubit_depth
 
-        print("     First front layer: ", first_front_layer)
+        if node.layout == None:
+            return [], None
 
         return gate_seq, trial_depth
     
@@ -488,5 +493,6 @@ class Node():
         self.predecessors  = predecessors # successors of the front layer
         self.qubit_depth   = qubit_depth # depth of each qubit
         self.mapped_dag    = mapped_dag # mapped dag
+        self.first_gates_seq = None
         self.depth         = None
         self.gate_seq      = None
