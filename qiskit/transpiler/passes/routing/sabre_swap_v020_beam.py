@@ -67,7 +67,7 @@ class SabreSwap(TransformationPass):
         seed=None,
         fake_run=False,
         lookahead_steps=5,
-        beam_width=1,
+        beam_width=10,
     ):
         r"""SabreSwap initializer.
 
@@ -160,7 +160,7 @@ class SabreSwap(TransformationPass):
     
     def _lookahead_search(self, initial_node, dag, canonical_register):
         current_level = [initial_node]
-        end_solutions = []
+        end_solution = []
         for i in range(self.lookahead_steps):
             next_level = []
             for node in current_level:
@@ -190,14 +190,27 @@ class SabreSwap(TransformationPass):
             beam = next_level[:self.beam_width]
             # Update the nodes mapped dag with the gates that were executed
 
+            # Storing end solution for later
+            for branch in beam:
+                branch_copy = deepcopy(branch)
+                initial_layout = branch_copy.layout
+                initial_dag    = branch_copy.mapped_dag
+
+                gate_seq = branch_copy.gate_seq
+                for gate in gate_seq:
+                    # if swap need to update the layout
+                    if gate.name == "swap":
+                        initial_layout.swap(*gate.qargs)
+                    self._branch_apply_gate(initial_dag, gate, initial_layout, canonical_register)
+                # note that we do not need to update the qubit depth as it was already calculated
+                end_solution.append(initial_dag)
+
+            # Continuing
             for branch in beam:
                 initial_layout = branch.layout
                 initial_dag = deepcopy(branch.mapped_dag)
 
-                if i == self.lookahead_steps - 1:
-                    gate_seq = branch.gate_seq
-                else: 
-                    gate_seq = branch.first_gates_seq 
+                gate_seq = branch.first_gates_seq 
                 for gate in gate_seq:
                     # if swap need to update the layout
                     if gate.name == "swap":
@@ -209,9 +222,15 @@ class SabreSwap(TransformationPass):
             
             current_level = beam
         
-        # Select number 1 branch
-        final_mapped_dag = beam[0].mapped_dag
-        return final_mapped_dag
+        # find the end solution with the lowest depth
+        lowest_depth = float("inf")
+        best_dag = None
+        for solution in end_solution:
+            if solution is not None:
+                if solution.depth() < lowest_depth:
+                    lowest_depth = solution.depth()
+                    best_dag = solution
+        return best_dag
     
     def _get_sabre_result(self, node, dag, swap_qubit):
         """ Run the sabre algorithm on the given node and return the gate sequence and depth
