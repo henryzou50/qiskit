@@ -95,6 +95,7 @@ class SabreSwap(TransformationPass):
         self.qubits_depth = None
         self._bit_indices = None
         self.dist_matrix = None
+        self.beam_width = 1
 
     def run(self, dag):
         """Run the SabreSwap pass on `dag`.
@@ -112,11 +113,13 @@ class SabreSwap(TransformationPass):
 
         if len(dag.qubits) > self.coupling_map.size():
             raise TranspilerError("More virtual qubits exist than physical.")
-
-        max_iterations_without_progress = 10 * len(dag.qubits)  # Arbitrary.
-        ops_since_progress = []
-
+        
         self.dist_matrix = self.coupling_map.distance_matrix
+
+        if self.beam_width > 1:
+            print("Running SabreSwap with beam width {}".format(self.beam_width))
+            return self._dive(dag)
+        print("Running regular SabreSwap ")
 
         rng = np.random.default_rng(self.seed)
 
@@ -163,8 +166,6 @@ class SabreSwap(TransformationPass):
                         self.required_predecessors[successor] -= 1
                         if self._is_resolved(successor):
                             front_layer.append(successor)
-
-                ops_since_progress = []
                 continue
 
             # After all free gates are exhausted, heuristically find
@@ -182,19 +183,25 @@ class SabreSwap(TransformationPass):
             best_swaps = [k for k, v in swap_scores.items() if v == min_score]
             best_swaps.sort(key=lambda x: (self._bit_indices[x[0]], self._bit_indices[x[1]]))
             best_swap = rng.choice(best_swaps)
-            swap_node = self._apply_gate(
+            self._apply_gate(
                 mapped_dag,
                 DAGOpNode(op=SwapGate(), qargs=best_swap),
                 current_layout,
                 canonical_register,
             )
             current_layout.swap(*best_swap)
-            ops_since_progress.append(swap_node)
 
         self.property_set["final_layout"] = current_layout
         if not self.fake_run:
             return mapped_dag
         return dag
+    
+    def _dive(self, dag):
+        """ Run SabreSwap with beam search. """
+
+        return dag
+
+
 
     def _apply_gate(self, mapped_dag, node, current_layout, canonical_register):
         new_node = _transform_gate_for_layout(node, current_layout, canonical_register)
