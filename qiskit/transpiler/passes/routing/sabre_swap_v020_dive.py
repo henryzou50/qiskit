@@ -96,7 +96,7 @@ class SabreSwap(TransformationPass):
         self._bit_indices = None
         self.dist_matrix = None
         self.dag = None
-        self.beam_width = 2
+        self.beam_width = 1
         self.rng = None
 
     def run(self, dag):
@@ -125,10 +125,8 @@ class SabreSwap(TransformationPass):
         self.rng = np.random.default_rng(self.seed)
 
 
-        if self.beam_width > 1:
-            print("Running SabreSwap with beam width {}".format(self.beam_width))
+        if self.beam_width >= 1:
             return self._dive()
-        print("Running regular SabreSwap ")
 
         rng = self.rng
 
@@ -215,9 +213,7 @@ class SabreSwap(TransformationPass):
         # Phase 1) Create the mapped_dag, current layout, and front layer 
         rng = np.random.default_rng(self.seed)
         # Preserve input DAG's name, regs, wire_map, etc. but replace the graph.
-        mapped_dag = None
-        if not self.fake_run:
-            mapped_dag = self.dag.copy_empty_like()
+        mapped_dag = self.dag.copy_empty_like()
         current_layout = Layout.generate_trivial_layout(self.dag.qregs["q"])
         front_layer = self.dag.front_layer()
 
@@ -231,20 +227,25 @@ class SabreSwap(TransformationPass):
         # Phase 2) Update mapped_dag, current
         #  layout and front layer until all gates are exhausted
         self._update_state(initial_state)
-        print("Front layer after update: ", initial_state["front_layer"])
 
-        # Phase 3) Use bfs to get the beam states
-        beam_states = self._get_beam_states(initial_state)
+        # if front layer is not empty, then we need to perform beam search
+        if initial_state["front_layer"]:
+            # Phase 3) Use bfs to get the beam states
+            beam_states = self._get_beam_states(initial_state)
 
-
-        # Phase 5) Find swaps and apply them to the mapped_dag and current layout
-        while initial_state["front_layer"]:
-            self._find_and_apply_swaps(initial_state)
-            self._update_state(initial_state)
+            # Phase 4) Perform the regular algorithm on each of the beam states
+            for state in beam_states:
+                while state["front_layer"]:
+                    self._find_and_apply_swaps(state)
+                    self._update_state(state)
+        
+            # Phase 5) Set the final dag to be the one with the lowest depth
+            beam_states.sort(key=lambda x: x["mapped_dag"].depth())
+            mapped_dag = beam_states[0]["mapped_dag"]
+        
 
         self.property_set["final_layout"] = current_layout
         if not self.fake_run:
-            print("Depth of mapped dag: ", mapped_dag.depth())
             return mapped_dag
         return self.dag
     
@@ -258,29 +259,25 @@ class SabreSwap(TransformationPass):
         Returns:
             List: A list of the beam states. 
         """
-        beam_states = [] 
 
         # perform bfs to get the beam states, once the nodes at the current level is greater than 
         # the beam width, then stop the bfs and collect the beam states 
 
-        current_level_nodes = 1
+        current_level_nodes = 0
         current_level = [initial_state]
-        print("Current level nodes: ", current_level_nodes)
-        while current_level_nodes < self.beam_width: 
 
+        while current_level_nodes < self.beam_width: 
+            current_level_nodes = 0
             next_level = []
             for state in current_level:
                 # Get list of swap candidates 
                 swap_candidates = self._obtain_swaps(state["front_layer"], state["layout"])
-                current_level_nodes = len(swap_candidates)
-                print("Number of swap candidates: ", current_level_nodes)
+                current_level_nodes += len(swap_candidates)
 
                 # Each swap represents a trial new state
                 for swap in swap_candidates: 
-                    print("  Swap: ", swap[0].index, swap[1].index)
                     # Make a copy of the layout and apply swap to the copy
                     trial_layout = state["layout"].copy()
-                    print("  Trial layout: ", trial_layout  )
                     trial_layout.swap(*swap)
 
                     # Make a copy of the dag and apply swap to the copy
@@ -320,6 +317,10 @@ class SabreSwap(TransformationPass):
                     self._update_state(trial_state)
                     next_level.append(trial_state)
             current_level = next_level
+        # organize current_level by mapped_dag depth
+        current_level.sort(key=lambda x: x["mapped_dag"].depth())
+        # prune the current_level to only include the beam_width number of states
+        current_level = current_level[:self.beam_width]
         return current_level
     
     def _update_state(self, state):
@@ -335,10 +336,12 @@ class SabreSwap(TransformationPass):
         front_layer = state["front_layer"]
         predecessors = state["predecessors"]
 
+
         while True:
             execute_gate_list = []
             # Remove as many immediately applicable gates as possible
             new_front_layer = []
+
             for node in front_layer:
                 if len(node.qargs) == 2:
                     v0, v1 = node.qargs
