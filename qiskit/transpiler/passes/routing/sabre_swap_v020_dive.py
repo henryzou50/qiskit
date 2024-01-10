@@ -95,7 +95,7 @@ class SabreSwap(TransformationPass):
         self._bit_indices = None
         self.dist_matrix = None
         self.dag = None
-        self.beam_width = 10
+        self.beam_width = 1000
         self.rng = None
 
     def run(self, dag):
