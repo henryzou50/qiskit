@@ -1,36 +1,29 @@
-Depth after transpiled v0.20:                               1         Time taken:         0.00528 seconds
-Depth after transpiled v0.20 with lookahead:                1         Time taken:         0.00416 seconds
+Depth after transpiled v0.20:                               1         Time taken:         0.00505 seconds
+Depth after transpiled v0.20 with lookahead:                1         Time taken:         0.00438 seconds
 ----------------------------------------------------------------------------------------------------
-end solution:  149
-Depth after transpiled v0.20:                               6         Time taken:         0.00636 seconds
-Depth after transpiled v0.20 with lookahead:                6         Time taken:         1.99301 seconds
+Depth after transpiled v0.20:                               6         Time taken:         0.00630 seconds
+Depth after transpiled v0.20 with lookahead:                6         Time taken:         0.10891 seconds
 ----------------------------------------------------------------------------------------------------
-Depth after transpiled v0.20:                               3         Time taken:         0.00821 seconds
-Depth after transpiled v0.20 with lookahead:                3         Time taken:         0.00764 seconds
+Depth after transpiled v0.20:                               3         Time taken:         0.00854 seconds
+Depth after transpiled v0.20 with lookahead:                3         Time taken:         0.00833 seconds
 ----------------------------------------------------------------------------------------------------
-end solution:  203
-Depth after transpiled v0.20:                               7         Time taken:         0.00980 seconds
-Depth after transpiled v0.20 with lookahead:                7         Time taken:         2.69015 seconds
+Depth after transpiled v0.20:                               7         Time taken:         0.01037 seconds
+Depth after transpiled v0.20 with lookahead:                7         Time taken:         0.16661 seconds
 ----------------------------------------------------------------------------------------------------
-end solution:  20
-Depth after transpiled v0.20:                               15        Time taken:         0.01242 seconds
-Depth after transpiled v0.20 with lookahead:                14        Time taken:         5.63466 seconds
+Depth after transpiled v0.20:                               15        Time taken:         0.01322 seconds
+Depth after transpiled v0.20 with lookahead:                14        Time taken:         0.20592 seconds
 ----------------------------------------------------------------------------------------------------
-end solution:  30
-Depth after transpiled v0.20:                               12        Time taken:         0.01397 seconds
-Depth after transpiled v0.20 with lookahead:                12        Time taken:         3.88198 seconds
+Depth after transpiled v0.20:                               12        Time taken:         0.01398 seconds
+Depth after transpiled v0.20 with lookahead:                12        Time taken:         0.19170 seconds
 ----------------------------------------------------------------------------------------------------
-end solution:  52
-Depth after transpiled v0.20:                               19        Time taken:         0.01681 seconds
-Depth after transpiled v0.20 with lookahead:                19        Time taken:         3.27825 seconds
+Depth after transpiled v0.20:                               19        Time taken:         0.01944 seconds
+Depth after transpiled v0.20 with lookahead:                13        Time taken:         0.14121 seconds
 ----------------------------------------------------------------------------------------------------
-end solution:  0
-Depth after transpiled v0.20:                               43        Time taken:         0.02144 seconds
-Depth after transpiled v0.20 with lookahead:                28        Time taken:         3.06107 seconds
+Depth after transpiled v0.20:                               43        Time taken:         0.03913 seconds
+Depth after transpiled v0.20 with lookahead:                25        Time taken:         0.14921 seconds
 ----------------------------------------------------------------------------------------------------
-end solution:  15
-Depth after transpiled v0.20:                               21        Time taken:         0.02179 seconds
-Depth after transpiled v0.20 with lookahead:                22        Time taken:         8.78562 seconds
+Depth after transpiled v0.20:                               21        Time taken:         0.02081 seconds
+Depth after transpiled v0.20 with lookahead:                21        Time taken:         0.37793 seconds
 ----------------------------------------------------------------------------------------------------
 Average depth after transpiled v0.20:                       14.11111  
-Average depth after transpiled v0.20 with lookahead:        12.44444  
+Average depth after transpiled v0.20 with lookahead:        11.33333  

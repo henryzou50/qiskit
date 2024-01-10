@@ -95,7 +95,7 @@ class SabreSwap(TransformationPass):
         self._bit_indices = None
         self.dist_matrix = None
         self.dag = None
-        self.beam_width = 100
+        self.beam_width = 10
         self.rng = None
 
     def run(self, dag):
@@ -233,7 +233,7 @@ class SabreSwap(TransformationPass):
             # Phase 4) Perform the regular algorithm on each of the beam states
             for state in beam_states:
                 while state["front_layer"]:
-                    self._find_and_apply_swaps(state)
+                    self._find_and_apply_swaps_depth(state)
                     self._update_state(state)
         
             # Phase 5) Set the final dag to be the one with the lowest depth
@@ -425,6 +425,94 @@ class SabreSwap(TransformationPass):
         state["layout"] = current_layout
         state["front_layer"] = front_layer
 
+    def _find_and_apply_swaps_depth(self, state):
+        """ Finds the best swap and applies it to the mapped_dag and current layout while 
+        considering depth.
+        
+        Args:
+            state (Dict): the current state of the circuit mapping. 
+        Returns:
+            None
+        """
+        mapped_dag = state["mapped_dag"]
+        current_layout = state["layout"]
+        front_layer = state["front_layer"]
+
+        swap_scores = {}
+        depth_scores = {}
+        for swap_qubits in self._obtain_swaps(front_layer, current_layout):
+            trial_layout = current_layout.copy()
+            trial_layout.swap(*swap_qubits)
+
+            score = self._score_heuristic(
+                front_layer, trial_layout 
+            )
+            swap_scores[swap_qubits] = score
+
+            # Make a copy of the dag and apply swap to the copy
+            trial_dag = deepcopy(mapped_dag)
+            self._apply_gate(
+                trial_dag, 
+                DAGOpNode(op=CXGate(), qargs=swap_qubits),
+                trial_layout,
+                self.dag.qregs["q"],
+            )
+            self._apply_gate(
+                trial_dag,
+                DAGOpNode(op=CXGate(), qargs=(swap_qubits[1], swap_qubits[0])),
+                trial_layout,
+                self.dag.qregs["q"],
+            )
+            self._apply_gate(
+                trial_dag,
+                DAGOpNode(op=CXGate(), qargs=swap_qubits),
+                trial_layout,
+                self.dag.qregs["q"],
+            )
+
+            # Make a copy of the front layer and predecessors
+            trial_front_layer = front_layer.copy()
+            trial_predecessors = state["predecessors"].copy()
+
+            # Create trial state and update it until no more gates can be applied
+            trial_state = {
+                "mapped_dag": trial_dag,
+                "layout": trial_layout,
+                "front_layer": trial_front_layer,
+                "predecessors": trial_predecessors,
+                "gates_done": state["gates_done"]
+            }
+            self._update_state(trial_state)
+            depth_scores[swap_qubits] = trial_state["mapped_dag"].depth()
+        # The best swap is the one with the lowest swap score, if tie, then lowest depth score
+        min_score = min(swap_scores.values())
+        best_swaps = [k for k, v in swap_scores.items() if v == min_score]
+        best_swaps.sort(key=lambda x: (depth_scores[x], self._bit_indices[x[0]], self._bit_indices[x[1]]))
+        best_swap = best_swaps[0]
+
+        self._apply_gate(
+            mapped_dag,
+            DAGOpNode(op=CXGate(), qargs=best_swap),
+            current_layout,
+            self.dag.qregs["q"],
+        )
+        self._apply_gate(
+            mapped_dag,
+            DAGOpNode(op=CXGate(), qargs=(best_swap[1], best_swap[0])),
+            current_layout,
+            self.dag.qregs["q"],
+        )
+        self._apply_gate(
+            mapped_dag,
+            DAGOpNode(op=CXGate(), qargs=best_swap),
+            current_layout,
+            self.dag.qregs["q"],
+        )
+
+        current_layout.swap(*best_swap)
+    
+        state["layout"] = current_layout
+        state["front_layer"] = front_layer
 
     def _apply_gate(self, mapped_dag, node, current_layout, canonical_register):
         new_node = _transform_gate_for_layout(node, current_layout, canonical_register)
