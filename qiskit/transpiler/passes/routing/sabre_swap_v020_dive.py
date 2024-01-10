@@ -92,11 +92,10 @@ class SabreSwap(TransformationPass):
         self.seed = seed
         self.fake_run = fake_run
         self.required_predecessors = None
-        self.qubits_depth = None
         self._bit_indices = None
         self.dist_matrix = None
         self.dag = None
-        self.beam_width = 1
+        self.beam_width = 100
         self.rng = None
 
     def run(self, dag):
@@ -119,7 +118,6 @@ class SabreSwap(TransformationPass):
         # Initialize self variables
         self.dist_matrix = self.coupling_map.distance_matrix
         self._bit_indices = {bit: idx for idx, bit in enumerate(dag.qregs["q"])}
-        self.qubits_depth = dict.fromkeys(dag.qubits, 0)
         self.required_predecessors = self._build_required_predecessors(dag)
         self.dag = dag
         self.rng = np.random.default_rng(self.seed)
@@ -209,7 +207,6 @@ class SabreSwap(TransformationPass):
             DAGCircuit: The dag that has the lowest circuit depth. 
         """
 
-
         # Phase 1) Create the mapped_dag, current layout, and front layer 
         rng = np.random.default_rng(self.seed)
         # Preserve input DAG's name, regs, wire_map, etc. but replace the graph.
@@ -221,11 +218,11 @@ class SabreSwap(TransformationPass):
             "mapped_dag": mapped_dag,
             "layout": current_layout,
             "front_layer": front_layer,
-            "predecessors": self.required_predecessors.copy()
+            "predecessors": self.required_predecessors.copy(),
+            "gates_done": 0
         }
 
-        # Phase 2) Update mapped_dag, current
-        #  layout and front layer until all gates are exhausted
+        # Phase 2) Update mapped_dag, current layout and front layer until all gates are exhausted
         self._update_state(initial_state)
 
         # if front layer is not empty, then we need to perform beam search
@@ -249,6 +246,56 @@ class SabreSwap(TransformationPass):
             return mapped_dag
         return self.dag
     
+    def _update_state(self, state):
+        """ Updates the state of the circuit mapping until all gates are exhausted
+        
+        Args:
+            state (Dict): the current state of the circuit mapping. 
+        Returns:
+            None
+        """
+        mapped_dag     = state["mapped_dag"]
+        current_layout = state["layout"]
+        front_layer    = state["front_layer"]
+        predecessors   = state["predecessors"]
+        gates_done     = state["gates_done"]
+
+
+        while True:
+            execute_gate_list = []
+            # Remove as many immediately applicable gates as possible
+            new_front_layer = []
+
+            for node in front_layer:
+                if len(node.qargs) == 2:
+                    v0, v1 = node.qargs
+                    # Accessing layout._v2p directly to avoid overhead from __getitem__ and a
+                    # single access isn't feasible because the layout is updated on each iteration
+                    if self.coupling_map.graph.has_edge(
+                        current_layout._v2p[v0], current_layout._v2p[v1]
+                    ):
+                        execute_gate_list.append(node)
+                    else:
+                        new_front_layer.append(node)
+                else:  # Single-qubit gates as well as barriers are free
+                    execute_gate_list.append(node)
+            front_layer = new_front_layer
+
+
+            if not execute_gate_list: # no more gates to execute
+                break
+            else:
+                for node in execute_gate_list:
+                    self._apply_gate(mapped_dag, node, current_layout, self.dag.qregs["q"])
+                    gates_done += 1
+                    for successor in self._successors(node, self.dag):
+                        predecessors[successor] -= 1
+                        if predecessors[successor] == 0:
+                            front_layer.append(successor)
+        state["front_layer"] = front_layer
+        state["predecessors"] = predecessors
+        state["gates_done"] = gates_done
+    
     def _get_beam_states(self, initial_state): 
         """ Gets the list of the beam states, which are possible initial mappings of the circuit. 
         The beam states include the dag, the layout, and the front layer. The number of beam states
@@ -265,6 +312,7 @@ class SabreSwap(TransformationPass):
 
         current_level_nodes = 0
         current_level = [initial_state]
+        end_solution = []
 
         while current_level_nodes < self.beam_width: 
             current_level_nodes = 0
@@ -311,65 +359,22 @@ class SabreSwap(TransformationPass):
                         "mapped_dag": trial_dag,
                         "layout": trial_layout,
                         "front_layer": trial_front_layer,
-                        "predecessors": trial_predecessors
+                        "predecessors": trial_predecessors,
+                        "gates_done": state["gates_done"]
                     }
 
                     self._update_state(trial_state)
+                    if not trial_state["front_layer"]:
+                        end_solution.append(trial_state)
                     next_level.append(trial_state)
             current_level = next_level
-        # organize current_level by mapped_dag depth
-        current_level.sort(key=lambda x: x["mapped_dag"].depth())
+        # add end solutions to the current level
+        current_level.extend(end_solution)
+        # organize current_level by first the number of gates done, then by mapped_dag depth
+        current_level.sort(key=lambda x: (-x["gates_done"], x["mapped_dag"].depth()))
         # prune the current_level to only include the beam_width number of states
         current_level = current_level[:self.beam_width]
         return current_level
-    
-    def _update_state(self, state):
-        """ Updates the state of the circuit mapping until all gates are exhausted
-        
-        Args:
-            state (Dict): the current state of the circuit mapping. 
-        Returns:
-            None
-        """
-        mapped_dag = state["mapped_dag"]
-        current_layout = state["layout"]
-        front_layer = state["front_layer"]
-        predecessors = state["predecessors"]
-
-
-        while True:
-            execute_gate_list = []
-            # Remove as many immediately applicable gates as possible
-            new_front_layer = []
-
-            for node in front_layer:
-                if len(node.qargs) == 2:
-                    v0, v1 = node.qargs
-                    # Accessing layout._v2p directly to avoid overhead from __getitem__ and a
-                    # single access isn't feasible because the layout is updated on each iteration
-                    if self.coupling_map.graph.has_edge(
-                        current_layout._v2p[v0], current_layout._v2p[v1]
-                    ):
-                        execute_gate_list.append(node)
-                    else:
-                        new_front_layer.append(node)
-                else:  # Single-qubit gates as well as barriers are free
-                    execute_gate_list.append(node)
-            front_layer = new_front_layer
-
-
-            if not execute_gate_list: # no more gates to execute
-                break
-            else:
-                for node in execute_gate_list:
-                    self._apply_gate(mapped_dag, node, current_layout, self.dag.qregs["q"])
-                    for successor in self._successors(node, self.dag):
-                        predecessors[successor] -= 1
-                        if predecessors[successor] == 0:
-                            front_layer.append(successor)
-        state["front_layer"] = front_layer
-        state["predecessors"] = predecessors
-
 
     def _find_and_apply_swaps(self, state):
         """ Finds the best swap and applies it to the mapped_dag and current layout.
