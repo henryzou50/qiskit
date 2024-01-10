@@ -19,11 +19,19 @@ from copy import copy, deepcopy
 import numpy as np
 import retworkx
 
-from qiskit.circuit.library.standard_gates import SwapGate, CXGate
+from qiskit.circuit.library.standard_gates import SwapGate
 from qiskit.transpiler.basepasses import TransformationPass
 from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.layout import Layout
 from qiskit.dagcircuit import DAGOpNode
+
+logger = logging.getLogger(__name__)
+
+EXTENDED_SET_SIZE = 20  # Size of lookahead window. TODO: set dynamically to len(current_layout)
+EXTENDED_SET_WEIGHT = 0.5  # Weight of lookahead window compared to front_layer.
+
+DECAY_RATE = 0.001  # Decay coefficient for penalizing serial swaps.
+DECAY_RESET_INTERVAL = 5  # How often to reset all decay rates to 1.
 
 
 class SabreSwap(TransformationPass):
@@ -92,11 +100,9 @@ class SabreSwap(TransformationPass):
         self.seed = seed
         self.fake_run = fake_run
         self.required_predecessors = None
+        self.qubits_depth = None
         self._bit_indices = None
         self.dist_matrix = None
-        self.dag = None
-        self.beam_width = 1000
-        self.rng = None
 
     def run(self, dag):
         """Run the SabreSwap pass on `dag`.
@@ -114,19 +120,9 @@ class SabreSwap(TransformationPass):
 
         if len(dag.qubits) > self.coupling_map.size():
             raise TranspilerError("More virtual qubits exist than physical.")
-        
-        # Initialize self variables
         self.dist_matrix = self.coupling_map.distance_matrix
-        self._bit_indices = {bit: idx for idx, bit in enumerate(dag.qregs["q"])}
-        self.required_predecessors = self._build_required_predecessors(dag)
-        self.dag = dag
-        self.rng = np.random.default_rng(self.seed)
 
-
-        if self.beam_width >= 1:
-            return self._dive()
-
-        rng = self.rng
+        rng = np.random.default_rng(self.seed)
 
         # Preserve input DAG's name, regs, wire_map, etc. but replace the graph.
         mapped_dag = None
@@ -136,7 +132,12 @@ class SabreSwap(TransformationPass):
         canonical_register = dag.qregs["q"]
         current_layout = Layout.generate_trivial_layout(canonical_register)
 
+        self._bit_indices = {bit: idx for idx, bit in enumerate(canonical_register)}
+
+        self.qubits_depth = dict.fromkeys(dag.qubits, 0)
+
         # Start algorithm from the front layer and iterate until all gates done.
+        self.required_predecessors = self._build_required_predecessors(dag)
         front_layer = dag.front_layer()
 
         while front_layer:
@@ -176,7 +177,7 @@ class SabreSwap(TransformationPass):
                 trial_layout = current_layout.copy()
                 trial_layout.swap(*swap_qubits)
                 score = self._score_heuristic(
-                    front_layer, trial_layout 
+                     front_layer, trial_layout
                 )
                 swap_scores[swap_qubits] = score
             min_score = min(swap_scores.values())
@@ -195,330 +196,18 @@ class SabreSwap(TransformationPass):
         if not self.fake_run:
             return mapped_dag
         return dag
-    
-    def _dive(self):
-        """ Run SabreSwap with beam search to get all the beam states, and then performs 
-        the regular algorithm on each of the beam states to get a finished circuit mapping. 
-        The beam states represents the initial mappings of the circuit that are promising. 
-        
-        Args:
-            None
-        Returns:
-            DAGCircuit: The dag that has the lowest circuit depth. 
-        """
-
-        # Phase 1) Create the mapped_dag, current layout, and front layer 
-        rng = np.random.default_rng(self.seed)
-        # Preserve input DAG's name, regs, wire_map, etc. but replace the graph.
-        mapped_dag = self.dag.copy_empty_like()
-        current_layout = Layout.generate_trivial_layout(self.dag.qregs["q"])
-        front_layer = self.dag.front_layer()
-
-        initial_state = {
-            "mapped_dag": mapped_dag,
-            "layout": current_layout,
-            "front_layer": front_layer,
-            "predecessors": self.required_predecessors.copy(),
-            "gates_done": 0
-        }
-
-        # Phase 2) Update mapped_dag, current layout and front layer until all gates are exhausted
-        self._update_state(initial_state)
-
-        # if front layer is not empty, then we need to perform beam search
-        if initial_state["front_layer"]:
-            # Phase 3) Use bfs to get the beam states
-            beam_states = self._get_beam_states(initial_state)
-
-            # Phase 4) Perform the regular algorithm on each of the beam states
-            for state in beam_states:
-                while state["front_layer"]:
-                    self._find_and_apply_swaps_depth(state)
-                    self._update_state(state)
-        
-            # Phase 5) Set the final dag to be the one with the lowest depth
-            beam_states.sort(key=lambda x: x["mapped_dag"].depth())
-            mapped_dag = beam_states[0]["mapped_dag"]
-        
-
-        self.property_set["final_layout"] = current_layout
-        if not self.fake_run:
-            return mapped_dag
-        return self.dag
-    
-    def _update_state(self, state):
-        """ Updates the state of the circuit mapping until all gates are exhausted
-        
-        Args:
-            state (Dict): the current state of the circuit mapping. 
-        Returns:
-            None
-        """
-        mapped_dag     = state["mapped_dag"]
-        current_layout = state["layout"]
-        front_layer    = state["front_layer"]
-        predecessors   = state["predecessors"]
-        gates_done     = state["gates_done"]
-
-
-        while True:
-            execute_gate_list = []
-            # Remove as many immediately applicable gates as possible
-            new_front_layer = []
-
-            for node in front_layer:
-                if len(node.qargs) == 2:
-                    v0, v1 = node.qargs
-                    # Accessing layout._v2p directly to avoid overhead from __getitem__ and a
-                    # single access isn't feasible because the layout is updated on each iteration
-                    if self.coupling_map.graph.has_edge(
-                        current_layout._v2p[v0], current_layout._v2p[v1]
-                    ):
-                        execute_gate_list.append(node)
-                    else:
-                        new_front_layer.append(node)
-                else:  # Single-qubit gates as well as barriers are free
-                    execute_gate_list.append(node)
-            front_layer = new_front_layer
-
-
-            if not execute_gate_list: # no more gates to execute
-                break
-            else:
-                for node in execute_gate_list:
-                    self._apply_gate(mapped_dag, node, current_layout, self.dag.qregs["q"])
-                    gates_done += 1
-                    for successor in self._successors(node, self.dag):
-                        predecessors[successor] -= 1
-                        if predecessors[successor] == 0:
-                            front_layer.append(successor)
-        state["front_layer"] = front_layer
-        state["predecessors"] = predecessors
-        state["gates_done"] = gates_done
-    
-    def _get_beam_states(self, initial_state): 
-        """ Gets the list of the beam states, which are possible initial mappings of the circuit. 
-        The beam states include the dag, the layout, and the front layer. The number of beam states
-        is equal to the beam width.
-        
-        Args:
-            initial_state (Dict): the initial state of the circuit mapping.
-        Returns:
-            List: A list of the beam states. 
-        """
-
-        # perform bfs to get the beam states, once the nodes at the current level is greater than 
-        # the beam width, then stop the bfs and collect the beam states 
-
-        current_level_nodes = 0
-        current_level = [initial_state]
-        end_solution = []
-
-        while current_level_nodes < self.beam_width: 
-            current_level_nodes = 0
-            next_level = []
-            for state in current_level:
-                # Get list of swap candidates 
-                swap_candidates = self._obtain_swaps(state["front_layer"], state["layout"])
-                current_level_nodes += len(swap_candidates)
-
-                # Each swap represents a trial new state
-                for swap in swap_candidates: 
-                    # Make a copy of the layout and apply swap to the copy
-                    trial_layout = state["layout"].copy()
-                    trial_layout.swap(*swap)
-
-                    # Make a copy of the dag and apply swap to the copy
-                    # Note since dag does not have copy, we have to use deepcopy
-                    trial_dag = deepcopy(state["mapped_dag"])
-                    self._apply_gate(
-                        trial_dag, 
-                        DAGOpNode(op=CXGate(), qargs=swap),
-                        trial_layout,
-                        self.dag.qregs["q"],
-                    )
-                    self._apply_gate(
-                        trial_dag,
-                        DAGOpNode(op=CXGate(), qargs=(swap[1], swap[0])),
-                        trial_layout,
-                        self.dag.qregs["q"],
-                    )
-                    self._apply_gate(
-                        trial_dag,
-                        DAGOpNode(op=CXGate(), qargs=swap),
-                        trial_layout,
-                        self.dag.qregs["q"],
-                    )
-
-                    # Make a copy of the front layer and predecessors
-                    trial_front_layer = state["front_layer"].copy() 
-                    trial_predecessors = state["predecessors"].copy()
-
-                    # Create trial state and update it until no more gates can be applied
-                    trial_state = {
-                        "mapped_dag": trial_dag,
-                        "layout": trial_layout,
-                        "front_layer": trial_front_layer,
-                        "predecessors": trial_predecessors,
-                        "gates_done": state["gates_done"]
-                    }
-
-                    self._update_state(trial_state)
-                    if not trial_state["front_layer"]:
-                        end_solution.append(trial_state)
-                    next_level.append(trial_state)
-            current_level = next_level
-        # add end solutions to the current level
-        current_level.extend(end_solution)
-        # organize current_level by first the number of gates done, then by mapped_dag depth
-        current_level.sort(key=lambda x: (-x["gates_done"], x["mapped_dag"].depth()))
-        # prune the current_level to only include the beam_width number of states
-        current_level = current_level[:self.beam_width]
-        return current_level
-
-    def _find_and_apply_swaps(self, state):
-        """ Finds the best swap and applies it to the mapped_dag and current layout.
-        
-        Args:
-            state (Dict): the current state of the circuit mapping. 
-        Returns:
-            None
-        """
-        mapped_dag = state["mapped_dag"]
-        current_layout = state["layout"]
-        front_layer = state["front_layer"]
-
-        swap_scores = {}
-        for swap_qubits in self._obtain_swaps(front_layer, current_layout):
-            trial_layout = current_layout.copy()
-            trial_layout.swap(*swap_qubits)
-            score = self._score_heuristic(
-                front_layer, trial_layout 
-            )
-            swap_scores[swap_qubits] = score
-        min_score = min(swap_scores.values())
-        best_swaps = [k for k, v in swap_scores.items() if v == min_score]
-        best_swaps.sort(key=lambda x: (self._bit_indices[x[0]], self._bit_indices[x[1]]))
-        best_swap = self.rng.choice(best_swaps)
-
-        # instead of applying the swap gate, we will apply 3 cnot gates to simulate the swap gate
-        self._apply_gate(
-            mapped_dag,
-            DAGOpNode(op=CXGate(), qargs=best_swap),
-            current_layout,
-            self.dag.qregs["q"],
-        )
-        self._apply_gate(
-            mapped_dag,
-            DAGOpNode(op=CXGate(), qargs=(best_swap[1], best_swap[0])),
-            current_layout,
-            self.dag.qregs["q"],
-        )
-        self._apply_gate(
-            mapped_dag,
-            DAGOpNode(op=CXGate(), qargs=best_swap),
-            current_layout,
-            self.dag.qregs["q"],
-        )
-
-        current_layout.swap(*best_swap)
-        state["layout"] = current_layout
-        state["front_layer"] = front_layer
-
-    def _find_and_apply_swaps_depth(self, state):
-        """ Finds the best swap and applies it to the mapped_dag and current layout while 
-        considering depth.
-        
-        Args:
-            state (Dict): the current state of the circuit mapping. 
-        Returns:
-            None
-        """
-        mapped_dag = state["mapped_dag"]
-        current_layout = state["layout"]
-        front_layer = state["front_layer"]
-
-        swap_scores = {}
-        depth_scores = {}
-        for swap_qubits in self._obtain_swaps(front_layer, current_layout):
-            trial_layout = current_layout.copy()
-            trial_layout.swap(*swap_qubits)
-
-            score = self._score_heuristic(
-                front_layer, trial_layout 
-            )
-            swap_scores[swap_qubits] = score
-
-            # Make a copy of the dag and apply swap to the copy
-            trial_dag = deepcopy(mapped_dag)
-            self._apply_gate(
-                trial_dag, 
-                DAGOpNode(op=CXGate(), qargs=swap_qubits),
-                trial_layout,
-                self.dag.qregs["q"],
-            )
-            self._apply_gate(
-                trial_dag,
-                DAGOpNode(op=CXGate(), qargs=(swap_qubits[1], swap_qubits[0])),
-                trial_layout,
-                self.dag.qregs["q"],
-            )
-            self._apply_gate(
-                trial_dag,
-                DAGOpNode(op=CXGate(), qargs=swap_qubits),
-                trial_layout,
-                self.dag.qregs["q"],
-            )
-
-            # Make a copy of the front layer and predecessors
-            trial_front_layer = front_layer.copy()
-            trial_predecessors = state["predecessors"].copy()
-
-            # Create trial state and update it until no more gates can be applied
-            trial_state = {
-                "mapped_dag": trial_dag,
-                "layout": trial_layout,
-                "front_layer": trial_front_layer,
-                "predecessors": trial_predecessors,
-                "gates_done": state["gates_done"]
-            }
-            self._update_state(trial_state)
-            depth_scores[swap_qubits] = trial_state["mapped_dag"].depth()
-        # The best swap is the one with the lowest swap score, if tie, then lowest depth score
-        min_score = min(swap_scores.values())
-        best_swaps = [k for k, v in swap_scores.items() if v == min_score]
-        best_swaps.sort(key=lambda x: (depth_scores[x], self._bit_indices[x[0]], self._bit_indices[x[1]]))
-        best_swap = best_swaps[0]
-
-        self._apply_gate(
-            mapped_dag,
-            DAGOpNode(op=CXGate(), qargs=best_swap),
-            current_layout,
-            self.dag.qregs["q"],
-        )
-        self._apply_gate(
-            mapped_dag,
-            DAGOpNode(op=CXGate(), qargs=(best_swap[1], best_swap[0])),
-            current_layout,
-            self.dag.qregs["q"],
-        )
-        self._apply_gate(
-            mapped_dag,
-            DAGOpNode(op=CXGate(), qargs=best_swap),
-            current_layout,
-            self.dag.qregs["q"],
-        )
-
-        current_layout.swap(*best_swap)
-    
-        state["layout"] = current_layout
-        state["front_layer"] = front_layer
 
     def _apply_gate(self, mapped_dag, node, current_layout, canonical_register):
         new_node = _transform_gate_for_layout(node, current_layout, canonical_register)
         if self.fake_run:
             return new_node
         return mapped_dag.apply_operation_back(new_node.op, new_node.qargs, new_node.cargs)
+
+    def _reset_qubits_depth(self):
+        """Reset all qubit decay factors to 1 upon request (to forget about
+        past penalizations).
+        """
+        self.qubits_depth = {k: 0 for k in self.qubits_depth.keys()}
 
     def _build_required_predecessors(self, dag):
         out = defaultdict(int)
