@@ -187,7 +187,7 @@ class SabreSwap(TransformationPass):
             print(f"    {'Node :':<16} {node.name}, {', '.join(map(str, indices))}")
         print(f"{'Gates Count:':<20} {state.gates_count}")
 
-    def _update_state(self, state):
+    def _update_state(self, state, trial=False):
         """ Update the state by removing as many immediately applicable gates from the front layer, 
         until no more gates can be immediately applied. The gates removed are added to the 
         gate sequence. 
@@ -199,6 +199,7 @@ class SabreSwap(TransformationPass):
             Gates count
         Args:
             state (State): the state of the algorithm
+            trial (bool): if true, no gate information is updated
         """
         # While there are still gates in the front layer
         while True:
@@ -225,8 +226,9 @@ class SabreSwap(TransformationPass):
             else:
                 for node in execute_gate_list:
                     # Update gate info
-                    state.gates_seq.append(node)
-                    state.gates_count += 1
+                    if not trial:
+                        state.gates_seq.append(node)
+                        state.gates_count += 1
                     # Update qubit depth
                     self._update_qubit_depth(node, state.qubit_depth)
 
@@ -263,21 +265,45 @@ class SabreSwap(TransformationPass):
         Args:
             state (State): the state of the algorithm
         """
-        # Get swap candidates
-        swap_candidate_list = self._obtain_swaps(state.front_layer, state.layout)
+        # Find the swap candidates for this state's front layer and current_layout
+        swap_candidates = list(self._obtain_swaps(state.front_layer, state.layout))
+        # sorting so that we always get the same order of swaps, so there is no randomness from order
+        swap_candidates.sort(key=lambda x: (self._bit_indices[x[0]], self._bit_indices[x[1]]))
         # Explores each swap candidate and scores it
         swap_scores = {}
-        for swap in swap_candidate_list:
+        depth_score = {}
+        for swap in swap_candidates:
             trial_layout = state.layout.copy()
             trial_layout.swap(*swap)
 
+            trial_state = State(trial_layout, state.front_layer.copy(), state.predecessors.copy(),
+                                state.qubit_depth.copy(), None, 0)
+            self._update_state(trial_state, trial=True)
+
             score = self._score_heuristic(state.front_layer, trial_layout)
+            depth = max(trial_state.qubit_depth.values())
             swap_scores[swap] = score
-        # Compute the best swap
+            depth_score[swap] = depth
+        # Compute the best swap, by lowest depth, then lowest score, then by index, then rng
         min_score = min(swap_scores.values())
+        # Filter swaps with the minimum score
+        min_score_swaps = [swap for swap, score in swap_scores.items() if score == min_score]
+        # If there's only one swap with the minimum score, choose it
+        if len(min_score_swaps) == 1:
+            best_swap = min_score_swaps[0]
+        else:
+            # Find the minimum depth among the swaps with the minimum score
+            min_depth = min(depth_score[swap] for swap in min_score_swaps)
+            # Filter swaps with the minimum depth
+            min_depth_swaps = [swap for swap in min_score_swaps if depth_score[swap] == min_depth]
+            # Choose a swap randomly among the ones with minimum score and depth
+            best_swap = self.rng.choice(min_depth_swaps)
+        """
+        min_score = min(swap_scores.values())    
         best_swaps = [swap for swap, score in swap_scores.items() if score == min_score]
-        best_swaps.sort(key=lambda x: (self._bit_indices[x[0]], self._bit_indices[x[1]]))
-        best_swap = self.rng.choice(best_swaps)
+        best_swaps.sort(key=lambda x: (-depth_score[x], 
+                                       self._bit_indices[x[0]], self._bit_indices[x[1]]))
+        best_swap = self.rng.choice(best_swaps)"""
         # Update layout
         state.layout.swap(*best_swap)
         # Update gate sequence (note that gate count is not updated)
