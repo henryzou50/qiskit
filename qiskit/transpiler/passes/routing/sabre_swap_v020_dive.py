@@ -93,6 +93,7 @@ class SabreSwap(TransformationPass):
         self.dist_matrix = None
         self.dag = None
         self.rng = None
+        self.num_candidates = 0
 
     def run(self, dag):
         """Run the SabreSwap pass on `dag`.
@@ -105,6 +106,7 @@ class SabreSwap(TransformationPass):
             TranspilerError: if the coupling map or the layout are not
             compatible with the DAG
         """
+        self.num_candidates = 0
         if len(dag.qregs) != 1 or dag.qregs.get("q", None) is None:
             raise TranspilerError("Sabre swap runs on physical circuits only.")
 
@@ -164,6 +166,7 @@ class SabreSwap(TransformationPass):
                 self._apply_gate(mapped_dag, node, current_layout, canonical_register)
 
         self.property_set["final_layout"] = current_layout
+        print(f"Number of candidates: {self.num_candidates}")
         if not self.fake_run:
             return mapped_dag
         return dag
@@ -270,6 +273,8 @@ class SabreSwap(TransformationPass):
         # sorting so that we always get the same order of swaps, so there is no randomness from order
         swap_candidates.sort(key=lambda x: (self._bit_indices[x[0]], self._bit_indices[x[1]]))
         # Explores each swap candidate and scores it
+        
+        """
         swap_node_list = []
         for swap in swap_candidates:
             trial_layout = state.layout.copy()
@@ -278,7 +283,7 @@ class SabreSwap(TransformationPass):
 
             # update depth 
             self._update_qubit_depth(DAGOpNode(op=SwapGate(), qargs=swap), trial_qubit_depth)
-            
+
             trial_state = State(trial_layout, state.front_layer.copy(), state.predecessors.copy(),
                                 trial_qubit_depth, None, 0)
                 
@@ -290,41 +295,72 @@ class SabreSwap(TransformationPass):
             swap_node_list.append(swap_node)
         swap_node_list.sort(key=lambda x: (x.score, x.depth))
         best_swap = swap_node_list[0].swap
-        
+
         """
+
+        best_swap = None
+        best_score = float('inf')
+        best_depth = float('inf')
+
         for swap in swap_candidates:
             trial_layout = state.layout.copy()
             trial_layout.swap(*swap)
+            score = self._score_heuristic(state.front_layer, trial_layout)
+            if score > best_score:
+                continue
+
+            
+            self.num_candidates += 1
+
+            trial_qubit_depth = state.qubit_depth.copy()
+
+            # update depth 
+            self._update_qubit_depth(DAGOpNode(op=SwapGate(), qargs=swap), trial_qubit_depth)
+
+            trial_state = State(trial_layout, state.front_layer.copy(), state.predecessors.copy(),
+                                trial_qubit_depth, None, 0)
+            self._update_state(trial_state, trial=True)
+            depth = max(trial_state.qubit_depth.values())
+
+            if score < best_score or (score == best_score and depth < best_depth):
+                best_swap = swap
+                best_score = score
+                best_depth = depth
+
+
+
+        """
+        best_swap = None
+        best_score = float('inf')
+        best_depth = float('inf')
+    
+        swap_scores = {}
+        depth_score = {}
+        for swap in swap_candidates:
+            trial_layout = state.layout.copy()
+            trial_layout.swap(*swap)
+            trial_qubit_depth = state.qubit_depth.copy()
+            score = self._score_heuristic(state.front_layer, trial_layout)
+
+            # update depth 
+            self._update_qubit_depth(DAGOpNode(op=SwapGate(), qargs=swap), trial_qubit_depth)
 
             trial_state = State(trial_layout, state.front_layer.copy(), state.predecessors.copy(),
                                 state.qubit_depth.copy(), None, 0)
             self._update_state(trial_state, trial=True)
 
-            score = self._score_heuristic(state.front_layer, trial_layout)
             depth = max(trial_state.qubit_depth.values())
             swap_scores[swap] = score
             depth_score[swap] = depth
-        # Compute the best swap, by lowest depth, then lowest score, then by index, then rng
-        min_score = min(swap_scores.values())
-        # Filter swaps with the minimum score
-        min_score_swaps = [swap for swap, score in swap_scores.items() if score == min_score]
-        # If there's only one swap with the minimum score, choose it
-        if len(min_score_swaps) == 1:
-            best_swap = min_score_swaps[0]
-        else:
-            # Find the minimum depth among the swaps with the minimum score
-            min_depth = min(depth_score[swap] for swap in min_score_swaps)
-            # Filter swaps with the minimum depth
-            min_depth_swaps = [swap for swap in min_score_swaps if depth_score[swap] == min_depth]
-            # Choose a swap randomly among the ones with minimum score and depth
-            best_swap = self.rng.choice(min_depth_swaps)
+        for swap, score in swap_scores.items():
+            depth = depth_score[swap]
+            # Check if this swap has a lower score or same score but lower depth
+            if score < best_score or (score == best_score and depth < best_depth):
+                best_swap = swap
+                best_score = score
+                best_depth = depth
         """
-        """
-        min_score = min(swap_scores.values())    
-        best_swaps = [swap for swap, score in swap_scores.items() if score == min_score]
-        best_swaps.sort(key=lambda x: (-depth_score[x], 
-                                       self._bit_indices[x[0]], self._bit_indices[x[1]]))
-        best_swap = self.rng.choice(best_swaps)"""
+
         # Update layout
         state.layout.swap(*best_swap)
         # Update gate sequence (note that gate count is not updated)
