@@ -270,8 +270,28 @@ class SabreSwap(TransformationPass):
         # sorting so that we always get the same order of swaps, so there is no randomness from order
         swap_candidates.sort(key=lambda x: (self._bit_indices[x[0]], self._bit_indices[x[1]]))
         # Explores each swap candidate and scores it
-        swap_scores = {}
-        depth_score = {}
+        swap_node_list = []
+        for swap in swap_candidates:
+            trial_layout = state.layout.copy()
+            trial_layout.swap(*swap)
+            trial_qubit_depth = state.qubit_depth.copy()
+
+            # update depth 
+            self._update_qubit_depth(DAGOpNode(op=SwapGate(), qargs=swap), trial_qubit_depth)
+            
+            trial_state = State(trial_layout, state.front_layer.copy(), state.predecessors.copy(),
+                                trial_qubit_depth, None, 0)
+                
+            self._update_state(trial_state, trial=True)
+            score = self._score_heuristic(state.front_layer, trial_layout)
+            depth = max(trial_state.qubit_depth.values()) 
+
+            swap_node = SwapNode(swap, score, depth)
+            swap_node_list.append(swap_node)
+        swap_node_list.sort(key=lambda x: (x.score, x.depth))
+        best_swap = swap_node_list[0].swap
+        
+        """
         for swap in swap_candidates:
             trial_layout = state.layout.copy()
             trial_layout.swap(*swap)
@@ -298,6 +318,7 @@ class SabreSwap(TransformationPass):
             min_depth_swaps = [swap for swap in min_score_swaps if depth_score[swap] == min_depth]
             # Choose a swap randomly among the ones with minimum score and depth
             best_swap = self.rng.choice(min_depth_swaps)
+        """
         """
         min_score = min(swap_scores.values())    
         best_swaps = [swap for swap, score in swap_scores.items() if score == min_score]
@@ -437,4 +458,9 @@ class State():
         self.gates_seq    = gates_seq     # a list of gates applied (including swaps)
         self.gates_count  = gates_count   # a int of gates applied (excluding swaps)
 
+class SwapNode():
+    def __init__(self, swap, score, depth):
+        self.swap = swap
+        self.score = score
+        self.depth = depth
 
