@@ -429,9 +429,4 @@ class State():
         self.gates_seq    = gates_seq     # a list of gates applied (including swaps)
         self.gates_count  = gates_count   # a int of gates applied (excluding swaps)
 
-class SwapNode():
-    def __init__(self, swap, score, depth):
-        self.swap = swap
-        self.score = score
-        self.depth = depth
 

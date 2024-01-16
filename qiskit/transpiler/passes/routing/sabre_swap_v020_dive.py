@@ -61,6 +61,7 @@ class SabreSwap(TransformationPass):
         coupling_map,
         seed=None,
         fake_run=False,
+        beam_width=1,
     ):
         r"""SabreSwap initializer.
 
@@ -93,6 +94,7 @@ class SabreSwap(TransformationPass):
         self.dist_matrix = None
         self.dag = None
         self.rng = None
+        self.beam_width = beam_width
 
     def run(self, dag):
         """Run the SabreSwap pass on `dag`.
@@ -137,6 +139,10 @@ class SabreSwap(TransformationPass):
         # Phase 2: Update current layout and front layer until all gates are exhausted
         self._update_state(initial_state)
 
+        # Phase 3: Perform beam search to get a list of candidate States 
+        if initial_state.front_layer:
+            candidate_states = self._get_beam_states(initial_state)
+
         # Phase 3: Get swap candidates and apply them
         if initial_state.front_layer:
             self._apply_swap(initial_state)
@@ -168,6 +174,61 @@ class SabreSwap(TransformationPass):
             return mapped_dag
         return dag
     
+    def _get_beam_states(self, initial_state):
+        """ Get the list of candidate states using beam search by breathe first search. 
+        The number of beam states is equal to the beam width. 
+        
+        Args:
+            initial_state (State): the initial state of the algorithm
+            
+        Returns:
+            candidate_states (list): a list of candidate states
+        """
+
+        current_level_nodes = 0
+        current_level = [initial_state]
+        end_solution = []
+
+        while current_level_nodes < self.beam_width:
+            current_level_nodes = 0
+            next_level = []
+            for state in current_level:
+                # Get list of swap candidates
+                swap_candidates = list(self._obtain_swaps(state.front_layer, state.layout))
+                current_level_nodes += len(swap_candidates)
+
+                # Each swap candidate is a new state
+                for swap in swap_candidates:
+                    # Copies that can be immediately updated
+                    trial_layout = state.layout.copy()
+                    trial_gates_seq = state.gates_seq.copy()
+                    trial_qubit_depth = state.qubit_depth.copy()
+
+                    # Updates 
+                    trial_layout.swap(*swap)
+                    trial_gates_seq.append(DAGOpNode(op=SwapGate(), qargs=swap))
+                    self._update_qubit_depth(DAGOpNode(op=SwapGate(), qargs=swap), trial_qubit_depth)
+
+
+
+                    trial_layout.swap(*swap)
+
+                    # Make a copy of the qubit depth and update it
+                    trial_qubit_depth = state.qubit_depth.copy()
+                    self._update_qubit_depth(DAGOpNode(op=SwapGate(), qargs=swap), trial_qubit_depth)
+
+                    # Make a copy of gates sequence and gates count, and update gate seq
+                    trial_gates_seq = state.gates_seq.copy()
+                    trial_gates_count = state.gates_count
+
+
+                    # Make a copy of front layer and predecessors
+                    trial_front_layer = state.front_layer.copy()
+                    trial_predecessors = state.predecessors.copy()
+
+                    
+
+
     def _validate_state(self, state):
         """ Validate the state of the algorithm by printing out the information for the state
         and then manually checking the state for correctness.
@@ -428,10 +489,4 @@ class State():
         self.qubit_depth  = qubit_depth   # a dict of qubit depths
         self.gates_seq    = gates_seq     # a list of gates applied (including swaps)
         self.gates_count  = gates_count   # a int of gates applied (excluding swaps)
-
-class SwapNode():
-    def __init__(self, swap, score, depth):
-        self.swap = swap
-        self.score = score
-        self.depth = depth
 
