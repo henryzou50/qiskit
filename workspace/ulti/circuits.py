@@ -68,8 +68,8 @@ def generate_and_store_ghz_circuits(start, end, directory="circuits/ghz"):
             
     print(f"QASM files for GHZ circuits saved in {directory}!")
 
-def generate_and_store_qv_circuits(qubit_sizes=[25], 
-                                   depth_ranges=[(10, 20)],
+def generate_and_store_qv_circuits(qubit_sizes=[10], 
+                                   depth_ranges=[(5, 100)],
                                    increments=[5], 
                                    base_path="circuits",
                                    seed=42):
@@ -99,15 +99,19 @@ def generate_and_store_qv_circuits(qubit_sizes=[25],
             
             # Generate and store circuits for each depth within the range
             for depth in range(start, stop, increment):
-                qv_circuit = QuantumVolume(size, depth, seed=seed)  
-                qasm_str = qv_circuit.qasm()
-                file_path = os.path.join(dir_path, f"qv_size{size}_depth{depth}.qasm")
+
+                # Repeat for 5 different seeds
+                for i in range(5):
+                    new_seed = seed + i
+                    qv_circuit = QuantumVolume(size, depth, new_seed)  
+                    qasm_str = qv_circuit.qasm()
+                    file_path = os.path.join(dir_path, f"qv_size{size}_depth{depth}_seed{new_seed}.qasm")
+                    
+                    with open(file_path, "w") as file:
+                        file.write(qasm_str)
                 
-                with open(file_path, "w") as file:
-                    file.write(qasm_str)
-                
-                print(f"Stored Quantum Volume circuit for size {size} and depth {depth} at \
-                        {file_path}")
+                    print(f"Stored Quantum Volume circuit for size {size} and depth {depth} at \
+                            {file_path} with seed {new_seed}")
 
 
 def sort_circuits_by_depth(qc_list):

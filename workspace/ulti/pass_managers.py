@@ -33,9 +33,10 @@ def build_pm(routing_pass, layout_pass, coupling_map, seed=42, lookahead=0, beam
     routing_args = {'coupling_map': coupling_map, 'seed': seed}
     if lookahead > 0:
         routing_args['lookahead_steps'] = lookahead
-        routing_args['beam_width']      = beam_width
     if heuristic != "basic":
         routing_args['heuristic'] = heuristic
+    if beam_width > 1:
+        routing_args['beam_width']      = beam_width
 
     # Determine the routing pass for layout and build the layout pass
     if fast_layout:
