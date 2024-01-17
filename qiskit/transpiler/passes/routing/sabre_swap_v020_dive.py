@@ -61,7 +61,7 @@ class SabreSwap(TransformationPass):
         coupling_map,
         seed=None,
         fake_run=False,
-        beam_width=1,
+        beam_width=100,
     ):
         r"""SabreSwap initializer.
 
@@ -143,16 +143,15 @@ class SabreSwap(TransformationPass):
         if initial_state.front_layer:
             candidate_states = self._get_beam_states(initial_state)
 
-        # Phase 3: Get swap candidates and apply them
-        if initial_state.front_layer:
-            self._apply_swap(initial_state)
-            self._update_state(initial_state)
+            # Phase 4: Perform the regular algorithm on each of the beam states
+            for state in candidate_states:
+                while state.front_layer:
+                    self._apply_swap(state)
+                    self._update_state(state)
 
-            # Phase 4: If there are still gates in the front layer, repeat phase 2 and 3
-            while initial_state.front_layer:
-                self._apply_swap(initial_state)
-                self._update_state(initial_state)
-
+            # Phase 5) Set the final dag to be the one with lowest depth
+            candidate_states.sort(key=lambda x: max(x.qubit_depth.values()))
+            initial_state = candidate_states[0]    
 
         # Phase 5: Use gate sequence to apply the gates to the mapped dag
         current_layout = Layout.generate_trivial_layout(canonical_register) # Reset layout
@@ -204,27 +203,36 @@ class SabreSwap(TransformationPass):
                     trial_gates_seq = state.gates_seq.copy()
                     trial_qubit_depth = state.qubit_depth.copy()
 
-                    # Updates 
+
+                    # Updates variables that can be updated immediately
                     trial_layout.swap(*swap)
                     trial_gates_seq.append(DAGOpNode(op=SwapGate(), qargs=swap))
                     self._update_qubit_depth(DAGOpNode(op=SwapGate(), qargs=swap), trial_qubit_depth)
 
-
-
-                    trial_layout.swap(*swap)
-
-                    # Make a copy of the qubit depth and update it
-                    trial_qubit_depth = state.qubit_depth.copy()
-                    self._update_qubit_depth(DAGOpNode(op=SwapGate(), qargs=swap), trial_qubit_depth)
-
-                    # Make a copy of gates sequence and gates count, and update gate seq
-                    trial_gates_seq = state.gates_seq.copy()
+                    # Copies that need to be updated by applying gates
                     trial_gates_count = state.gates_count
-
-
-                    # Make a copy of front layer and predecessors
                     trial_front_layer = state.front_layer.copy()
                     trial_predecessors = state.predecessors.copy()
+
+                    # Create trial state
+                    trial_state = State(trial_layout, trial_front_layer, trial_predecessors,
+                                        trial_qubit_depth, trial_gates_seq, trial_gates_count)
+                    self._update_state(trial_state, trial=False)
+                    
+                    # Add trial state to end solution if no more gates can be applied
+                    if not trial_state.front_layer:
+                        end_solution.append(trial_state)
+                    else:
+                        next_level.append(trial_state)
+            current_level = next_level
+        # add end solution to candidate level
+        current_level.extend(end_solution)
+        # organize current_level by first the number of gates done, then by depth
+        current_level.sort(key=lambda x: (-x.gates_count, max(x.qubit_depth.values())))
+        # prune the current_level to only include the beam_width number of states
+        current_level = current_level[:self.beam_width]
+        return current_level
+                    
 
                     
 
