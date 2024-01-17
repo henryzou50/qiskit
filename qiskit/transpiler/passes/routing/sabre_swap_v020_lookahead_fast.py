@@ -12,9 +12,6 @@
 
 """Routing via SWAP insertion using the SABRE method from Li et al."""
 
-import time
-import random
-import logging
 from collections import defaultdict
 from copy import copy, deepcopy
 
@@ -26,8 +23,6 @@ from qiskit.transpiler.basepasses import TransformationPass
 from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.layout import Layout
 from qiskit.dagcircuit import DAGOpNode
-
-logger = logging.getLogger(__name__)
 
 class SabreSwap(TransformationPass):
     r"""Map input circuit onto a backend topology via insertion of SWAPs.
@@ -67,7 +62,7 @@ class SabreSwap(TransformationPass):
         seed=None,
         fake_run=False,
         lookahead_steps=1,
-        beam_width=1
+        beam_width=5
     ):
         r"""SabreSwap initializer.
 
@@ -104,9 +99,9 @@ class SabreSwap(TransformationPass):
         self.dist_matrix = None
         self.lookahead_steps = lookahead_steps
         self.beam_width = beam_width
+        self.end_solution_found = False
 
     def run(self, dag):
-        #print("SabreSwap run")
         """Run the SabreSwap pass on `dag`.
 
         Args:
@@ -117,6 +112,7 @@ class SabreSwap(TransformationPass):
             TranspilerError: if the coupling map or the layout are not
             compatible with the DAG
         """
+        self.end_solution_found = False
         if len(dag.qregs) != 1 or dag.qregs.get("q", None) is None:
             raise TranspilerError("Sabre swap runs on physical circuits only.")
 
@@ -126,13 +122,7 @@ class SabreSwap(TransformationPass):
         max_iterations_without_progress = 10 * len(dag.qubits)  # Arbitrary.
         ops_since_progress = []
 
-        # Normally this isn't necessary, but here we want to log some objects that have some
-        # non-trivial cost to create.
-        do_expensive_logging = logger.isEnabledFor(logging.DEBUG)
-
         self.dist_matrix = self.coupling_map.distance_matrix
-
-        rng = np.random.default_rng(self.seed)
 
         # Preserve input DAG's name, regs, wire_map, etc. but replace the graph.
         mapped_dag = None
@@ -193,11 +183,21 @@ class SabreSwap(TransformationPass):
 
             # Start bfs search for lookahead
             initial_node = Node(current_layout, front_layer, self.required_predecessors, 
-                                self.qubits_depth, [], [])
+                                self.qubits_depth, [])
             
             # get the first node in the lookahead search
-            best_swap = self.lookahead_search(initial_node, dag)[0].swap_seq[0]
+            gate_seq  = self.lookahead_search(initial_node, dag).gate_seq
             
+            # if end solution is found, loop to apply all of the gates to the mapped_dag
+            if self.end_solution_found:
+                for gate in gate_seq:
+                    # if gate is a swap, we need to update the layout
+                    if gate.name == "swap":
+                        current_layout.swap(*gate.qargs)
+                    self._apply_gate(mapped_dag, gate, current_layout, canonical_register)
+                break
+
+            best_swap = gate_seq[0].qargs
             swap_node = self._apply_gate(
                 mapped_dag,
                 DAGOpNode(op=SwapGate(), qargs=best_swap),
@@ -228,10 +228,13 @@ class SabreSwap(TransformationPass):
             Node: The node with the best score.
         """
         all_gate_seq = set() # exclude swaps
+        end_solutions = []
         current_level = [initial_node]
-        for _ in range(self.lookahead_steps):
+        for i in range(self.lookahead_steps):
             next_level = []
             for node in current_level:
+                if node.front_layer == []: # already added, avoid double counting
+                    continue
                 # Find the swap candidates for this node's front layer and current_layout
                 swap_candidates = list(self._obtain_swaps(node.front_layer, node.layout))
                 # sorting so that we always get the same order of swaps, so there is no randomness from order
@@ -242,18 +245,21 @@ class SabreSwap(TransformationPass):
                     trial_layout.swap(*swap_qubits)
 
                     # Update score front
-                    trial_score_front = self._score_heuristic(node.front_layer, trial_layout)
+                    if i == 0:
+                        trial_score_front = self._score_heuristic(node.front_layer, trial_layout)
+                    else:
+                        trial_score_front = node.score_front
 
                     # Create a new swap sequence and add the swap
-                    trial_swap_seq    = node.swap_seq + [swap_qubits]
+                    swap = DAGOpNode(op=SwapGate(), qargs=swap_qubits)
+                    trial_gate_seq    = node.gate_seq + [swap]
 
                     # Create variables that need to be updated when applying gates
-                    trial_gate_seq    = node.gate_seq.copy()
                     trial_successors  = node.successors.copy()
                     trial_front_layer = node.front_layer.copy()
                     trial_qubit_depth = node.qubit_depth.copy()
 
-                    swap = DAGOpNode(op=SwapGate(), qargs=swap_qubits)
+                    # Update depth with the swap
                     trial_qubit_depth = self._update_qubit_depth(swap, trial_qubit_depth)
 
                     while True: # continue to update until no more gates can be applied
@@ -284,17 +290,43 @@ class SabreSwap(TransformationPass):
                                         trial_front_layer.append(successor)
 
                     trial_node = Node(trial_layout, trial_front_layer, trial_successors, 
-                                    trial_qubit_depth, trial_gate_seq, trial_swap_seq)
+                                    trial_qubit_depth, trial_gate_seq)
                     trial_node.score_front = trial_score_front
                     trial_node.score_depth = max(trial_node.qubit_depth.values())
+                    # i represents number of swaps, 
+                    # so the number of gates is i - len(trial_node.gate_seq)
+                    # the more gates done, the more negative the score_gates
+                    trial_node.score_gates = i - len(trial_node.gate_seq) 
+                    
+                    # Reached a potential point of end of the lookahead
+                    if trial_front_layer == []:
+                        end_solutions.append(trial_node)
+                        # end of this branch, don't add to next level
+                        continue
                     next_level.append(trial_node)
+                    
+                # Update the lookahead score for each node 
+                for node in next_level:
+                    gates_remaining = []
+                    for gate in all_gate_seq:
+                        if gate not in node.gate_seq:
+                            gates_remaining.append(gate)
+                    node.score_looka = self._compute_cost(gates_remaining, node.layout)
+                    node.score_total_1 = node.score_front + node.score_looka 
+                    node.score_total_2 = node.score_depth + node.score_gates
 
             # Sort the next level by score first, then by depth, if equal, then random tie-break
             # print each node's score front with their score_depth
-            next_level.sort(key=lambda x: (x.score_front, x.score_depth))
+            next_level.sort(key=lambda x: (x.score_total_1, x.score_total_2))
             current_level = next_level[:self.beam_width]
+        
+        # If there is an end solution, return the one with the best score
+        if end_solutions:
+            end_solutions.sort(key=lambda x: (x.score_depth))
+            self.end_solution_found = True
+            return end_solutions[0]
 
-        return current_level 
+        return current_level[0]
 
     def _update_qubit_depth(self, node, qubit_depth):
         """Update the depth of the qubits after applying a gate.
@@ -421,6 +453,12 @@ class SabreSwap(TransformationPass):
         layout_map = layout._v2p
         for node in layer:
             cost += self.dist_matrix[layout_map[node.qargs[0]], layout_map[node.qargs[1]]]
+
+        # normalize by the number of gates
+        if len(layer) == 0:
+            return 0
+        cost /= len(layer)
+        cost *= 3
         return cost
 
     def _score_heuristic(self, front_layer, layout):
@@ -430,7 +468,7 @@ class SabreSwap(TransformationPass):
         to it. The goodness of a layout is evaluated based on how viable it makes
         the remaining virtual gates that must be applied.
         """
-        first_cost = self._compute_cost(front_layer, layout)
+        first_cost = self._compute_cost(front_layer, layout) / len (front_layer)
 
         return first_cost
 
@@ -471,16 +509,15 @@ def _shortest_swap_path(target_qubits, coupling_map, layout):
         yield v_goal, layout._p2v[swap]
 
 class Node():
-    def __init__(self, layout, front_layer, successors, qubit_depth, gate_seq, swap_seq):
-        self.layout =layout
-        self.front_layer = front_layer
-        self.successors = successors
-        self.qubit_depth = qubit_depth
-        self.gate_seq = gate_seq
-        self.swap_seq = swap_seq
-        self.score_front = 0
-        self.score_depth = 0
-        self.score_looka = 0
-        self.score_gates = 0
-    
-        
+    def __init__(self, layout, front_layer, successors, qubit_depth, gate_seq):
+        self.layout        = layout # layout of the circuit
+        self.front_layer   = front_layer # front layer of the circuit
+        self.successors    = successors # successors of the front layer
+        self.qubit_depth   = qubit_depth # depth of each qubit
+        self.gate_seq      = gate_seq # sequence of all of the gates applied
+        self.score_front   = 0
+        self.score_depth   = 0
+        self.score_looka   = 0
+        self.score_gates   = 0
+        self.score_total_1 = 0
+        self.score_total_2 = 0

@@ -61,7 +61,7 @@ class SabreSwap(TransformationPass):
         coupling_map,
         seed=None,
         fake_run=False,
-        beam_width=100,
+        beam_width=10,
     ):
         r"""SabreSwap initializer.
 
