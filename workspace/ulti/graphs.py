@@ -131,7 +131,7 @@ def analyze_metric(data_dir, metric, baseline_filename, plot_title, x_axis_label
 
     return sum_table
 
-def plot_data(filename, y_key, title, x_label, y_label):
+def plot_data(filename, y_key, title, x_label, y_label, baseline=None):
     # Load the CSV file
     df = pd.read_csv(filename)
 
@@ -149,13 +149,21 @@ def plot_data(filename, y_key, title, x_label, y_label):
     plt.figure(figsize=(10, 6))
     scatter = sns.scatterplot(data=df, x='RowNumber', y=y_key, palette="viridis", s=100, edgecolor="w", alpha=0.7)
 
+    # Add baseline if specified
+    if baseline is not None:
+        plt.axhline(y=baseline, color='r', linestyle='--', label=f'Baseline: {baseline}')
+
     plt.title(title, fontsize=16)
     plt.xlabel(x_label, fontsize=14)
     plt.ylabel(y_label, fontsize=14)
+
+    if baseline is not None:
+        plt.legend()
 
     plt.xticks(fontsize=12)
     plt.yticks(fontsize=12)
 
     plt.show()
+
 
 
