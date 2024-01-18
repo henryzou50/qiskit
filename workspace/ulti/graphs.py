@@ -131,4 +131,31 @@ def analyze_metric(data_dir, metric, baseline_filename, plot_title, x_axis_label
 
     return sum_table
 
+def plot_data(filename, y_key, title, x_label, y_label):
+    # Load the CSV file
+    df = pd.read_csv(filename)
+
+    # Process the 'best_data' column and extract the specified y_key
+    df['best_data'] = df['best_data'].apply(lambda x: ast.literal_eval(x))
+    df[y_key] = df['best_data'].apply(lambda x: x.get(y_key))
+
+    # Create a new column for row numbers
+    df['RowNumber'] = range(1, len(df) + 1)
+
+    # Plotting
+    plt.style.use('ggplot')
+    sns.set_theme(style="whitegrid")
+
+    plt.figure(figsize=(10, 6))
+    scatter = sns.scatterplot(data=df, x='RowNumber', y=y_key, palette="viridis", s=100, edgecolor="w", alpha=0.7)
+
+    plt.title(title, fontsize=16)
+    plt.xlabel(x_label, fontsize=14)
+    plt.ylabel(y_label, fontsize=14)
+
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+
+    plt.show()
+
 

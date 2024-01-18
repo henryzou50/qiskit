@@ -1,105 +1,202 @@
-best_data,std_dev,routing pass,layout pass,coupling map,circuit label,beam width,look ahead
-"{'depth': 818, 'depth_ratio': 8.18, 'time': 3.688232421875, 'cx_gates': 2274, 'num_gates': 2774}","{'depth': 12.5, 'depth_ratio': 0.125, 'time': 0.00779, 'cx_gates': 30.0, 'num_gates': 30.0}",sabre_v020_look_010_beam_001,sabre_v020,hex_27,0,1,10
-"{'depth': 892, 'depth_ratio': 8.92, 'time': 4.0082314014434814, 'cx_gates': 2391, 'num_gates': 2891}","{'depth': 160.5, 'depth_ratio': 1.605, 'time': 1.008, 'cx_gates': 217.5, 'num_gates': 217.5}",sabre_v020_look_010_beam_001,sabre_v020,hex_27,1,1,10
-"{'depth': 836, 'depth_ratio': 8.36, 'time': 6.07723593711853, 'cx_gates': 2214, 'num_gates': 2714}","{'depth': 14.0, 'depth_ratio': 0.14, 'time': 0.08686, 'cx_gates': 21.0, 'num_gates': 21.0}",sabre_v020_look_010_beam_002,sabre_v020,hex_27,0,2,10
-"{'depth': 875, 'depth_ratio': 8.75, 'time': 5.794776201248169, 'cx_gates': 2364, 'num_gates': 2864}","{'depth': 171.5, 'depth_ratio': 1.715, 'time': 1.396, 'cx_gates': 211.5, 'num_gates': 211.5}",sabre_v020_look_010_beam_002,sabre_v020,hex_27,1,2,10
-"{'depth': 842, 'depth_ratio': 8.42, 'time': 7.875079154968262, 'cx_gates': 2190, 'num_gates': 2690}","{'depth': 10.5, 'depth_ratio': 0.105, 'time': 0.1902, 'cx_gates': 15.0, 'num_gates': 15.0}",sabre_v020_look_010_beam_003,sabre_v020,hex_27,0,3,10
-"{'depth': 796, 'depth_ratio': 7.96, 'time': 8.22869348526001, 'cx_gates': 2127, 'num_gates': 2627}","{'depth': 221.0, 'depth_ratio': 2.21, 'time': 1.593, 'cx_gates': 67.5, 'num_gates': 67.5}",sabre_v020_look_010_beam_003,sabre_v020,hex_27,1,3,10
-"{'depth': 825, 'depth_ratio': 8.25, 'time': 9.623186111450195, 'cx_gates': 2124, 'num_gates': 2624}","{'depth': 22.0, 'depth_ratio': 0.22, 'time': 0.1101, 'cx_gates': 25.5, 'num_gates': 25.5}",sabre_v020_look_010_beam_004,sabre_v020,hex_27,0,4,10
-"{'depth': 863, 'depth_ratio': 8.63, 'time': 9.539689064025879, 'cx_gates': 2193, 'num_gates': 2693}","{'depth': 193.0, 'depth_ratio': 1.93, 'time': 5.586, 'cx_gates': 147.0, 'num_gates': 147.0}",sabre_v020_look_010_beam_004,sabre_v020,hex_27,1,4,10
-"{'depth': 843, 'depth_ratio': 8.43, 'time': 13.193770408630371, 'cx_gates': 2157, 'num_gates': 2657}","{'depth': 15.0, 'depth_ratio': 0.15, 'time': 0.2117, 'cx_gates': 24.0, 'num_gates': 24.0}",sabre_v020_look_010_beam_005,sabre_v020,hex_27,0,5,10
-"{'depth': 863, 'depth_ratio': 8.63, 'time': 13.424760103225708, 'cx_gates': 2238, 'num_gates': 2738}","{'depth': 167.5, 'depth_ratio': 1.675, 'time': 4.207, 'cx_gates': 175.5, 'num_gates': 175.5}",sabre_v020_look_010_beam_005,sabre_v020,hex_27,1,5,10
-"{'depth': 800, 'depth_ratio': 8.0, 'time': 25.89917540550232, 'cx_gates': 2157, 'num_gates': 2657}","{'depth': 28.5, 'depth_ratio': 0.285, 'time': 3.905, 'cx_gates': 25.5, 'num_gates': 25.5}",sabre_v020_look_010_beam_006,sabre_v020,hex_27,0,6,10
-"{'depth': 835, 'depth_ratio': 8.35, 'time': 17.361578702926636, 'cx_gates': 2202, 'num_gates': 2702}","{'depth': 182.5, 'depth_ratio': 1.825, 'time': 0.8637, 'cx_gates': 153.0, 'num_gates': 153.0}",sabre_v020_look_010_beam_006,sabre_v020,hex_27,1,6,10
-"{'depth': 825, 'depth_ratio': 8.25, 'time': 37.889703035354614, 'cx_gates': 2217, 'num_gates': 2717}","{'depth': 1.5, 'depth_ratio': 0.015, 'time': 7.225, 'cx_gates': 37.5, 'num_gates': 37.5}",sabre_v020_look_010_beam_007,sabre_v020,hex_27,0,7,10
-"{'depth': 852, 'depth_ratio': 8.52, 'time': 22.47830057144165, 'cx_gates': 2169, 'num_gates': 2669}","{'depth': 172.0, 'depth_ratio': 1.72, 'time': 8.548, 'cx_gates': 145.5, 'num_gates': 145.5}",sabre_v020_look_010_beam_007,sabre_v020,hex_27,1,7,10
-"{'depth': 795, 'depth_ratio': 7.95, 'time': 27.048444747924805, 'cx_gates': 2142, 'num_gates': 2642}","{'depth': 16.5, 'depth_ratio': 0.165, 'time': 4.798, 'cx_gates': 4.5, 'num_gates': 4.5}",sabre_v020_look_010_beam_008,sabre_v020,hex_27,0,8,10
-"{'depth': 814, 'depth_ratio': 8.14, 'time': 27.71312689781189, 'cx_gates': 2235, 'num_gates': 2735}","{'depth': 181.0, 'depth_ratio': 1.81, 'time': 9.391, 'cx_gates': 199.5, 'num_gates': 199.5}",sabre_v020_look_010_beam_008,sabre_v020,hex_27,1,8,10
-"{'depth': 826, 'depth_ratio': 8.26, 'time': 30.34264612197876, 'cx_gates': 2160, 'num_gates': 2660}","{'depth': 0.5, 'depth_ratio': 0.005, 'time': 0.7972, 'cx_gates': 12.0, 'num_gates': 12.0}",sabre_v020_look_010_beam_009,sabre_v020,hex_27,0,9,10
-"{'depth': 837, 'depth_ratio': 8.37, 'time': 29.608251810073853, 'cx_gates': 2094, 'num_gates': 2594}","{'depth': 136.0, 'depth_ratio': 1.36, 'time': 12.41, 'cx_gates': 165.0, 'num_gates': 165.0}",sabre_v020_look_010_beam_009,sabre_v020,hex_27,1,9,10
-"{'depth': 813, 'depth_ratio': 8.13, 'time': 38.177587270736694, 'cx_gates': 2097, 'num_gates': 2597}","{'depth': 18.5, 'depth_ratio': 0.185, 'time': 0.1501, 'cx_gates': 72.0, 'num_gates': 72.0}",sabre_v020_look_010_beam_010,sabre_v020,hex_27,0,10,10
-"{'depth': 833, 'depth_ratio': 8.33, 'time': 36.35642910003662, 'cx_gates': 2196, 'num_gates': 2696}","{'depth': 187.0, 'depth_ratio': 1.87, 'time': 5.565, 'cx_gates': 187.5, 'num_gates': 187.5}",sabre_v020_look_010_beam_010,sabre_v020,hex_27,1,10,10
-"{'depth': 828, 'depth_ratio': 8.28, 'time': 44.69894289970398, 'cx_gates': 2229, 'num_gates': 2729}","{'depth': 14.0, 'depth_ratio': 0.14, 'time': 0.4177, 'cx_gates': 1.5, 'num_gates': 1.5}",sabre_v020_look_010_beam_011,sabre_v020,hex_27,0,11,10
-"{'depth': 865, 'depth_ratio': 8.65, 'time': 62.01776599884033, 'cx_gates': 2193, 'num_gates': 2693}","{'depth': 155.5, 'depth_ratio': 1.555, 'time': 15.85, 'cx_gates': 192.0, 'num_gates': 192.0}",sabre_v020_look_010_beam_011,sabre_v020,hex_27,1,11,10
-"{'depth': 831, 'depth_ratio': 8.31, 'time': 49.073601722717285, 'cx_gates': 2184, 'num_gates': 2684}","{'depth': 10.5, 'depth_ratio': 0.105, 'time': 1.444, 'cx_gates': 13.5, 'num_gates': 13.5}",sabre_v020_look_010_beam_012,sabre_v020,hex_27,0,12,10
-"{'depth': 855, 'depth_ratio': 8.55, 'time': 48.489843130111694, 'cx_gates': 2154, 'num_gates': 2654}","{'depth': 146.0, 'depth_ratio': 1.46, 'time': 7.922, 'cx_gates': 184.5, 'num_gates': 184.5}",sabre_v020_look_010_beam_012,sabre_v020,hex_27,1,12,10
-"{'depth': 809, 'depth_ratio': 8.09, 'time': 56.74716758728027, 'cx_gates': 2070, 'num_gates': 2570}","{'depth': 1.0, 'depth_ratio': 0.01, 'time': 0.03892, 'cx_gates': 63.0, 'num_gates': 63.0}",sabre_v020_look_010_beam_013,sabre_v020,hex_27,0,13,10
-"{'depth': 805, 'depth_ratio': 8.05, 'time': 53.90176606178284, 'cx_gates': 2124, 'num_gates': 2624}","{'depth': 169.0, 'depth_ratio': 1.69, 'time': 6.884, 'cx_gates': 198.0, 'num_gates': 198.0}",sabre_v020_look_010_beam_013,sabre_v020,hex_27,1,13,10
-"{'depth': 763, 'depth_ratio': 7.63, 'time': 64.92630696296692, 'cx_gates': 1986, 'num_gates': 2486}","{'depth': 29.5, 'depth_ratio': 0.295, 'time': 0.8817, 'cx_gates': 49.5, 'num_gates': 49.5}",sabre_v020_look_010_beam_014,sabre_v020,hex_27,0,14,10
-"{'depth': 799, 'depth_ratio': 7.99, 'time': 64.57703256607056, 'cx_gates': 2106, 'num_gates': 2606}","{'depth': 185.5, 'depth_ratio': 1.855, 'time': 12.4, 'cx_gates': 169.5, 'num_gates': 169.5}",sabre_v020_look_010_beam_014,sabre_v020,hex_27,1,14,10
-"{'depth': 811, 'depth_ratio': 8.11, 'time': 74.37420845031738, 'cx_gates': 2160, 'num_gates': 2660}","{'depth': 16.0, 'depth_ratio': 0.16, 'time': 4.1, 'cx_gates': 45.0, 'num_gates': 45.0}",sabre_v020_look_010_beam_015,sabre_v020,hex_27,0,15,10
-"{'depth': 806, 'depth_ratio': 8.06, 'time': 66.0155999660492, 'cx_gates': 2133, 'num_gates': 2633}","{'depth': 188.5, 'depth_ratio': 1.885, 'time': 10.97, 'cx_gates': 153.0, 'num_gates': 153.0}",sabre_v020_look_010_beam_015,sabre_v020,hex_27,1,15,10
-"{'depth': 825, 'depth_ratio': 8.25, 'time': 73.99628138542175, 'cx_gates': 2178, 'num_gates': 2678}","{'depth': 18.5, 'depth_ratio': 0.185, 'time': 0.8256, 'cx_gates': 24.0, 'num_gates': 24.0}",sabre_v020_look_010_beam_016,sabre_v020,hex_27,0,16,10
-"{'depth': 836, 'depth_ratio': 8.36, 'time': 73.12201023101807, 'cx_gates': 2145, 'num_gates': 2645}","{'depth': 170.0, 'depth_ratio': 1.7, 'time': 11.86, 'cx_gates': 165.0, 'num_gates': 165.0}",sabre_v020_look_010_beam_016,sabre_v020,hex_27,1,16,10
-"{'depth': 793, 'depth_ratio': 7.93, 'time': 79.9664044380188, 'cx_gates': 2133, 'num_gates': 2633}","{'depth': 8.0, 'depth_ratio': 0.08, 'time': 1.065, 'cx_gates': 1.5, 'num_gates': 1.5}",sabre_v020_look_010_beam_017,sabre_v020,hex_27,0,17,10
-"{'depth': 759, 'depth_ratio': 7.59, 'time': 80.57424998283386, 'cx_gates': 2034, 'num_gates': 2534}","{'depth': 195.5, 'depth_ratio': 1.955, 'time': 14.98, 'cx_gates': 132.0, 'num_gates': 132.0}",sabre_v020_look_010_beam_017,sabre_v020,hex_27,1,17,10
-"{'depth': 784, 'depth_ratio': 7.84, 'time': 87.95578956604004, 'cx_gates': 2058, 'num_gates': 2558}","{'depth': 20.0, 'depth_ratio': 0.2, 'time': 2.231, 'cx_gates': 88.5, 'num_gates': 88.5}",sabre_v020_look_010_beam_018,sabre_v020,hex_27,0,18,10
-"{'depth': 813, 'depth_ratio': 8.13, 'time': 87.17825865745544, 'cx_gates': 2112, 'num_gates': 2612}","{'depth': 173.5, 'depth_ratio': 1.735, 'time': 14.34, 'cx_gates': 165.0, 'num_gates': 165.0}",sabre_v020_look_010_beam_018,sabre_v020,hex_27,1,18,10
-"{'depth': 786, 'depth_ratio': 7.86, 'time': 97.0666823387146, 'cx_gates': 2067, 'num_gates': 2567}","{'depth': 11.5, 'depth_ratio': 0.115, 'time': 1.779, 'cx_gates': 13.5, 'num_gates': 13.5}",sabre_v020_look_010_beam_019,sabre_v020,hex_27,0,19,10
-"{'depth': 787, 'depth_ratio': 7.87, 'time': 98.04202818870544, 'cx_gates': 1992, 'num_gates': 2492}","{'depth': 178.0, 'depth_ratio': 1.78, 'time': 10.25, 'cx_gates': 115.5, 'num_gates': 115.5}",sabre_v020_look_010_beam_019,sabre_v020,hex_27,1,19,10
-"{'depth': 807, 'depth_ratio': 8.07, 'time': 109.2328519821167, 'cx_gates': 2106, 'num_gates': 2606}","{'depth': 13.0, 'depth_ratio': 0.13, 'time': 1.776, 'cx_gates': 25.5, 'num_gates': 25.5}",sabre_v020_look_010_beam_020,sabre_v020,hex_27,0,20,10
-"{'depth': 820, 'depth_ratio': 8.2, 'time': 102.867196559906, 'cx_gates': 2202, 'num_gates': 2702}","{'depth': 202.0, 'depth_ratio': 2.02, 'time': 5.168, 'cx_gates': 216.0, 'num_gates': 216.0}",sabre_v020_look_010_beam_020,sabre_v020,hex_27,1,20,10
-"{'depth': 802, 'depth_ratio': 8.02, 'time': 124.15270924568176, 'cx_gates': 2124, 'num_gates': 2624}","{'depth': 5.5, 'depth_ratio': 0.055, 'time': 0.9437, 'cx_gates': 4.5, 'num_gates': 4.5}",sabre_v020_look_010_beam_021,sabre_v020,hex_27,0,21,10
-"{'depth': 819, 'depth_ratio': 8.19, 'time': 144.6149878501892, 'cx_gates': 2178, 'num_gates': 2678}","{'depth': 196.5, 'depth_ratio': 1.965, 'time': 33.05, 'cx_gates': 204.0, 'num_gates': 204.0}",sabre_v020_look_010_beam_021,sabre_v020,hex_27,1,21,10
-"{'depth': 817, 'depth_ratio': 8.17, 'time': 156.63201808929443, 'cx_gates': 2166, 'num_gates': 2666}","{'depth': 14.0, 'depth_ratio': 0.14, 'time': 13.38, 'cx_gates': 9.0, 'num_gates': 9.0}",sabre_v020_look_010_beam_022,sabre_v020,hex_27,0,22,10
-"{'depth': 819, 'depth_ratio': 8.19, 'time': 129.3978590965271, 'cx_gates': 2247, 'num_gates': 2747}","{'depth': 185.5, 'depth_ratio': 1.855, 'time': 20.36, 'cx_gates': 217.5, 'num_gates': 217.5}",sabre_v020_look_010_beam_022,sabre_v020,hex_27,1,22,10
-"{'depth': 831, 'depth_ratio': 8.31, 'time': 133.74713611602783, 'cx_gates': 2169, 'num_gates': 2669}","{'depth': 1.5, 'depth_ratio': 0.015, 'time': 0.9554, 'cx_gates': 33.0, 'num_gates': 33.0}",sabre_v020_look_010_beam_023,sabre_v020,hex_27,0,23,10
-"{'depth': 816, 'depth_ratio': 8.16, 'time': 132.8730399608612, 'cx_gates': 2187, 'num_gates': 2687}","{'depth': 180.0, 'depth_ratio': 1.8, 'time': 18.59, 'cx_gates': 208.5, 'num_gates': 208.5}",sabre_v020_look_010_beam_023,sabre_v020,hex_27,1,23,10
-"{'depth': 821, 'depth_ratio': 8.21, 'time': 143.57920026779175, 'cx_gates': 2154, 'num_gates': 2654}","{'depth': 15.5, 'depth_ratio': 0.155, 'time': 2.94, 'cx_gates': 9.0, 'num_gates': 9.0}",sabre_v020_look_010_beam_024,sabre_v020,hex_27,0,24,10
-"{'depth': 809, 'depth_ratio': 8.09, 'time': 132.18757128715515, 'cx_gates': 2067, 'num_gates': 2567}","{'depth': 167.0, 'depth_ratio': 1.67, 'time': 15.47, 'cx_gates': 138.0, 'num_gates': 138.0}",sabre_v020_look_010_beam_024,sabre_v020,hex_27,1,24,10
-"{'depth': 777, 'depth_ratio': 7.77, 'time': 162.65149879455566, 'cx_gates': 2088, 'num_gates': 2588}","{'depth': 30.0, 'depth_ratio': 0.3, 'time': 7.762, 'cx_gates': 61.5, 'num_gates': 61.5}",sabre_v020_look_010_beam_025,sabre_v020,hex_27,0,25,10
-"{'depth': 801, 'depth_ratio': 8.01, 'time': 152.33866000175476, 'cx_gates': 2175, 'num_gates': 2675}","{'depth': 168.0, 'depth_ratio': 1.68, 'time': 24.55, 'cx_gates': 222.0, 'num_gates': 222.0}",sabre_v020_look_010_beam_025,sabre_v020,hex_27,1,25,10
-"{'depth': 761, 'depth_ratio': 7.61, 'time': 168.30503129959106, 'cx_gates': 2019, 'num_gates': 2519}","{'depth': 38.5, 'depth_ratio': 0.385, 'time': 5.725, 'cx_gates': 97.5, 'num_gates': 97.5}",sabre_v020_look_010_beam_026,sabre_v020,hex_27,0,26,10
-"{'depth': 799, 'depth_ratio': 7.99, 'time': 171.1475429534912, 'cx_gates': 2154, 'num_gates': 2654}","{'depth': 171.0, 'depth_ratio': 1.71, 'time': 26.63, 'cx_gates': 211.5, 'num_gates': 211.5}",sabre_v020_look_010_beam_026,sabre_v020,hex_27,1,26,10
-"{'depth': 779, 'depth_ratio': 7.79, 'time': 192.61458802223206, 'cx_gates': 2046, 'num_gates': 2546}","{'depth': 32.0, 'depth_ratio': 0.32, 'time': 9.868, 'cx_gates': 84.0, 'num_gates': 84.0}",sabre_v020_look_010_beam_027,sabre_v020,hex_27,0,27,10
-"{'depth': 784, 'depth_ratio': 7.84, 'time': 181.42099285125732, 'cx_gates': 2064, 'num_gates': 2564}","{'depth': 185.5, 'depth_ratio': 1.855, 'time': 27.44, 'cx_gates': 195.0, 'num_gates': 195.0}",sabre_v020_look_010_beam_027,sabre_v020,hex_27,1,27,10
-"{'depth': 773, 'depth_ratio': 7.73, 'time': 195.95942664146423, 'cx_gates': 2073, 'num_gates': 2573}","{'depth': 10.5, 'depth_ratio': 0.105, 'time': 9.982, 'cx_gates': 49.5, 'num_gates': 49.5}",sabre_v020_look_010_beam_028,sabre_v020,hex_27,0,28,10
-"{'depth': 757, 'depth_ratio': 7.57, 'time': 187.0032184123993, 'cx_gates': 2031, 'num_gates': 2531}","{'depth': 236.0, 'depth_ratio': 2.36, 'time': 30.66, 'cx_gates': 84.0, 'num_gates': 84.0}",sabre_v020_look_010_beam_028,sabre_v020,hex_27,1,28,10
-"{'depth': 798, 'depth_ratio': 7.98, 'time': 200.2545838356018, 'cx_gates': 2079, 'num_gates': 2579}","{'depth': 21.5, 'depth_ratio': 0.215, 'time': 0.4522, 'cx_gates': 88.5, 'num_gates': 88.5}",sabre_v020_look_010_beam_029,sabre_v020,hex_27,0,29,10
-"{'depth': 832, 'depth_ratio': 8.32, 'time': 183.57022953033447, 'cx_gates': 2157, 'num_gates': 2657}","{'depth': 195.5, 'depth_ratio': 1.955, 'time': 21.57, 'cx_gates': 145.5, 'num_gates': 145.5}",sabre_v020_look_010_beam_029,sabre_v020,hex_27,1,29,10
-"{'depth': 773, 'depth_ratio': 7.73, 'time': 196.69831657409668, 'cx_gates': 2046, 'num_gates': 2546}","{'depth': 16.5, 'depth_ratio': 0.165, 'time': 3.148, 'cx_gates': 73.5, 'num_gates': 73.5}",sabre_v020_look_010_beam_030,sabre_v020,hex_27,0,30,10
-"{'depth': 756, 'depth_ratio': 7.56, 'time': 194.842200756073, 'cx_gates': 1956, 'num_gates': 2456}","{'depth': 173.5, 'depth_ratio': 1.735, 'time': 26.24, 'cx_gates': 115.5, 'num_gates': 115.5}",sabre_v020_look_010_beam_030,sabre_v020,hex_27,1,30,10
-"{'depth': 774, 'depth_ratio': 7.74, 'time': 224.62836265563965, 'cx_gates': 2076, 'num_gates': 2576}","{'depth': 9.5, 'depth_ratio': 0.095, 'time': 3.457, 'cx_gates': 21.0, 'num_gates': 21.0}",sabre_v020_look_010_beam_031,sabre_v020,hex_27,0,31,10
-"{'depth': 775, 'depth_ratio': 7.75, 'time': 227.74314904212952, 'cx_gates': 2058, 'num_gates': 2558}","{'depth': 208.5, 'depth_ratio': 2.085, 'time': 39.87, 'cx_gates': 115.5, 'num_gates': 115.5}",sabre_v020_look_010_beam_031,sabre_v020,hex_27,1,31,10
-"{'depth': 795, 'depth_ratio': 7.95, 'time': 241.34103345870972, 'cx_gates': 2082, 'num_gates': 2582}","{'depth': 15.0, 'depth_ratio': 0.15, 'time': 2.458, 'cx_gates': 24.0, 'num_gates': 24.0}",sabre_v020_look_010_beam_032,sabre_v020,hex_27,0,32,10
-"{'depth': 781, 'depth_ratio': 7.81, 'time': 221.9387149810791, 'cx_gates': 2022, 'num_gates': 2522}","{'depth': 157.0, 'depth_ratio': 1.57, 'time': 37.04, 'cx_gates': 201.0, 'num_gates': 201.0}",sabre_v020_look_010_beam_032,sabre_v020,hex_27,1,32,10
-"{'depth': 780, 'depth_ratio': 7.8, 'time': 246.6297676563263, 'cx_gates': 2109, 'num_gates': 2609}","{'depth': 8.0, 'depth_ratio': 0.08, 'time': 2.811, 'cx_gates': 18.0, 'num_gates': 18.0}",sabre_v020_look_010_beam_033,sabre_v020,hex_27,0,33,10
-"{'depth': 782, 'depth_ratio': 7.82, 'time': 235.7369453907013, 'cx_gates': 2022, 'num_gates': 2522}","{'depth': 163.0, 'depth_ratio': 1.63, 'time': 36.03, 'cx_gates': 135.0, 'num_gates': 135.0}",sabre_v020_look_010_beam_033,sabre_v020,hex_27,1,33,10
-"{'depth': 782, 'depth_ratio': 7.82, 'time': 251.88760352134705, 'cx_gates': 2034, 'num_gates': 2534}","{'depth': 2.0, 'depth_ratio': 0.02, 'time': 10.06, 'cx_gates': 3.0, 'num_gates': 3.0}",sabre_v020_look_010_beam_034,sabre_v020,hex_27,0,34,10
-"{'depth': 797, 'depth_ratio': 7.97, 'time': 243.15766620635986, 'cx_gates': 2085, 'num_gates': 2585}","{'depth': 195.5, 'depth_ratio': 1.955, 'time': 29.32, 'cx_gates': 141.0, 'num_gates': 141.0}",sabre_v020_look_010_beam_034,sabre_v020,hex_27,1,34,10
-"{'depth': 832, 'depth_ratio': 8.32, 'time': 275.75053334236145, 'cx_gates': 2076, 'num_gates': 2576}","{'depth': 9.5, 'depth_ratio': 0.095, 'time': 1.604, 'cx_gates': 52.5, 'num_gates': 52.5}",sabre_v020_look_010_beam_035,sabre_v020,hex_27,0,35,10
-"{'depth': 777, 'depth_ratio': 7.77, 'time': 269.32902932167053, 'cx_gates': 2058, 'num_gates': 2558}","{'depth': 200.5, 'depth_ratio': 2.005, 'time': 45.83, 'cx_gates': 136.5, 'num_gates': 136.5}",sabre_v020_look_010_beam_035,sabre_v020,hex_27,1,35,10
-"{'depth': 799, 'depth_ratio': 7.99, 'time': 294.6431202888489, 'cx_gates': 1983, 'num_gates': 2483}","{'depth': 30.0, 'depth_ratio': 0.3, 'time': 3.142, 'cx_gates': 112.5, 'num_gates': 112.5}",sabre_v020_look_010_beam_036,sabre_v020,hex_27,0,36,10
-"{'depth': 797, 'depth_ratio': 7.97, 'time': 262.0117497444153, 'cx_gates': 2046, 'num_gates': 2546}","{'depth': 158.5, 'depth_ratio': 1.585, 'time': 36.7, 'cx_gates': 162.0, 'num_gates': 162.0}",sabre_v020_look_010_beam_036,sabre_v020,hex_27,1,36,10
-"{'depth': 797, 'depth_ratio': 7.97, 'time': 334.69056224823, 'cx_gates': 1983, 'num_gates': 2483}","{'depth': 18.5, 'depth_ratio': 0.185, 'time': 21.19, 'cx_gates': 58.5, 'num_gates': 58.5}",sabre_v020_look_010_beam_037,sabre_v020,hex_27,0,37,10
-"{'depth': 796, 'depth_ratio': 7.96, 'time': 300.21176171302795, 'cx_gates': 2067, 'num_gates': 2567}","{'depth': 160.5, 'depth_ratio': 1.605, 'time': 45.17, 'cx_gates': 177.0, 'num_gates': 177.0}",sabre_v020_look_010_beam_037,sabre_v020,hex_27,1,37,10
-"{'depth': 796, 'depth_ratio': 7.96, 'time': 334.89908361434937, 'cx_gates': 2013, 'num_gates': 2513}","{'depth': 19.0, 'depth_ratio': 0.19, 'time': 2.814, 'cx_gates': 43.5, 'num_gates': 43.5}",sabre_v020_look_010_beam_038,sabre_v020,hex_27,0,38,10
-"{'depth': 783, 'depth_ratio': 7.83, 'time': 320.00154638290405, 'cx_gates': 2037, 'num_gates': 2537}","{'depth': 185.0, 'depth_ratio': 1.85, 'time': 63.0, 'cx_gates': 144.0, 'num_gates': 144.0}",sabre_v020_look_010_beam_038,sabre_v020,hex_27,1,38,10
-"{'depth': 765, 'depth_ratio': 7.65, 'time': 356.57285952568054, 'cx_gates': 1947, 'num_gates': 2447}","{'depth': 27.0, 'depth_ratio': 0.27, 'time': 6.794, 'cx_gates': 48.0, 'num_gates': 48.0}",sabre_v020_look_010_beam_039,sabre_v020,hex_27,0,39,10
-"{'depth': 785, 'depth_ratio': 7.85, 'time': 338.0948610305786, 'cx_gates': 2052, 'num_gates': 2552}","{'depth': 214.0, 'depth_ratio': 2.14, 'time': 37.53, 'cx_gates': 129.0, 'num_gates': 129.0}",sabre_v020_look_010_beam_039,sabre_v020,hex_27,1,39,10
-"{'depth': 775, 'depth_ratio': 7.75, 'time': 387.19752526283264, 'cx_gates': 2085, 'num_gates': 2585}","{'depth': 20.5, 'depth_ratio': 0.205, 'time': 9.326, 'cx_gates': 1.5, 'num_gates': 1.5}",sabre_v020_look_010_beam_040,sabre_v020,hex_27,0,40,10
-"{'depth': 785, 'depth_ratio': 7.85, 'time': 368.81280541419983, 'cx_gates': 2052, 'num_gates': 2552}","{'depth': 163.5, 'depth_ratio': 1.635, 'time': 65.03, 'cx_gates': 189.0, 'num_gates': 189.0}",sabre_v020_look_010_beam_040,sabre_v020,hex_27,1,40,10
-"{'depth': 789, 'depth_ratio': 7.89, 'time': 453.34776520729065, 'cx_gates': 2091, 'num_gates': 2591}","{'depth': 36.0, 'depth_ratio': 0.36, 'time': 27.94, 'cx_gates': 16.5, 'num_gates': 16.5}",sabre_v020_look_010_beam_041,sabre_v020,hex_27,0,41,10
-"{'depth': 789, 'depth_ratio': 7.89, 'time': 529.4563443660736, 'cx_gates': 2070, 'num_gates': 2570}","{'depth': 156.5, 'depth_ratio': 1.565, 'time': 96.53, 'cx_gates': 204.0, 'num_gates': 204.0}",sabre_v020_look_010_beam_041,sabre_v020,hex_27,1,41,10
-"{'depth': 830, 'depth_ratio': 8.3, 'time': 522.0259244441986, 'cx_gates': 2118, 'num_gates': 2618}","{'depth': 15.5, 'depth_ratio': 0.155, 'time': 6.95, 'cx_gates': 3.0, 'num_gates': 3.0}",sabre_v020_look_010_beam_042,sabre_v020,hex_27,0,42,10
-"{'depth': 780, 'depth_ratio': 7.8, 'time': 538.2803919315338, 'cx_gates': 1995, 'num_gates': 2495}","{'depth': 161.0, 'depth_ratio': 1.61, 'time': 91.0, 'cx_gates': 166.5, 'num_gates': 166.5}",sabre_v020_look_010_beam_042,sabre_v020,hex_27,1,42,10
-"{'depth': 824, 'depth_ratio': 8.24, 'time': 591.4721908569336, 'cx_gates': 2079, 'num_gates': 2579}","{'depth': 4.5, 'depth_ratio': 0.045, 'time': 25.83, 'cx_gates': 10.5, 'num_gates': 10.5}",sabre_v020_look_010_beam_043,sabre_v020,hex_27,0,43,10
-"{'depth': 811, 'depth_ratio': 8.11, 'time': 551.8859055042267, 'cx_gates': 2031, 'num_gates': 2531}","{'depth': 159.0, 'depth_ratio': 1.59, 'time': 113.0, 'cx_gates': 180.0, 'num_gates': 180.0}",sabre_v020_look_010_beam_043,sabre_v020,hex_27,1,43,10
-"{'depth': 815, 'depth_ratio': 8.15, 'time': 609.7553915977478, 'cx_gates': 2091, 'num_gates': 2591}","{'depth': 6.0, 'depth_ratio': 0.06, 'time': 12.42, 'cx_gates': 27.0, 'num_gates': 27.0}",sabre_v020_look_010_beam_044,sabre_v020,hex_27,0,44,10
-"{'depth': 801, 'depth_ratio': 8.01, 'time': 577.5828161239624, 'cx_gates': 2016, 'num_gates': 2516}","{'depth': 167.0, 'depth_ratio': 1.67, 'time': 88.58, 'cx_gates': 154.5, 'num_gates': 154.5}",sabre_v020_look_010_beam_044,sabre_v020,hex_27,1,44,10
-"{'depth': 746, 'depth_ratio': 7.46, 'time': 648.5019135475159, 'cx_gates': 2034, 'num_gates': 2534}","{'depth': 34.5, 'depth_ratio': 0.345, 'time': 8.923, 'cx_gates': 28.5, 'num_gates': 28.5}",sabre_v020_look_010_beam_045,sabre_v020,hex_27,0,45,10
-"{'depth': 808, 'depth_ratio': 8.08, 'time': 418.38033056259155, 'cx_gates': 2067, 'num_gates': 2567}","{'depth': 194.0, 'depth_ratio': 1.94, 'time': 83.82, 'cx_gates': 123.0, 'num_gates': 123.0}",sabre_v020_look_010_beam_045,sabre_v020,hex_27,1,45,10
-"{'depth': 813, 'depth_ratio': 8.13, 'time': 434.8892631530762, 'cx_gates': 2148, 'num_gates': 2648}","{'depth': 2.0, 'depth_ratio': 0.02, 'time': 23.61, 'cx_gates': 91.5, 'num_gates': 91.5}",sabre_v020_look_010_beam_046,sabre_v020,hex_27,0,46,10
-"{'depth': 784, 'depth_ratio': 7.84, 'time': 443.7999498844147, 'cx_gates': 2004, 'num_gates': 2504}","{'depth': 219.0, 'depth_ratio': 2.19, 'time': 62.55, 'cx_gates': 115.5, 'num_gates': 115.5}",sabre_v020_look_010_beam_046,sabre_v020,hex_27,1,46,10
-"{'depth': 775, 'depth_ratio': 7.75, 'time': 493.87973952293396, 'cx_gates': 1965, 'num_gates': 2465}","{'depth': 18.5, 'depth_ratio': 0.185, 'time': 12.4, 'cx_gates': 75.0, 'num_gates': 75.0}",sabre_v020_look_010_beam_047,sabre_v020,hex_27,0,47,10
-"{'depth': 800, 'depth_ratio': 8.0, 'time': 542.3217163085938, 'cx_gates': 2022, 'num_gates': 2522}","{'depth': 186.5, 'depth_ratio': 1.865, 'time': 90.79, 'cx_gates': 156.0, 'num_gates': 156.0}",sabre_v020_look_010_beam_047,sabre_v020,hex_27,1,47,10
-"{'depth': 790, 'depth_ratio': 7.9, 'time': 675.5266971588135, 'cx_gates': 1950, 'num_gates': 2450}","{'depth': 27.0, 'depth_ratio': 0.27, 'time': 1.706, 'cx_gates': 79.5, 'num_gates': 79.5}",sabre_v020_look_010_beam_048,sabre_v020,hex_27,0,48,10
-"{'depth': 795, 'depth_ratio': 7.95, 'time': 627.3603956699371, 'cx_gates': 2085, 'num_gates': 2585}","{'depth': 189.0, 'depth_ratio': 1.89, 'time': 95.83, 'cx_gates': 187.5, 'num_gates': 187.5}",sabre_v020_look_010_beam_048,sabre_v020,hex_27,1,48,10
-"{'depth': 729, 'depth_ratio': 7.29, 'time': 701.7661545276642, 'cx_gates': 1950, 'num_gates': 2450}","{'depth': 34.5, 'depth_ratio': 0.345, 'time': 29.89, 'cx_gates': 22.5, 'num_gates': 22.5}",sabre_v020_look_010_beam_049,sabre_v020,hex_27,0,49,10
-"{'depth': 794, 'depth_ratio': 7.94, 'time': 654.2386989593506, 'cx_gates': 2055, 'num_gates': 2555}","{'depth': 180.5, 'depth_ratio': 1.805, 'time': 110.5, 'cx_gates': 163.5, 'num_gates': 163.5}",sabre_v020_look_010_beam_049,sabre_v020,hex_27,1,49,10
-"{'depth': 786, 'depth_ratio': 7.86, 'time': 698.2033519744873, 'cx_gates': 1989, 'num_gates': 2489}","{'depth': 6.0, 'depth_ratio': 0.06, 'time': 14.0, 'cx_gates': 42.0, 'num_gates': 42.0}",sabre_v020_look_010_beam_050,sabre_v020,hex_27,0,50,10
-"{'depth': 785, 'depth_ratio': 7.85, 'time': 681.9549224376678, 'cx_gates': 2088, 'num_gates': 2588}","{'depth': 177.5, 'depth_ratio': 1.775, 'time': 103.4, 'cx_gates': 186.0, 'num_gates': 186.0}",sabre_v020_look_010_beam_050,sabre_v020,hex_27,1,50,10
-"{'depth': 772, 'depth_ratio': 7.72, 'time': 738.658242225647, 'cx_gates': 1920, 'num_gates': 2420}","{'depth': 15.0, 'depth_ratio': 0.15, 'time': 29.89, 'cx_gates': 12.0, 'num_gates': 12.0}",sabre_v020_look_010_beam_051,sabre_v020,hex_27,0,51,10
-"{'depth': 764, 'depth_ratio': 7.64, 'time': 765.6659207344055, 'cx_gates': 2025, 'num_gates': 2525}","{'depth': 202.0, 'depth_ratio': 2.02, 'time': 141.2, 'cx_gates': 138.0, 'num_gates': 138.0}",sabre_v020_look_010_beam_051,sabre_v020,hex_27,1,51,10
-"{'depth': 772, 'depth_ratio': 7.72, 'time': 774.635157585144, 'cx_gates': 1926, 'num_gates': 2426}","{'depth': 12.5, 'depth_ratio': 0.125, 'time': 8.79, 'cx_gates': 42.0, 'num_gates': 42.0}",sabre_v020_look_010_beam_052,sabre_v020,hex_27,0,52,10
-"{'depth': 791, 'depth_ratio': 7.91, 'time': 737.374751329422, 'cx_gates': 2061, 'num_gates': 2561}","{'depth': 183.0, 'depth_ratio': 1.83, 'time': 114.6, 'cx_gates': 199.5, 'num_gates': 199.5}",sabre_v020_look_010_beam_052,sabre_v020,hex_27,1,52,10
+best_data,std_dev,routing pass,layout pass,coupling map,circuit label,beam width,look ahead
+
+"{'depth': 818, 'depth_ratio': 8.18, 'time': 3.688232421875, 'cx_gates': 2274, 'num_gates': 2774}","{'depth': 12.5, 'depth_ratio': 0.125, 'time': 0.00779, 'cx_gates': 30.0, 'num_gates': 30.0}",sabre_v020_look_010_beam_001,sabre_v020,hex_27,0,1,10
+
+"{'depth': 892, 'depth_ratio': 8.92, 'time': 4.0082314014434814, 'cx_gates': 2391, 'num_gates': 2891}","{'depth': 160.5, 'depth_ratio': 1.605, 'time': 1.008, 'cx_gates': 217.5, 'num_gates': 217.5}",sabre_v020_look_010_beam_001,sabre_v020,hex_27,1,1,10
+
+"{'depth': 836, 'depth_ratio': 8.36, 'time': 6.07723593711853, 'cx_gates': 2214, 'num_gates': 2714}","{'depth': 14.0, 'depth_ratio': 0.14, 'time': 0.08686, 'cx_gates': 21.0, 'num_gates': 21.0}",sabre_v020_look_010_beam_002,sabre_v020,hex_27,0,2,10
+
+"{'depth': 875, 'depth_ratio': 8.75, 'time': 5.794776201248169, 'cx_gates': 2364, 'num_gates': 2864}","{'depth': 171.5, 'depth_ratio': 1.715, 'time': 1.396, 'cx_gates': 211.5, 'num_gates': 211.5}",sabre_v020_look_010_beam_002,sabre_v020,hex_27,1,2,10
+
+"{'depth': 842, 'depth_ratio': 8.42, 'time': 7.875079154968262, 'cx_gates': 2190, 'num_gates': 2690}","{'depth': 10.5, 'depth_ratio': 0.105, 'time': 0.1902, 'cx_gates': 15.0, 'num_gates': 15.0}",sabre_v020_look_010_beam_003,sabre_v020,hex_27,0,3,10
+
+"{'depth': 796, 'depth_ratio': 7.96, 'time': 8.22869348526001, 'cx_gates': 2127, 'num_gates': 2627}","{'depth': 221.0, 'depth_ratio': 2.21, 'time': 1.593, 'cx_gates': 67.5, 'num_gates': 67.5}",sabre_v020_look_010_beam_003,sabre_v020,hex_27,1,3,10
+
+"{'depth': 825, 'depth_ratio': 8.25, 'time': 9.623186111450195, 'cx_gates': 2124, 'num_gates': 2624}","{'depth': 22.0, 'depth_ratio': 0.22, 'time': 0.1101, 'cx_gates': 25.5, 'num_gates': 25.5}",sabre_v020_look_010_beam_004,sabre_v020,hex_27,0,4,10
+
+"{'depth': 863, 'depth_ratio': 8.63, 'time': 9.539689064025879, 'cx_gates': 2193, 'num_gates': 2693}","{'depth': 193.0, 'depth_ratio': 1.93, 'time': 5.586, 'cx_gates': 147.0, 'num_gates': 147.0}",sabre_v020_look_010_beam_004,sabre_v020,hex_27,1,4,10
+
+"{'depth': 843, 'depth_ratio': 8.43, 'time': 13.193770408630371, 'cx_gates': 2157, 'num_gates': 2657}","{'depth': 15.0, 'depth_ratio': 0.15, 'time': 0.2117, 'cx_gates': 24.0, 'num_gates': 24.0}",sabre_v020_look_010_beam_005,sabre_v020,hex_27,0,5,10
+
+"{'depth': 863, 'depth_ratio': 8.63, 'time': 13.424760103225708, 'cx_gates': 2238, 'num_gates': 2738}","{'depth': 167.5, 'depth_ratio': 1.675, 'time': 4.207, 'cx_gates': 175.5, 'num_gates': 175.5}",sabre_v020_look_010_beam_005,sabre_v020,hex_27,1,5,10
+
+"{'depth': 800, 'depth_ratio': 8.0, 'time': 25.89917540550232, 'cx_gates': 2157, 'num_gates': 2657}","{'depth': 28.5, 'depth_ratio': 0.285, 'time': 3.905, 'cx_gates': 25.5, 'num_gates': 25.5}",sabre_v020_look_010_beam_006,sabre_v020,hex_27,0,6,10
+
+"{'depth': 835, 'depth_ratio': 8.35, 'time': 17.361578702926636, 'cx_gates': 2202, 'num_gates': 2702}","{'depth': 182.5, 'depth_ratio': 1.825, 'time': 0.8637, 'cx_gates': 153.0, 'num_gates': 153.0}",sabre_v020_look_010_beam_006,sabre_v020,hex_27,1,6,10
+
+"{'depth': 825, 'depth_ratio': 8.25, 'time': 37.889703035354614, 'cx_gates': 2217, 'num_gates': 2717}","{'depth': 1.5, 'depth_ratio': 0.015, 'time': 7.225, 'cx_gates': 37.5, 'num_gates': 37.5}",sabre_v020_look_010_beam_007,sabre_v020,hex_27,0,7,10
+
+"{'depth': 852, 'depth_ratio': 8.52, 'time': 22.47830057144165, 'cx_gates': 2169, 'num_gates': 2669}","{'depth': 172.0, 'depth_ratio': 1.72, 'time': 8.548, 'cx_gates': 145.5, 'num_gates': 145.5}",sabre_v020_look_010_beam_007,sabre_v020,hex_27,1,7,10
+
+"{'depth': 795, 'depth_ratio': 7.95, 'time': 27.048444747924805, 'cx_gates': 2142, 'num_gates': 2642}","{'depth': 16.5, 'depth_ratio': 0.165, 'time': 4.798, 'cx_gates': 4.5, 'num_gates': 4.5}",sabre_v020_look_010_beam_008,sabre_v020,hex_27,0,8,10
+
+"{'depth': 814, 'depth_ratio': 8.14, 'time': 27.71312689781189, 'cx_gates': 2235, 'num_gates': 2735}","{'depth': 181.0, 'depth_ratio': 1.81, 'time': 9.391, 'cx_gates': 199.5, 'num_gates': 199.5}",sabre_v020_look_010_beam_008,sabre_v020,hex_27,1,8,10
+
+"{'depth': 826, 'depth_ratio': 8.26, 'time': 30.34264612197876, 'cx_gates': 2160, 'num_gates': 2660}","{'depth': 0.5, 'depth_ratio': 0.005, 'time': 0.7972, 'cx_gates': 12.0, 'num_gates': 12.0}",sabre_v020_look_010_beam_009,sabre_v020,hex_27,0,9,10
+
+"{'depth': 837, 'depth_ratio': 8.37, 'time': 29.608251810073853, 'cx_gates': 2094, 'num_gates': 2594}","{'depth': 136.0, 'depth_ratio': 1.36, 'time': 12.41, 'cx_gates': 165.0, 'num_gates': 165.0}",sabre_v020_look_010_beam_009,sabre_v020,hex_27,1,9,10
+
+"{'depth': 813, 'depth_ratio': 8.13, 'time': 38.177587270736694, 'cx_gates': 2097, 'num_gates': 2597}","{'depth': 18.5, 'depth_ratio': 0.185, 'time': 0.1501, 'cx_gates': 72.0, 'num_gates': 72.0}",sabre_v020_look_010_beam_010,sabre_v020,hex_27,0,10,10
+
+"{'depth': 833, 'depth_ratio': 8.33, 'time': 36.35642910003662, 'cx_gates': 2196, 'num_gates': 2696}","{'depth': 187.0, 'depth_ratio': 1.87, 'time': 5.565, 'cx_gates': 187.5, 'num_gates': 187.5}",sabre_v020_look_010_beam_010,sabre_v020,hex_27,1,10,10
+
+"{'depth': 828, 'depth_ratio': 8.28, 'time': 44.69894289970398, 'cx_gates': 2229, 'num_gates': 2729}","{'depth': 14.0, 'depth_ratio': 0.14, 'time': 0.4177, 'cx_gates': 1.5, 'num_gates': 1.5}",sabre_v020_look_010_beam_011,sabre_v020,hex_27,0,11,10
+
+"{'depth': 865, 'depth_ratio': 8.65, 'time': 62.01776599884033, 'cx_gates': 2193, 'num_gates': 2693}","{'depth': 155.5, 'depth_ratio': 1.555, 'time': 15.85, 'cx_gates': 192.0, 'num_gates': 192.0}",sabre_v020_look_010_beam_011,sabre_v020,hex_27,1,11,10
+
+"{'depth': 831, 'depth_ratio': 8.31, 'time': 49.073601722717285, 'cx_gates': 2184, 'num_gates': 2684}","{'depth': 10.5, 'depth_ratio': 0.105, 'time': 1.444, 'cx_gates': 13.5, 'num_gates': 13.5}",sabre_v020_look_010_beam_012,sabre_v020,hex_27,0,12,10
+
+"{'depth': 855, 'depth_ratio': 8.55, 'time': 48.489843130111694, 'cx_gates': 2154, 'num_gates': 2654}","{'depth': 146.0, 'depth_ratio': 1.46, 'time': 7.922, 'cx_gates': 184.5, 'num_gates': 184.5}",sabre_v020_look_010_beam_012,sabre_v020,hex_27,1,12,10
+
+"{'depth': 809, 'depth_ratio': 8.09, 'time': 56.74716758728027, 'cx_gates': 2070, 'num_gates': 2570}","{'depth': 1.0, 'depth_ratio': 0.01, 'time': 0.03892, 'cx_gates': 63.0, 'num_gates': 63.0}",sabre_v020_look_010_beam_013,sabre_v020,hex_27,0,13,10
+
+"{'depth': 805, 'depth_ratio': 8.05, 'time': 53.90176606178284, 'cx_gates': 2124, 'num_gates': 2624}","{'depth': 169.0, 'depth_ratio': 1.69, 'time': 6.884, 'cx_gates': 198.0, 'num_gates': 198.0}",sabre_v020_look_010_beam_013,sabre_v020,hex_27,1,13,10
+
+"{'depth': 763, 'depth_ratio': 7.63, 'time': 64.92630696296692, 'cx_gates': 1986, 'num_gates': 2486}","{'depth': 29.5, 'depth_ratio': 0.295, 'time': 0.8817, 'cx_gates': 49.5, 'num_gates': 49.5}",sabre_v020_look_010_beam_014,sabre_v020,hex_27,0,14,10
+
+"{'depth': 799, 'depth_ratio': 7.99, 'time': 64.57703256607056, 'cx_gates': 2106, 'num_gates': 2606}","{'depth': 185.5, 'depth_ratio': 1.855, 'time': 12.4, 'cx_gates': 169.5, 'num_gates': 169.5}",sabre_v020_look_010_beam_014,sabre_v020,hex_27,1,14,10
+
+"{'depth': 811, 'depth_ratio': 8.11, 'time': 74.37420845031738, 'cx_gates': 2160, 'num_gates': 2660}","{'depth': 16.0, 'depth_ratio': 0.16, 'time': 4.1, 'cx_gates': 45.0, 'num_gates': 45.0}",sabre_v020_look_010_beam_015,sabre_v020,hex_27,0,15,10
+
+"{'depth': 806, 'depth_ratio': 8.06, 'time': 66.0155999660492, 'cx_gates': 2133, 'num_gates': 2633}","{'depth': 188.5, 'depth_ratio': 1.885, 'time': 10.97, 'cx_gates': 153.0, 'num_gates': 153.0}",sabre_v020_look_010_beam_015,sabre_v020,hex_27,1,15,10
+
+"{'depth': 825, 'depth_ratio': 8.25, 'time': 73.99628138542175, 'cx_gates': 2178, 'num_gates': 2678}","{'depth': 18.5, 'depth_ratio': 0.185, 'time': 0.8256, 'cx_gates': 24.0, 'num_gates': 24.0}",sabre_v020_look_010_beam_016,sabre_v020,hex_27,0,16,10
+
+"{'depth': 836, 'depth_ratio': 8.36, 'time': 73.12201023101807, 'cx_gates': 2145, 'num_gates': 2645}","{'depth': 170.0, 'depth_ratio': 1.7, 'time': 11.86, 'cx_gates': 165.0, 'num_gates': 165.0}",sabre_v020_look_010_beam_016,sabre_v020,hex_27,1,16,10
+
+"{'depth': 793, 'depth_ratio': 7.93, 'time': 79.9664044380188, 'cx_gates': 2133, 'num_gates': 2633}","{'depth': 8.0, 'depth_ratio': 0.08, 'time': 1.065, 'cx_gates': 1.5, 'num_gates': 1.5}",sabre_v020_look_010_beam_017,sabre_v020,hex_27,0,17,10
+
+"{'depth': 759, 'depth_ratio': 7.59, 'time': 80.57424998283386, 'cx_gates': 2034, 'num_gates': 2534}","{'depth': 195.5, 'depth_ratio': 1.955, 'time': 14.98, 'cx_gates': 132.0, 'num_gates': 132.0}",sabre_v020_look_010_beam_017,sabre_v020,hex_27,1,17,10
+
+"{'depth': 784, 'depth_ratio': 7.84, 'time': 87.95578956604004, 'cx_gates': 2058, 'num_gates': 2558}","{'depth': 20.0, 'depth_ratio': 0.2, 'time': 2.231, 'cx_gates': 88.5, 'num_gates': 88.5}",sabre_v020_look_010_beam_018,sabre_v020,hex_27,0,18,10
+
+"{'depth': 813, 'depth_ratio': 8.13, 'time': 87.17825865745544, 'cx_gates': 2112, 'num_gates': 2612}","{'depth': 173.5, 'depth_ratio': 1.735, 'time': 14.34, 'cx_gates': 165.0, 'num_gates': 165.0}",sabre_v020_look_010_beam_018,sabre_v020,hex_27,1,18,10
+
+"{'depth': 786, 'depth_ratio': 7.86, 'time': 97.0666823387146, 'cx_gates': 2067, 'num_gates': 2567}","{'depth': 11.5, 'depth_ratio': 0.115, 'time': 1.779, 'cx_gates': 13.5, 'num_gates': 13.5}",sabre_v020_look_010_beam_019,sabre_v020,hex_27,0,19,10
+
+"{'depth': 787, 'depth_ratio': 7.87, 'time': 98.04202818870544, 'cx_gates': 1992, 'num_gates': 2492}","{'depth': 178.0, 'depth_ratio': 1.78, 'time': 10.25, 'cx_gates': 115.5, 'num_gates': 115.5}",sabre_v020_look_010_beam_019,sabre_v020,hex_27,1,19,10
+
+"{'depth': 807, 'depth_ratio': 8.07, 'time': 109.2328519821167, 'cx_gates': 2106, 'num_gates': 2606}","{'depth': 13.0, 'depth_ratio': 0.13, 'time': 1.776, 'cx_gates': 25.5, 'num_gates': 25.5}",sabre_v020_look_010_beam_020,sabre_v020,hex_27,0,20,10
+
+"{'depth': 820, 'depth_ratio': 8.2, 'time': 102.867196559906, 'cx_gates': 2202, 'num_gates': 2702}","{'depth': 202.0, 'depth_ratio': 2.02, 'time': 5.168, 'cx_gates': 216.0, 'num_gates': 216.0}",sabre_v020_look_010_beam_020,sabre_v020,hex_27,1,20,10
+
+"{'depth': 802, 'depth_ratio': 8.02, 'time': 124.15270924568176, 'cx_gates': 2124, 'num_gates': 2624}","{'depth': 5.5, 'depth_ratio': 0.055, 'time': 0.9437, 'cx_gates': 4.5, 'num_gates': 4.5}",sabre_v020_look_010_beam_021,sabre_v020,hex_27,0,21,10
+
+"{'depth': 819, 'depth_ratio': 8.19, 'time': 144.6149878501892, 'cx_gates': 2178, 'num_gates': 2678}","{'depth': 196.5, 'depth_ratio': 1.965, 'time': 33.05, 'cx_gates': 204.0, 'num_gates': 204.0}",sabre_v020_look_010_beam_021,sabre_v020,hex_27,1,21,10
+
+"{'depth': 817, 'depth_ratio': 8.17, 'time': 156.63201808929443, 'cx_gates': 2166, 'num_gates': 2666}","{'depth': 14.0, 'depth_ratio': 0.14, 'time': 13.38, 'cx_gates': 9.0, 'num_gates': 9.0}",sabre_v020_look_010_beam_022,sabre_v020,hex_27,0,22,10
+
+"{'depth': 819, 'depth_ratio': 8.19, 'time': 129.3978590965271, 'cx_gates': 2247, 'num_gates': 2747}","{'depth': 185.5, 'depth_ratio': 1.855, 'time': 20.36, 'cx_gates': 217.5, 'num_gates': 217.5}",sabre_v020_look_010_beam_022,sabre_v020,hex_27,1,22,10
+
+"{'depth': 831, 'depth_ratio': 8.31, 'time': 133.74713611602783, 'cx_gates': 2169, 'num_gates': 2669}","{'depth': 1.5, 'depth_ratio': 0.015, 'time': 0.9554, 'cx_gates': 33.0, 'num_gates': 33.0}",sabre_v020_look_010_beam_023,sabre_v020,hex_27,0,23,10
+
+"{'depth': 816, 'depth_ratio': 8.16, 'time': 132.8730399608612, 'cx_gates': 2187, 'num_gates': 2687}","{'depth': 180.0, 'depth_ratio': 1.8, 'time': 18.59, 'cx_gates': 208.5, 'num_gates': 208.5}",sabre_v020_look_010_beam_023,sabre_v020,hex_27,1,23,10
+
+"{'depth': 821, 'depth_ratio': 8.21, 'time': 143.57920026779175, 'cx_gates': 2154, 'num_gates': 2654}","{'depth': 15.5, 'depth_ratio': 0.155, 'time': 2.94, 'cx_gates': 9.0, 'num_gates': 9.0}",sabre_v020_look_010_beam_024,sabre_v020,hex_27,0,24,10
+
+"{'depth': 809, 'depth_ratio': 8.09, 'time': 132.18757128715515, 'cx_gates': 2067, 'num_gates': 2567}","{'depth': 167.0, 'depth_ratio': 1.67, 'time': 15.47, 'cx_gates': 138.0, 'num_gates': 138.0}",sabre_v020_look_010_beam_024,sabre_v020,hex_27,1,24,10
+
+"{'depth': 777, 'depth_ratio': 7.77, 'time': 162.65149879455566, 'cx_gates': 2088, 'num_gates': 2588}","{'depth': 30.0, 'depth_ratio': 0.3, 'time': 7.762, 'cx_gates': 61.5, 'num_gates': 61.5}",sabre_v020_look_010_beam_025,sabre_v020,hex_27,0,25,10
+
+"{'depth': 801, 'depth_ratio': 8.01, 'time': 152.33866000175476, 'cx_gates': 2175, 'num_gates': 2675}","{'depth': 168.0, 'depth_ratio': 1.68, 'time': 24.55, 'cx_gates': 222.0, 'num_gates': 222.0}",sabre_v020_look_010_beam_025,sabre_v020,hex_27,1,25,10
+
+"{'depth': 761, 'depth_ratio': 7.61, 'time': 168.30503129959106, 'cx_gates': 2019, 'num_gates': 2519}","{'depth': 38.5, 'depth_ratio': 0.385, 'time': 5.725, 'cx_gates': 97.5, 'num_gates': 97.5}",sabre_v020_look_010_beam_026,sabre_v020,hex_27,0,26,10
+
+"{'depth': 799, 'depth_ratio': 7.99, 'time': 171.1475429534912, 'cx_gates': 2154, 'num_gates': 2654}","{'depth': 171.0, 'depth_ratio': 1.71, 'time': 26.63, 'cx_gates': 211.5, 'num_gates': 211.5}",sabre_v020_look_010_beam_026,sabre_v020,hex_27,1,26,10
+
+"{'depth': 779, 'depth_ratio': 7.79, 'time': 192.61458802223206, 'cx_gates': 2046, 'num_gates': 2546}","{'depth': 32.0, 'depth_ratio': 0.32, 'time': 9.868, 'cx_gates': 84.0, 'num_gates': 84.0}",sabre_v020_look_010_beam_027,sabre_v020,hex_27,0,27,10
+
+"{'depth': 784, 'depth_ratio': 7.84, 'time': 181.42099285125732, 'cx_gates': 2064, 'num_gates': 2564}","{'depth': 185.5, 'depth_ratio': 1.855, 'time': 27.44, 'cx_gates': 195.0, 'num_gates': 195.0}",sabre_v020_look_010_beam_027,sabre_v020,hex_27,1,27,10
+
+"{'depth': 773, 'depth_ratio': 7.73, 'time': 195.95942664146423, 'cx_gates': 2073, 'num_gates': 2573}","{'depth': 10.5, 'depth_ratio': 0.105, 'time': 9.982, 'cx_gates': 49.5, 'num_gates': 49.5}",sabre_v020_look_010_beam_028,sabre_v020,hex_27,0,28,10
+
+"{'depth': 757, 'depth_ratio': 7.57, 'time': 187.0032184123993, 'cx_gates': 2031, 'num_gates': 2531}","{'depth': 236.0, 'depth_ratio': 2.36, 'time': 30.66, 'cx_gates': 84.0, 'num_gates': 84.0}",sabre_v020_look_010_beam_028,sabre_v020,hex_27,1,28,10
+
+"{'depth': 798, 'depth_ratio': 7.98, 'time': 200.2545838356018, 'cx_gates': 2079, 'num_gates': 2579}","{'depth': 21.5, 'depth_ratio': 0.215, 'time': 0.4522, 'cx_gates': 88.5, 'num_gates': 88.5}",sabre_v020_look_010_beam_029,sabre_v020,hex_27,0,29,10
+
+"{'depth': 832, 'depth_ratio': 8.32, 'time': 183.57022953033447, 'cx_gates': 2157, 'num_gates': 2657}","{'depth': 195.5, 'depth_ratio': 1.955, 'time': 21.57, 'cx_gates': 145.5, 'num_gates': 145.5}",sabre_v020_look_010_beam_029,sabre_v020,hex_27,1,29,10
+
+"{'depth': 773, 'depth_ratio': 7.73, 'time': 196.69831657409668, 'cx_gates': 2046, 'num_gates': 2546}","{'depth': 16.5, 'depth_ratio': 0.165, 'time': 3.148, 'cx_gates': 73.5, 'num_gates': 73.5}",sabre_v020_look_010_beam_030,sabre_v020,hex_27,0,30,10
+
+"{'depth': 756, 'depth_ratio': 7.56, 'time': 194.842200756073, 'cx_gates': 1956, 'num_gates': 2456}","{'depth': 173.5, 'depth_ratio': 1.735, 'time': 26.24, 'cx_gates': 115.5, 'num_gates': 115.5}",sabre_v020_look_010_beam_030,sabre_v020,hex_27,1,30,10
+
+"{'depth': 774, 'depth_ratio': 7.74, 'time': 224.62836265563965, 'cx_gates': 2076, 'num_gates': 2576}","{'depth': 9.5, 'depth_ratio': 0.095, 'time': 3.457, 'cx_gates': 21.0, 'num_gates': 21.0}",sabre_v020_look_010_beam_031,sabre_v020,hex_27,0,31,10
+
+"{'depth': 775, 'depth_ratio': 7.75, 'time': 227.74314904212952, 'cx_gates': 2058, 'num_gates': 2558}","{'depth': 208.5, 'depth_ratio': 2.085, 'time': 39.87, 'cx_gates': 115.5, 'num_gates': 115.5}",sabre_v020_look_010_beam_031,sabre_v020,hex_27,1,31,10
+
+"{'depth': 795, 'depth_ratio': 7.95, 'time': 241.34103345870972, 'cx_gates': 2082, 'num_gates': 2582}","{'depth': 15.0, 'depth_ratio': 0.15, 'time': 2.458, 'cx_gates': 24.0, 'num_gates': 24.0}",sabre_v020_look_010_beam_032,sabre_v020,hex_27,0,32,10
+
+"{'depth': 781, 'depth_ratio': 7.81, 'time': 221.9387149810791, 'cx_gates': 2022, 'num_gates': 2522}","{'depth': 157.0, 'depth_ratio': 1.57, 'time': 37.04, 'cx_gates': 201.0, 'num_gates': 201.0}",sabre_v020_look_010_beam_032,sabre_v020,hex_27,1,32,10
+
+"{'depth': 780, 'depth_ratio': 7.8, 'time': 246.6297676563263, 'cx_gates': 2109, 'num_gates': 2609}","{'depth': 8.0, 'depth_ratio': 0.08, 'time': 2.811, 'cx_gates': 18.0, 'num_gates': 18.0}",sabre_v020_look_010_beam_033,sabre_v020,hex_27,0,33,10
+
+"{'depth': 782, 'depth_ratio': 7.82, 'time': 235.7369453907013, 'cx_gates': 2022, 'num_gates': 2522}","{'depth': 163.0, 'depth_ratio': 1.63, 'time': 36.03, 'cx_gates': 135.0, 'num_gates': 135.0}",sabre_v020_look_010_beam_033,sabre_v020,hex_27,1,33,10
+
+"{'depth': 782, 'depth_ratio': 7.82, 'time': 251.88760352134705, 'cx_gates': 2034, 'num_gates': 2534}","{'depth': 2.0, 'depth_ratio': 0.02, 'time': 10.06, 'cx_gates': 3.0, 'num_gates': 3.0}",sabre_v020_look_010_beam_034,sabre_v020,hex_27,0,34,10
+
+"{'depth': 797, 'depth_ratio': 7.97, 'time': 243.15766620635986, 'cx_gates': 2085, 'num_gates': 2585}","{'depth': 195.5, 'depth_ratio': 1.955, 'time': 29.32, 'cx_gates': 141.0, 'num_gates': 141.0}",sabre_v020_look_010_beam_034,sabre_v020,hex_27,1,34,10
+
+"{'depth': 832, 'depth_ratio': 8.32, 'time': 275.75053334236145, 'cx_gates': 2076, 'num_gates': 2576}","{'depth': 9.5, 'depth_ratio': 0.095, 'time': 1.604, 'cx_gates': 52.5, 'num_gates': 52.5}",sabre_v020_look_010_beam_035,sabre_v020,hex_27,0,35,10
+
+"{'depth': 777, 'depth_ratio': 7.77, 'time': 269.32902932167053, 'cx_gates': 2058, 'num_gates': 2558}","{'depth': 200.5, 'depth_ratio': 2.005, 'time': 45.83, 'cx_gates': 136.5, 'num_gates': 136.5}",sabre_v020_look_010_beam_035,sabre_v020,hex_27,1,35,10
+
+"{'depth': 799, 'depth_ratio': 7.99, 'time': 294.6431202888489, 'cx_gates': 1983, 'num_gates': 2483}","{'depth': 30.0, 'depth_ratio': 0.3, 'time': 3.142, 'cx_gates': 112.5, 'num_gates': 112.5}",sabre_v020_look_010_beam_036,sabre_v020,hex_27,0,36,10
+
+"{'depth': 797, 'depth_ratio': 7.97, 'time': 262.0117497444153, 'cx_gates': 2046, 'num_gates': 2546}","{'depth': 158.5, 'depth_ratio': 1.585, 'time': 36.7, 'cx_gates': 162.0, 'num_gates': 162.0}",sabre_v020_look_010_beam_036,sabre_v020,hex_27,1,36,10
+
+"{'depth': 797, 'depth_ratio': 7.97, 'time': 334.69056224823, 'cx_gates': 1983, 'num_gates': 2483}","{'depth': 18.5, 'depth_ratio': 0.185, 'time': 21.19, 'cx_gates': 58.5, 'num_gates': 58.5}",sabre_v020_look_010_beam_037,sabre_v020,hex_27,0,37,10
+
+"{'depth': 796, 'depth_ratio': 7.96, 'time': 300.21176171302795, 'cx_gates': 2067, 'num_gates': 2567}","{'depth': 160.5, 'depth_ratio': 1.605, 'time': 45.17, 'cx_gates': 177.0, 'num_gates': 177.0}",sabre_v020_look_010_beam_037,sabre_v020,hex_27,1,37,10
+
+"{'depth': 796, 'depth_ratio': 7.96, 'time': 334.89908361434937, 'cx_gates': 2013, 'num_gates': 2513}","{'depth': 19.0, 'depth_ratio': 0.19, 'time': 2.814, 'cx_gates': 43.5, 'num_gates': 43.5}",sabre_v020_look_010_beam_038,sabre_v020,hex_27,0,38,10
+
+"{'depth': 783, 'depth_ratio': 7.83, 'time': 320.00154638290405, 'cx_gates': 2037, 'num_gates': 2537}","{'depth': 185.0, 'depth_ratio': 1.85, 'time': 63.0, 'cx_gates': 144.0, 'num_gates': 144.0}",sabre_v020_look_010_beam_038,sabre_v020,hex_27,1,38,10
+
+"{'depth': 765, 'depth_ratio': 7.65, 'time': 356.57285952568054, 'cx_gates': 1947, 'num_gates': 2447}","{'depth': 27.0, 'depth_ratio': 0.27, 'time': 6.794, 'cx_gates': 48.0, 'num_gates': 48.0}",sabre_v020_look_010_beam_039,sabre_v020,hex_27,0,39,10
+
+"{'depth': 785, 'depth_ratio': 7.85, 'time': 338.0948610305786, 'cx_gates': 2052, 'num_gates': 2552}","{'depth': 214.0, 'depth_ratio': 2.14, 'time': 37.53, 'cx_gates': 129.0, 'num_gates': 129.0}",sabre_v020_look_010_beam_039,sabre_v020,hex_27,1,39,10
+
+"{'depth': 775, 'depth_ratio': 7.75, 'time': 387.19752526283264, 'cx_gates': 2085, 'num_gates': 2585}","{'depth': 20.5, 'depth_ratio': 0.205, 'time': 9.326, 'cx_gates': 1.5, 'num_gates': 1.5}",sabre_v020_look_010_beam_040,sabre_v020,hex_27,0,40,10
+
+"{'depth': 785, 'depth_ratio': 7.85, 'time': 368.81280541419983, 'cx_gates': 2052, 'num_gates': 2552}","{'depth': 163.5, 'depth_ratio': 1.635, 'time': 65.03, 'cx_gates': 189.0, 'num_gates': 189.0}",sabre_v020_look_010_beam_040,sabre_v020,hex_27,1,40,10
+
+"{'depth': 789, 'depth_ratio': 7.89, 'time': 453.34776520729065, 'cx_gates': 2091, 'num_gates': 2591}","{'depth': 36.0, 'depth_ratio': 0.36, 'time': 27.94, 'cx_gates': 16.5, 'num_gates': 16.5}",sabre_v020_look_010_beam_041,sabre_v020,hex_27,0,41,10
+
+"{'depth': 789, 'depth_ratio': 7.89, 'time': 529.4563443660736, 'cx_gates': 2070, 'num_gates': 2570}","{'depth': 156.5, 'depth_ratio': 1.565, 'time': 96.53, 'cx_gates': 204.0, 'num_gates': 204.0}",sabre_v020_look_010_beam_041,sabre_v020,hex_27,1,41,10
+
+"{'depth': 830, 'depth_ratio': 8.3, 'time': 522.0259244441986, 'cx_gates': 2118, 'num_gates': 2618}","{'depth': 15.5, 'depth_ratio': 0.155, 'time': 6.95, 'cx_gates': 3.0, 'num_gates': 3.0}",sabre_v020_look_010_beam_042,sabre_v020,hex_27,0,42,10
+
+"{'depth': 780, 'depth_ratio': 7.8, 'time': 538.2803919315338, 'cx_gates': 1995, 'num_gates': 2495}","{'depth': 161.0, 'depth_ratio': 1.61, 'time': 91.0, 'cx_gates': 166.5, 'num_gates': 166.5}",sabre_v020_look_010_beam_042,sabre_v020,hex_27,1,42,10
+
+"{'depth': 824, 'depth_ratio': 8.24, 'time': 591.4721908569336, 'cx_gates': 2079, 'num_gates': 2579}","{'depth': 4.5, 'depth_ratio': 0.045, 'time': 25.83, 'cx_gates': 10.5, 'num_gates': 10.5}",sabre_v020_look_010_beam_043,sabre_v020,hex_27,0,43,10
+
+"{'depth': 811, 'depth_ratio': 8.11, 'time': 551.8859055042267, 'cx_gates': 2031, 'num_gates': 2531}","{'depth': 159.0, 'depth_ratio': 1.59, 'time': 113.0, 'cx_gates': 180.0, 'num_gates': 180.0}",sabre_v020_look_010_beam_043,sabre_v020,hex_27,1,43,10
+
+"{'depth': 815, 'depth_ratio': 8.15, 'time': 609.7553915977478, 'cx_gates': 2091, 'num_gates': 2591}","{'depth': 6.0, 'depth_ratio': 0.06, 'time': 12.42, 'cx_gates': 27.0, 'num_gates': 27.0}",sabre_v020_look_010_beam_044,sabre_v020,hex_27,0,44,10
+
+"{'depth': 801, 'depth_ratio': 8.01, 'time': 577.5828161239624, 'cx_gates': 2016, 'num_gates': 2516}","{'depth': 167.0, 'depth_ratio': 1.67, 'time': 88.58, 'cx_gates': 154.5, 'num_gates': 154.5}",sabre_v020_look_010_beam_044,sabre_v020,hex_27,1,44,10
+
+"{'depth': 746, 'depth_ratio': 7.46, 'time': 648.5019135475159, 'cx_gates': 2034, 'num_gates': 2534}","{'depth': 34.5, 'depth_ratio': 0.345, 'time': 8.923, 'cx_gates': 28.5, 'num_gates': 28.5}",sabre_v020_look_010_beam_045,sabre_v020,hex_27,0,45,10
+
+"{'depth': 808, 'depth_ratio': 8.08, 'time': 418.38033056259155, 'cx_gates': 2067, 'num_gates': 2567}","{'depth': 194.0, 'depth_ratio': 1.94, 'time': 83.82, 'cx_gates': 123.0, 'num_gates': 123.0}",sabre_v020_look_010_beam_045,sabre_v020,hex_27,1,45,10
+
+"{'depth': 813, 'depth_ratio': 8.13, 'time': 434.8892631530762, 'cx_gates': 2148, 'num_gates': 2648}","{'depth': 2.0, 'depth_ratio': 0.02, 'time': 23.61, 'cx_gates': 91.5, 'num_gates': 91.5}",sabre_v020_look_010_beam_046,sabre_v020,hex_27,0,46,10
+
+"{'depth': 784, 'depth_ratio': 7.84, 'time': 443.7999498844147, 'cx_gates': 2004, 'num_gates': 2504}","{'depth': 219.0, 'depth_ratio': 2.19, 'time': 62.55, 'cx_gates': 115.5, 'num_gates': 115.5}",sabre_v020_look_010_beam_046,sabre_v020,hex_27,1,46,10
+
+"{'depth': 775, 'depth_ratio': 7.75, 'time': 493.87973952293396, 'cx_gates': 1965, 'num_gates': 2465}","{'depth': 18.5, 'depth_ratio': 0.185, 'time': 12.4, 'cx_gates': 75.0, 'num_gates': 75.0}",sabre_v020_look_010_beam_047,sabre_v020,hex_27,0,47,10
+
+"{'depth': 800, 'depth_ratio': 8.0, 'time': 542.3217163085938, 'cx_gates': 2022, 'num_gates': 2522}","{'depth': 186.5, 'depth_ratio': 1.865, 'time': 90.79, 'cx_gates': 156.0, 'num_gates': 156.0}",sabre_v020_look_010_beam_047,sabre_v020,hex_27,1,47,10
+
+"{'depth': 790, 'depth_ratio': 7.9, 'time': 675.5266971588135, 'cx_gates': 1950, 'num_gates': 2450}","{'depth': 27.0, 'depth_ratio': 0.27, 'time': 1.706, 'cx_gates': 79.5, 'num_gates': 79.5}",sabre_v020_look_010_beam_048,sabre_v020,hex_27,0,48,10
+
+"{'depth': 795, 'depth_ratio': 7.95, 'time': 627.3603956699371, 'cx_gates': 2085, 'num_gates': 2585}","{'depth': 189.0, 'depth_ratio': 1.89, 'time': 95.83, 'cx_gates': 187.5, 'num_gates': 187.5}",sabre_v020_look_010_beam_048,sabre_v020,hex_27,1,48,10
+
+"{'depth': 729, 'depth_ratio': 7.29, 'time': 701.7661545276642, 'cx_gates': 1950, 'num_gates': 2450}","{'depth': 34.5, 'depth_ratio': 0.345, 'time': 29.89, 'cx_gates': 22.5, 'num_gates': 22.5}",sabre_v020_look_010_beam_049,sabre_v020,hex_27,0,49,10
+
+"{'depth': 794, 'depth_ratio': 7.94, 'time': 654.2386989593506, 'cx_gates': 2055, 'num_gates': 2555}","{'depth': 180.5, 'depth_ratio': 1.805, 'time': 110.5, 'cx_gates': 163.5, 'num_gates': 163.5}",sabre_v020_look_010_beam_049,sabre_v020,hex_27,1,49,10
+
+"{'depth': 786, 'depth_ratio': 7.86, 'time': 698.2033519744873, 'cx_gates': 1989, 'num_gates': 2489}","{'depth': 6.0, 'depth_ratio': 0.06, 'time': 14.0, 'cx_gates': 42.0, 'num_gates': 42.0}",sabre_v020_look_010_beam_050,sabre_v020,hex_27,0,50,10
+
+"{'depth': 785, 'depth_ratio': 7.85, 'time': 681.9549224376678, 'cx_gates': 2088, 'num_gates': 2588}","{'depth': 177.5, 'depth_ratio': 1.775, 'time': 103.4, 'cx_gates': 186.0, 'num_gates': 186.0}",sabre_v020_look_010_beam_050,sabre_v020,hex_27,1,50,10
+
