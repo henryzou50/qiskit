@@ -61,7 +61,7 @@ class SabreSwap(TransformationPass):
         coupling_map,
         seed=None,
         fake_run=False,
-        beam_width=2,
+        beam_width=1,
     ):
         r"""SabreSwap initializer.
 
@@ -143,31 +143,11 @@ class SabreSwap(TransformationPass):
         if initial_state.front_layer:
             candidate_states = self._get_beam_states(initial_state)
 
-            print("Initial candidate States: ")
-            for state in candidate_states:
-                self._validate_state(state)
-            print("*" * 50)
-            
-            candidate_states_copy = deepcopy(candidate_states)
-
             # Phase 4: Perform the regular algorithm on each of the beam states
             for state in candidate_states:
                 while state.front_layer:
                     self._apply_swap(state)
                     self._update_state(state)
-
-            print("Post candidate States: ")
-            for state in candidate_states:
-                self._validate_state(state)
-            print("*" * 50)
-
-            # get the lowest depth from the circuits
-            lowest_depth = float()
-            
-            print("Checking old states")
-            for state in candidate_states_copy:
-                self._validate_state(state)
-            
 
             # Phase 5) Set the final dag to be the one with lowest depth
             candidate_states.sort(key=lambda x: max(x.qubit_depth.values()))
@@ -253,6 +233,10 @@ class SabreSwap(TransformationPass):
         current_level = current_level[:self.beam_width]
         return current_level
                     
+
+                    
+
+
     def _validate_state(self, state):
         """ Validate the state of the algorithm by printing out the information for the state
         and then manually checking the state for correctness.
