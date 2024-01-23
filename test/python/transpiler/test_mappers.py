@@ -74,6 +74,7 @@ import sys
 
 from qiskit import execute
 from qiskit import ClassicalRegister, QuantumRegister, QuantumCircuit, BasicAer
+from qiskit.qasm2 import dump
 from qiskit.transpiler import PassManager
 from qiskit.transpiler.passes import BasicSwap, LookaheadSwap, StochasticSwap, SabreSwap
 from qiskit.transpiler.passes import SetLayout
@@ -132,7 +133,7 @@ class CommonUtilitiesMixin:
         )
         self.assertDictAlmostEqual(self.counts, job.result().get_counts(), delta=self.delta)
 
-        transpiled_result.qasm(formatted=False, filename=filename)
+        dump(transpiled_result.qasm(formatted=False), filename)
 
     def assertResult(self, result, circuit):
         """Fetches the QASM in circuit.name file and compares it with result."""
@@ -294,7 +295,7 @@ class TestsSabreSwap(SwapperCommonTestCases, QiskitTestCase):
     """Test SwapperCommonTestCases using SabreSwap."""
 
     pass_class = SabreSwap
-    additional_args = {"seed": 1242}
+    additional_args = {"seed": 1242, "trials": 2}
 
 
 if __name__ == "__main__":
