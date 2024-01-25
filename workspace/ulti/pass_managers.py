@@ -1,8 +1,8 @@
 """ This module contains functions for generating and using PassManager objects. """
 
 from qiskit.transpiler import PassManager
-from qiskit.transpiler.passes import SabreSwap
-from qiskit.transpiler.passes import SabreLayout
+from qiskit.transpiler.passes.routing.sabre_swap_v020_depth import SabreSwap
+from qiskit.transpiler.passes.layout.sabre_layout_v020 import SabreLayout
 from qiskit.transpiler.passes import ApplyLayout, FullAncillaAllocation, \
                                      EnlargeWithAncilla, TrivialLayout  
 import time
@@ -36,7 +36,7 @@ def build_pm(routing_pass, layout_pass, coupling_map, seed=42, lookahead=0, beam
     if heuristic != "basic":
         routing_args['heuristic'] = heuristic
     if beam_width > 1:
-        routing_args['beam_width']      = beam_width
+        routing_args['beam_width'] = beam_width
 
     # Determine the routing pass for layout and build the layout pass
     if fast_layout:
