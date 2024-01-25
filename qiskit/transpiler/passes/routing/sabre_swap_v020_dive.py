@@ -23,6 +23,7 @@ from qiskit.transpiler.basepasses import TransformationPass
 from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.layout import Layout
 from qiskit.dagcircuit import DAGOpNode
+from termcolor import colored
 
 class SabreSwap(TransformationPass):
     r"""Map input circuit onto a backend topology via insertion of SWAPs.
@@ -61,7 +62,7 @@ class SabreSwap(TransformationPass):
         coupling_map,
         seed=None,
         fake_run=False,
-        beam_width=2,
+        beam_width=10,
     ):
         r"""SabreSwap initializer.
 
@@ -95,6 +96,8 @@ class SabreSwap(TransformationPass):
         self.dag = None
         self.rng = None
         self.beam_width = beam_width
+        self.lowest_depth = float('inf')
+        self.end_candidate_gates = None
 
     def run(self, dag):
         """Run the SabreSwap pass on `dag`.
@@ -121,6 +124,8 @@ class SabreSwap(TransformationPass):
         self.dist_matrix = self.coupling_map.distance_matrix
         self.dag = dag
         self.rng = np.random.default_rng(self.seed)
+        self.lowest_depth = float('inf')
+        self.end_candidate = None
         canonical_register = dag.qregs["q"]
         self._bit_indices = {bit: idx for idx, bit in enumerate(canonical_register)}
 
@@ -132,50 +137,50 @@ class SabreSwap(TransformationPass):
         gate_seq       = []
         gates_count    = 0
         
+
         # Phase 1: Create initial state
         initial_state = State(current_layout, front_layer, predecessors, 
                               qubits_depth, gate_seq, gates_count)
 
         # Phase 2: Update current layout and front layer until all gates are exhausted
         self._update_state(initial_state)
+        self.end_candidate_gates = initial_state.gates_seq.copy()
+
+        candidate_states_orig = [initial_state]
 
         # Phase 3: Perform beam search to get a list of candidate States 
         if initial_state.front_layer:
-            candidate_states = self._get_beam_states(initial_state)
+            for i in range(100):
+                print("current level: " , i)
+                candidate_states = self._get_next_states(candidate_states_orig)
 
-            print("Initial candidate States: ")
-            for state in candidate_states:
-                self._validate_state(state)
-            print("*" * 50)
-            
-            candidate_states_copy = deepcopy(candidate_states)
+                print("     Number of candidate states: ", len(candidate_states))
+                # Phase 3a: Get copies of each candidate state, as we need to return to its original state
+                candidate_states_orig = []
+                for state in candidate_states:
+                    candidate_states_orig.append(state._copy())
 
-            # Phase 4: Perform the regular algorithm on each of the beam states
-            for state in candidate_states:
-                while state.front_layer:
-                    self._apply_swap(state)
-                    self._update_state(state)
+                # Phase 3b: Perform the regular algorithm on each of the beam states
+                for state in candidate_states:
+                    while state.front_layer:
+                        self._apply_swap(state)
+                        self._update_state(state)
 
-            print("Post candidate States: ")
-            for state in candidate_states:
-                self._validate_state(state)
-            print("*" * 50)
+                # Phase 4a: Get list of depths of each candidate state and store the lowest depth
+                depths = []
+                for state in candidate_states:
+                    depths.append(max(state.qubit_depth.values()))
+                    # If depth is lower than self.lowest_depth, update it and make it the end candidate
+                    if depths[-1] < self.lowest_depth:
+                        self.lowest_depth = depths[-1]
+                        print("     Update (after sabre) depth to ", self.lowest_depth)
+                        # Make a copy for the end candidate
+                        self.end_candidate_gates = state.gates_seq.copy()
 
-            # get the lowest depth from the circuits
-            lowest_depth = float()
-            
-            print("Checking old states")
-            for state in candidate_states_copy:
-                self._validate_state(state)
-            
-
-            # Phase 5) Set the final dag to be the one with lowest depth
-            candidate_states.sort(key=lambda x: max(x.qubit_depth.values()))
-            initial_state = candidate_states[0]    
 
         # Phase 5: Use gate sequence to apply the gates to the mapped dag
         current_layout = Layout.generate_trivial_layout(canonical_register) # Reset layout
-        for node in initial_state.gates_seq:
+        for node in self.end_candidate_gates:
             if node.name == "swap":
                 current_layout.swap(*node.qargs)
                 # Instead of applying the swap gate mapped_dag, apply 3 CXGates to mapped_dag
@@ -192,6 +197,62 @@ class SabreSwap(TransformationPass):
         if not self.fake_run:
             return mapped_dag
         return dag
+    
+    def _get_next_states(self, current_level):
+        """ Get the list of candidate states using the next swap candidates for each of the 
+        states. 
+
+        Args:
+            current_level (list): a list of states
+
+        Return:
+            candidate_states (list): a list of candidate states
+        """
+        next_level = []
+        for state in current_level:
+            if not state.front_layer:
+                next_level.append(state)
+                continue
+            # Get list of swap candidates
+            swap_candidates = list(self._obtain_swaps(state.front_layer, state.layout))
+            for swap in swap_candidates:
+                # Copies that can be immediately updated  
+                trial_layout = state.layout.copy()
+                trial_gates_seq = state.gates_seq.copy()
+                trial_qubit_depth = state.qubit_depth.copy()
+
+                # Updates variables that can be updated immediately
+                trial_layout.swap(*swap)
+                trial_gates_seq.append(DAGOpNode(op=SwapGate(), qargs=swap))
+                self._update_qubit_depth(DAGOpNode(op=SwapGate(), qargs=swap), trial_qubit_depth)
+
+                # Copies that need to be updated by applying gates
+                trial_gates_count = state.gates_count
+                trial_front_layer = state.front_layer.copy()
+                trial_predecessors = state.predecessors.copy()
+
+                # Create trial state
+                trial_state = State(trial_layout, trial_front_layer, trial_predecessors,
+                                    trial_qubit_depth, trial_gates_seq, trial_gates_count)
+                self._update_state(trial_state, trial=False)
+
+                # if trial state depth is higher than self.lowest_depth, prune it
+                depth = max(trial_state.qubit_depth.values())
+
+                if not trial_state.front_layer:
+                    if depth <= self.lowest_depth:
+                        self.lowest_depth = depth
+                        self.end_candidate_gates = trial_state.gates_seq.copy()
+                        print("     Update depth to ", self.lowest_depth)
+                elif depth < self.lowest_depth:
+                    next_level.append(trial_state)
+
+        # organize next_level by first the number of gates done, then by depth
+        next_level.sort(key=lambda x: (-x.gates_count, max(x.qubit_depth.values())))
+        # prune the next_level to only include the beam_width number of states
+        next_level = next_level[:self.beam_width]
+        return next_level
+        
     
     def _get_beam_states(self, initial_state):
         """ Get the list of candidate states using beam search by breathe first search. 
@@ -513,4 +574,18 @@ class State():
         self.qubit_depth  = qubit_depth   # a dict of qubit depths
         self.gates_seq    = gates_seq     # a list of gates applied (including swaps)
         self.gates_count  = gates_count   # a int of gates applied (excluding swaps)
+
+    """
+    def _copy(self):
+        layout = self.layout.copy()
+        front_layer = list(self.front_layer)
+        predecessors = dict(self.predecessors)
+        qubit_depth = dict(self.qubit_depth)
+        gates_seq = list(self.gates_seq)
+        gates_count = self.gates_count
+        return State(layout, front_layer, predecessors, qubit_depth, gates_seq, gates_count)
+    """
+    def _copy(self):
+        return State(self.layout.copy(), list(self.front_layer), dict(self.predecessors),
+                    dict(self.qubit_depth), list(self.gates_seq), self.gates_count)
 

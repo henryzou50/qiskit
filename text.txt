@@ -1,0 +1,794 @@
+current level:  0
+     Number of candidate states:  3
+Depth of the circuit after transpiled v0.20:                120       Time taken:         0.00518 seconds
+Depth of the circuit after transpiled v0.20 with lookahead: 87        Time taken:         0.01034 seconds
+
+current level:  0
+     Number of candidate states:  3
+current level:  1
+     Number of candidate states:  11
+Depth of the circuit after transpiled v0.20:                120       Time taken:         0.00505 seconds
+Depth of the circuit after transpiled v0.20 with lookahead: 87        Time taken:         0.03907 seconds
+
+current level:  0
+     Number of candidate states:  3
+current level:  1
+     Number of candidate states:  11
+current level:  2
+     Number of candidate states:  43
+Depth of the circuit after transpiled v0.20:                120       Time taken:         0.00559 seconds
+Depth of the circuit after transpiled v0.20 with lookahead: 87        Time taken:         0.15201 seconds
+
+current level:  0
+     Number of candidate states:  3
+current level:  1
+     Number of candidate states:  11
+current level:  2
+     Number of candidate states:  43
+current level:  3
+     Number of candidate states:  179
+Depth of the circuit after transpiled v0.20:                120       Time taken:         0.00529 seconds
+Depth of the circuit after transpiled v0.20 with lookahead: 86        Time taken:         0.61818 seconds
+
+current level:  0
+     Number of candidate states:  3
+current level:  1
+     Number of candidate states:  11
+current level:  2
+     Number of candidate states:  43
+current level:  3
+     Number of candidate states:  179
+current level:  4
+     Number of candidate states:  756
+Depth of the circuit after transpiled v0.20:                120       Time taken:         0.00529 seconds
+Depth of the circuit after transpiled v0.20 with lookahead: 85        Time taken:         2.61981 seconds
+
+current level:  0
+     Number of candidate states:  3
+current level:  1
+     Number of candidate states:  11
+current level:  2
+     Number of candidate states:  43
+current level:  3
+     Number of candidate states:  179
+current level:  4
+     Number of candidate states:  756
+current level:  5
+     Number of candidate states:  3236
+Depth of the circuit after transpiled v0.20:                120       Time taken:         0.00514 seconds
+Depth of the circuit after transpiled v0.20 with lookahead: 85        Time taken:         11.27475 seconds
+
+current level:  0
+     Number of candidate states:  3
+current level:  1
+     Number of candidate states:  11
+current level:  2
+     Number of candidate states:  43
+current level:  3
+     Number of candidate states:  179
+current level:  4
+     Number of candidate states:  756
+current level:  5
+     Number of candidate states:  3236
+current level:  6
+     Number of candidate states:  13871
+Depth of the circuit after transpiled v0.20:                120       Time taken:         0.00518 seconds
+Depth of the circuit after transpiled v0.20 with lookahead: 85        Time taken:         48.50186 seconds
+
+current level:  0
+     Number of candidate states:  3
+current level:  1
+     Number of candidate states:  11
+current level:  2
+     Number of candidate states:  43
+current level:  3
+     Number of candidate states:  179
+current level:  4
+     Number of candidate states:  756
+current level:  5
+     Number of candidate states:  3236
+current level:  6
+     Number of candidate states:  13871
+current level:  7
+     Number of candidate states:  59697
+Depth of the circuit after transpiled v0.20:                120       Time taken:         0.00555 seconds
+Depth of the circuit after transpiled v0.20 with lookahead: 84        Time taken:         208.81531 seconds
+
+current level:  0
+     Number of candidate states:  3
+current level:  1
+     Number of candidate states:  11
+current level:  2
+     Number of candidate states:  43
+current level:  3
+     Number of candidate states:  179
+current level:  4
+     Number of candidate states:  756
+current level:  5
+     Number of candidate states:  3236
+current level:  6
+     Number of candidate states:  13871
+current level:  7
+     Number of candidate states:  59697
+current level:  8
+     Number of candidate states:  257774
+Depth of the circuit after transpiled v0.20:                120       Time taken:         0.00526 seconds
+Depth of the circuit after transpiled v0.20 with lookahead: 83        Time taken:         918.67508 seconds
+
+
+current level:  0
+     Number of candidate states:  3
+current level:  1
+     Number of candidate states:  11
+current level:  2
+     Number of candidate states:  43
+current level:  3
+     Number of candidate states:  179
+current level:  4
+     Number of candidate states:  756
+current level:  5
+     Number of candidate states:  1000
+current level:  6
+     Number of candidate states:  1000
+current level:  7
+     Number of candidate states:  1000
+current level:  8
+     Number of candidate states:  1000
+Depth of the circuit after transpiled v0.20:                120       Time taken:         0.00468 seconds
+Depth of the circuit after transpiled v0.20 with lookahead: 83        Time taken:         12.58678 seconds
+
+
+current level:  0
+     Number of candidate states:  3
+current level:  1
+     Number of candidate states:  11
+current level:  2
+     Number of candidate states:  43
+current level:  3
+     Number of candidate states:  179
+current level:  4
+     Number of candidate states:  756
+current level:  5
+     Number of candidate states:  1000
+current level:  6
+     Number of candidate states:  1000
+current level:  7
+     Number of candidate states:  1000
+current level:  8
+     Number of candidate states:  1000
+current level:  9
+     Number of candidate states:  1000
+current level:  10
+     Number of candidate states:  1000
+current level:  11
+     Number of candidate states:  1000
+current level:  12
+     Number of candidate states:  1000
+current level:  13
+     Number of candidate states:  1000
+current level:  14
+     Number of candidate states:  1000
+current level:  15
+     Number of candidate states:  1000
+current level:  16
+     Number of candidate states:  1000
+current level:  17
+     Number of candidate states:  1000
+current level:  18
+     Number of candidate states:  1000
+current level:  19
+     Number of candidate states:  1000
+Depth of the circuit after transpiled v0.20:                120       Time taken:         0.00480 seconds
+Depth of the circuit after transpiled v0.20 with lookahead: 81        Time taken:         38.91677 seconds
+
+
+current level:  0
+     Number of candidate states:  3
+current level:  1
+     Number of candidate states:  11
+current level:  2
+     Number of candidate states:  43
+current level:  3
+     Number of candidate states:  179
+current level:  4
+     Number of candidate states:  756
+current level:  5
+     Number of candidate states:  1000
+current level:  6
+     Number of candidate states:  1000
+current level:  7
+     Number of candidate states:  1000
+current level:  8
+     Number of candidate states:  1000
+current level:  9
+     Number of candidate states:  1000
+current level:  10
+     Number of candidate states:  1000
+current level:  11
+     Number of candidate states:  1000
+current level:  12
+     Number of candidate states:  1000
+current level:  13
+     Number of candidate states:  1000
+current level:  14
+     Number of candidate states:  1000
+current level:  15
+     Number of candidate states:  1000
+current level:  16
+     Number of candidate states:  1000
+current level:  17
+     Number of candidate states:  1000
+current level:  18
+     Number of candidate states:  1000
+current level:  19
+     Number of candidate states:  1000
+current level:  20
+     Number of candidate states:  1000
+current level:  21
+     Number of candidate states:  1000
+current level:  22
+     Number of candidate states:  1000
+current level:  23
+     Number of candidate states:  1000
+current level:  24
+     Number of candidate states:  1000
+current level:  25
+     Number of candidate states:  1000
+current level:  26
+     Number of candidate states:  1000
+current level:  27
+     Number of candidate states:  1000
+current level:  28
+     Number of candidate states:  1000
+current level:  29
+     Number of candidate states:  1000
+current level:  30
+     Number of candidate states:  1000
+current level:  31
+     Number of candidate states:  1000
+current level:  32
+     Number of candidate states:  1000
+current level:  33
+     Number of candidate states:  1000
+current level:  34
+     Number of candidate states:  1000
+current level:  35
+     Number of candidate states:  1000
+current level:  36
+     Number of candidate states:  1000
+current level:  37
+     Number of candidate states:  1000
+current level:  38
+     Number of candidate states:  1000
+current level:  39
+     Number of candidate states:  1000
+current level:  40
+     Number of candidate states:  1000
+current level:  41
+     Number of candidate states:  1000
+current level:  42
+     Number of candidate states:  1000
+current level:  43
+     Number of candidate states:  1000
+current level:  44
+     Number of candidate states:  1000
+current level:  45
+     Number of candidate states:  1000
+current level:  46
+     Number of candidate states:  1000
+current level:  47
+     Number of candidate states:  1000
+current level:  48
+     Number of candidate states:  1000
+current level:  49
+     Number of candidate states:  1000
+current level:  50
+     Number of candidate states:  1000
+current level:  51
+     Number of candidate states:  1000
+current level:  52
+     Number of candidate states:  1000
+current level:  53
+     Number of candidate states:  1000
+current level:  54
+     Number of candidate states:  1000
+current level:  55
+     Number of candidate states:  1000
+current level:  56
+     Number of candidate states:  1000
+current level:  57
+     Number of candidate states:  1000
+current level:  58
+     Number of candidate states:  1000
+current level:  59
+     Number of candidate states:  1000
+current level:  60
+     Number of candidate states:  1000
+current level:  61
+     Number of candidate states:  1000
+current level:  62
+     Number of candidate states:  1000
+current level:  63
+     Number of candidate states:  1000
+current level:  64
+     Number of candidate states:  1000
+current level:  65
+     Number of candidate states:  1000
+current level:  66
+     Number of candidate states:  1000
+current level:  67
+     Number of candidate states:  1000
+current level:  68
+     Number of candidate states:  1000
+current level:  69
+     Number of candidate states:  1000
+current level:  70
+     Number of candidate states:  1000
+current level:  71
+     Number of candidate states:  1000
+current level:  72
+     Number of candidate states:  0
+current level:  73
+     Number of candidate states:  0
+current level:  74
+     Number of candidate states:  0
+current level:  75
+     Number of candidate states:  0
+current level:  76
+     Number of candidate states:  0
+current level:  77
+     Number of candidate states:  0
+current level:  78
+     Number of candidate states:  0
+current level:  79
+     Number of candidate states:  0
+current level:  80
+     Number of candidate states:  0
+current level:  81
+     Number of candidate states:  0
+current level:  82
+     Number of candidate states:  0
+current level:  83
+     Number of candidate states:  0
+current level:  84
+     Number of candidate states:  0
+current level:  85
+     Number of candidate states:  0
+current level:  86
+     Number of candidate states:  0
+current level:  87
+     Number of candidate states:  0
+current level:  88
+     Number of candidate states:  0
+current level:  89
+     Number of candidate states:  0
+current level:  90
+     Number of candidate states:  0
+current level:  91
+     Number of candidate states:  0
+current level:  92
+     Number of candidate states:  0
+current level:  93
+     Number of candidate states:  0
+current level:  94
+     Number of candidate states:  0
+current level:  95
+     Number of candidate states:  0
+current level:  96
+     Number of candidate states:  0
+current level:  97
+     Number of candidate states:  0
+current level:  98
+     Number of candidate states:  0
+current level:  99
+     Number of candidate states:  0
+Depth of the circuit after transpiled v0.20:                120       Time taken:         0.00466 seconds
+Depth of the circuit after transpiled v0.20 with lookahead: 80        Time taken:         86.18643 seconds
+
+
+current level:  0
+     Number of candidate states:  3
+current level:  1
+     Number of candidate states:  11
+current level:  2
+     Number of candidate states:  43
+current level:  3
+     Number of candidate states:  179
+current level:  4
+     Number of candidate states:  756
+current level:  5
+     Number of candidate states:  2000
+current level:  6
+     Number of candidate states:  2000
+current level:  7
+     Number of candidate states:  2000
+current level:  8
+     Number of candidate states:  2000
+current level:  9
+     Number of candidate states:  2000
+current level:  10
+     Number of candidate states:  2000
+current level:  11
+     Number of candidate states:  2000
+current level:  12
+     Number of candidate states:  2000
+current level:  13
+     Number of candidate states:  2000
+current level:  14
+     Number of candidate states:  2000
+current level:  15
+     Number of candidate states:  2000
+current level:  16
+     Number of candidate states:  2000
+current level:  17
+     Number of candidate states:  2000
+current level:  18
+     Number of candidate states:  2000
+current level:  19
+     Number of candidate states:  2000
+current level:  20
+     Number of candidate states:  2000
+current level:  21
+     Number of candidate states:  2000
+current level:  22
+     Number of candidate states:  2000
+current level:  23
+     Number of candidate states:  2000
+current level:  24
+     Number of candidate states:  2000
+current level:  25
+     Number of candidate states:  2000
+current level:  26
+     Number of candidate states:  2000
+current level:  27
+     Number of candidate states:  2000
+current level:  28
+     Number of candidate states:  2000
+current level:  29
+     Number of candidate states:  2000
+current level:  30
+     Number of candidate states:  2000
+current level:  31
+     Number of candidate states:  2000
+current level:  32
+     Number of candidate states:  2000
+current level:  33
+     Number of candidate states:  2000
+current level:  34
+     Number of candidate states:  2000
+current level:  35
+     Number of candidate states:  2000
+current level:  36
+     Number of candidate states:  2000
+current level:  37
+     Number of candidate states:  2000
+current level:  38
+     Number of candidate states:  2000
+current level:  39
+     Number of candidate states:  2000
+current level:  40
+     Number of candidate states:  2000
+current level:  41
+     Number of candidate states:  2000
+current level:  42
+     Number of candidate states:  2000
+current level:  43
+     Number of candidate states:  2000
+current level:  44
+     Number of candidate states:  2000
+current level:  45
+     Number of candidate states:  2000
+current level:  46
+     Number of candidate states:  2000
+current level:  47
+     Number of candidate states:  2000
+current level:  48
+     Number of candidate states:  2000
+current level:  49
+     Number of candidate states:  2000
+current level:  50
+     Number of candidate states:  2000
+current level:  51
+     Number of candidate states:  2000
+current level:  52
+     Number of candidate states:  2000
+current level:  53
+     Number of candidate states:  2000
+current level:  54
+     Number of candidate states:  2000
+current level:  55
+     Number of candidate states:  1440
+current level:  56
+     Number of candidate states:  2000
+current level:  57
+     Number of candidate states:  720
+current level:  58
+     Number of candidate states:  2000
+current level:  59
+     Number of candidate states:  720
+current level:  60
+     Number of candidate states:  2000
+current level:  61
+     Number of candidate states:  720
+current level:  62
+     Number of candidate states:  2000
+current level:  63
+     Number of candidate states:  720
+current level:  64
+     Number of candidate states:  2000
+current level:  65
+     Number of candidate states:  720
+current level:  66
+     Number of candidate states:  2000
+current level:  67
+     Number of candidate states:  720
+current level:  68
+     Number of candidate states:  2000
+current level:  69
+     Number of candidate states:  720
+current level:  70
+     Number of candidate states:  2000
+current level:  71
+     Number of candidate states:  720
+current level:  72
+     Number of candidate states:  2000
+current level:  73
+     Number of candidate states:  720
+current level:  74
+     Number of candidate states:  516
+current level:  75
+     Number of candidate states:  180
+current level:  76
+     Number of candidate states:  0
+current level:  77
+     Number of candidate states:  0
+current level:  78
+     Number of candidate states:  0
+current level:  79
+     Number of candidate states:  0
+current level:  80
+     Number of candidate states:  0
+current level:  81
+     Number of candidate states:  0
+current level:  82
+     Number of candidate states:  0
+current level:  83
+     Number of candidate states:  0
+current level:  84
+     Number of candidate states:  0
+current level:  85
+     Number of candidate states:  0
+current level:  86
+     Number of candidate states:  0
+current level:  87
+     Number of candidate states:  0
+current level:  88
+     Number of candidate states:  0
+current level:  89
+     Number of candidate states:  0
+current level:  90
+     Number of candidate states:  0
+current level:  91
+     Number of candidate states:  0
+current level:  92
+     Number of candidate states:  0
+current level:  93
+     Number of candidate states:  0
+current level:  94
+     Number of candidate states:  0
+current level:  95
+     Number of candidate states:  0
+current level:  96
+     Number of candidate states:  0
+current level:  97
+     Number of candidate states:  0
+current level:  98
+     Number of candidate states:  0
+current level:  99
+     Number of candidate states:  0
+Depth of the circuit after transpiled v0.20:                120       Time taken:         0.00480 seconds
+Depth of the circuit after transpiled v0.20 with lookahead: 81        Time taken:         149.59409 seconds
+
+
+current level:  0
+     Number of candidate states:  3
+current level:  1
+     Number of candidate states:  11
+current level:  2
+     Number of candidate states:  43
+current level:  3
+     Number of candidate states:  179
+current level:  4
+     Number of candidate states:  756
+current level:  5
+     Number of candidate states:  3236
+current level:  6
+     Number of candidate states:  4000
+current level:  7
+     Number of candidate states:  4000
+current level:  8
+     Number of candidate states:  4000
+current level:  9
+     Number of candidate states:  4000
+current level:  10
+     Number of candidate states:  4000
+current level:  11
+     Number of candidate states:  4000
+current level:  12
+     Number of candidate states:  4000
+current level:  13
+     Number of candidate states:  4000
+current level:  14
+     Number of candidate states:  4000
+current level:  15
+     Number of candidate states:  4000
+current level:  16
+     Number of candidate states:  4000
+current level:  17
+     Number of candidate states:  4000
+current level:  18
+     Number of candidate states:  4000
+current level:  19
+     Number of candidate states:  4000
+current level:  20
+     Number of candidate states:  4000
+current level:  21
+     Number of candidate states:  4000
+current level:  22
+     Number of candidate states:  4000
+current level:  23
+     Number of candidate states:  4000
+current level:  24
+     Number of candidate states:  4000
+current level:  25
+     Number of candidate states:  4000
+current level:  26
+     Number of candidate states:  4000
+current level:  27
+     Number of candidate states:  4000
+current level:  28
+     Number of candidate states:  4000
+current level:  29
+     Number of candidate states:  4000
+current level:  30
+     Number of candidate states:  4000
+current level:  31
+     Number of candidate states:  4000
+current level:  32
+     Number of candidate states:  4000
+current level:  33
+     Number of candidate states:  4000
+current level:  34
+     Number of candidate states:  4000
+current level:  35
+     Number of candidate states:  4000
+current level:  36
+     Number of candidate states:  4000
+current level:  37
+     Number of candidate states:  4000
+current level:  38
+     Number of candidate states:  4000
+current level:  39
+     Number of candidate states:  4000
+current level:  40
+     Number of candidate states:  4000
+current level:  41
+     Number of candidate states:  4000
+current level:  42
+     Number of candidate states:  4000
+current level:  43
+     Number of candidate states:  4000
+current level:  44
+     Number of candidate states:  4000
+current level:  45
+     Number of candidate states:  4000
+current level:  46
+     Number of candidate states:  4000
+current level:  47
+     Number of candidate states:  4000
+current level:  48
+     Number of candidate states:  4000
+current level:  49
+     Number of candidate states:  4000
+current level:  50
+     Number of candidate states:  4000
+current level:  51
+     Number of candidate states:  4000
+current level:  52
+     Number of candidate states:  4000
+current level:  53
+     Number of candidate states:  4000
+current level:  54
+     Number of candidate states:  2880
+current level:  55
+     Number of candidate states:  4000
+current level:  56
+     Number of candidate states:  1440
+current level:  57
+     Number of candidate states:  4000
+current level:  58
+     Number of candidate states:  1440
+current level:  59
+     Number of candidate states:  4000
+current level:  60
+     Number of candidate states:  1440
+current level:  61
+     Number of candidate states:  4000
+current level:  62
+     Number of candidate states:  1440
+current level:  63
+     Number of candidate states:  4000
+current level:  64
+     Number of candidate states:  1440
+current level:  65
+     Number of candidate states:  4000
+current level:  66
+     Number of candidate states:  1440
+current level:  67
+     Number of candidate states:  4000
+current level:  68
+     Number of candidate states:  1440
+current level:  69
+     Number of candidate states:  4000
+current level:  70
+     Number of candidate states:  1440
+current level:  71
+     Number of candidate states:  4000
+current level:  72
+     Number of candidate states:  1440
+current level:  73
+     Number of candidate states:  1032
+current level:  74
+     Number of candidate states:  360
+current level:  75
+     Number of candidate states:  0
+current level:  76
+     Number of candidate states:  0
+current level:  77
+     Number of candidate states:  0
+current level:  78
+     Number of candidate states:  0
+current level:  79
+     Number of candidate states:  0
+current level:  80
+     Number of candidate states:  0
+current level:  81
+     Number of candidate states:  0
+current level:  82
+     Number of candidate states:  0
+current level:  83
+     Number of candidate states:  0
+current level:  84
+     Number of candidate states:  0
+current level:  85
+     Number of candidate states:  0
+current level:  86
+     Number of candidate states:  0
+current level:  87
+     Number of candidate states:  0
+current level:  88
+     Number of candidate states:  0
+current level:  89
+     Number of candidate states:  0
+current level:  90
+     Number of candidate states:  0
+current level:  91
+     Number of candidate states:  0
+current level:  92
+     Number of candidate states:  0
+current level:  93
+     Number of candidate states:  0
+current level:  94
+     Number of candidate states:  0
+current level:  95
+     Number of candidate states:  0
+current level:  96
+     Number of candidate states:  0
+current level:  97
+     Number of candidate states:  0
+current level:  98
+     Number of candidate states:  0
+current level:  99
+     Number of candidate states:  0
+Depth of the circuit after transpiled v0.20:                120       Time taken:         0.00513 seconds
+Depth of the circuit after transpiled v0.20 with lookahead: 81        Time taken:         285.45739 seconds
