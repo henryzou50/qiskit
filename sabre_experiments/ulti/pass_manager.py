@@ -137,15 +137,13 @@ def round_to_sig_figures(num, n=4):
         return 0
     return round(num, -int(np.floor(np.log10(abs(num))) - (n - 1)))
 
-
-    
-def run_experiment(qc_list, routing_pass, layout_pass, coupling_map, num_pm=4, heuristic="basic", 
-                   seed=42, look=0, beam=1): 
-    """ Runs the experiment for the given parameters. 
+def run_experiment(filename, qc_list, routing_pass, layout_pass, coupling_map, num_pm=4, 
+                   heuristic="basic", seed=42, look=0, beam=1):
+    """ Runs the experiment for the given parameters and saves the results to a CSV file.
 
     Args:
         filename (str): The name of the file to save the results.
-        qc_list: list of qunatum circuits to transpile.
+        qc_list: list of quantum circuits to transpile.
         routing_pass (str): The routing pass to use.
         layout_pass (str): The layout pass to use.
         coupling_map (CouplingMap): The coupling map to use.
@@ -161,18 +159,31 @@ def run_experiment(qc_list, routing_pass, layout_pass, coupling_map, num_pm=4, h
     # Build the pass managers
     pm_list = build_pm_list(routing_pass, layout_pass, coupling_map, num_pm, heuristic, 
                             seed, look, beam)
+
+    # Initialize an empty list to hold the data frames
+    data_frames = []
+
     # Run the experiment for each of the qc in the list
-    data_list = []
     counter = 0
     for qc in qc_list:
         data = run_one_circuit(qc, pm_list)
         data['look'] = look
         data['beam'] = beam
         data['heuristic'] = heuristic
-        data_list.append(data)
+        
+        # Convert the data to a DataFrame and append it to the list
+        data_df = pd.DataFrame([data])
+        data_frames.append(data_df)
+
+        # Concatenate all the DataFrames and save to CSV after each iteration
+        all_data_df = pd.concat(data_frames, ignore_index=True)
+        all_data_df.to_csv(filename, index=False)
+
         print("Finished: ", counter, " out of ", len(qc_list))
         counter += 1
-    return pd.DataFrame(data_list)
+
+    return all_data_df
+
 
 def run_experiment_beam(qc, routing_pass, layout_pass, coupling_map, beam_list,
                         num_pm=4, heuristic="basic", seed=42, look=0): 
