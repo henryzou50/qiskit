@@ -27,7 +27,7 @@ def build_pm(routing_pass, layout_pass, coupling_map, heuristic="basic", seed=42
     if look > 0:
         routing_args['look'] = look
     if beam > 1:
-        routing_args['beam_'] = beam
+        routing_args['beam_width'] = beam
     if heuristic != "basic":
         routing_args['heuristic'] = heuristic
 
@@ -174,7 +174,38 @@ def run_experiment(qc_list, routing_pass, layout_pass, coupling_map, num_pm=4, h
         counter += 1
     return pd.DataFrame(data_list)
 
+def run_experiment_beam(qc, routing_pass, layout_pass, coupling_map, beam_list,
+                        num_pm=4, heuristic="basic", seed=42, look=0): 
+    """ Runs the experiment for the given parameters for the beam list.
+    
+    Args:
+        filename (str): The name of the file to save the results.
+        qc_list: list of qunatum circuits to transpile.
+        routing_pass (str): The routing pass to use.
+        layout_pass (str): The layout pass to use.
+        coupling_map (CouplingMap): The coupling map to use.
+        beam_list (list): The list of beam values to use.
+        num_pm (int): The number of pass managers to build.
+        heuristic (str): The heuristic to use (for regular Sabre).
+        seed (int): The seed to use.
+        look (int): The lookahead steps to use (for Sabre Look).
 
+    Returns:
+        df (pd.DataFrame): A dataframe with the results of the experiment.
+    """
+    data_list = []
+    counter = 0
+    for beam in beam_list:
+        pm_list = build_pm_list(routing_pass, layout_pass, coupling_map, num_pm, heuristic, 
+                                seed, look, beam)
+        data = run_one_circuit(qc, pm_list)
+        data['look'] = look
+        data['beam'] = beam
+        data['heuristic'] = heuristic
+        data_list.append(data)
+        print("Finished: ", counter, " out of ", len(beam_list))
+        counter += 1
+    return pd.DataFrame(data_list)
 
 
 
