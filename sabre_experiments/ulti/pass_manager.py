@@ -163,12 +163,15 @@ def run_experiment(qc_list, routing_pass, layout_pass, coupling_map, num_pm=4, h
                             seed, look, beam)
     # Run the experiment for each of the qc in the list
     data_list = []
+    counter = 0
     for qc in qc_list:
         data = run_one_circuit(qc, pm_list)
         data['look'] = look
         data['beam'] = beam
         data['heuristic'] = heuristic
         data_list.append(data)
+        print("Finished: ", counter, " out of ", len(qc_list))
+        counter += 1
     return pd.DataFrame(data_list)
 
 
