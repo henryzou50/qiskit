@@ -19,7 +19,7 @@ def file_to_circuit_list(directory):
         file_path = os.path.join(directory, file)
         qc = QuantumCircuit.from_qasm_file(file_path)
         qc_list.append(qc)
-        qc_list.sort(key=lambda x: x.num_qubits)
+    qc_list.sort(key=lambda x: x.depth())
     return qc_list
 
 
