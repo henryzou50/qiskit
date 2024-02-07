@@ -7,7 +7,8 @@ import time
 import numpy as np
 import pandas as pd
 
-def build_pm(routing_pass, layout_pass, coupling_map, heuristic="basic", seed=42, look=0, beam=1):
+def build_pm(routing_pass, layout_pass, coupling_map, heuristic="basic", seed=42, look=0, beam=1,
+             triv_layout=False):
     """ Builds a pass manager with the given parameters. 
     
     Args: 
@@ -23,6 +24,7 @@ def build_pm(routing_pass, layout_pass, coupling_map, heuristic="basic", seed=42
         PassManager: The pass manager with the five passes for transpilation.
     """
 
+
     routing_args = {'coupling_map': coupling_map, 'seed': seed}
     if look > 0:
         routing_args['look'] = look
@@ -31,8 +33,11 @@ def build_pm(routing_pass, layout_pass, coupling_map, heuristic="basic", seed=42
     if heuristic != "basic":
         routing_args['heuristic'] = heuristic
 
-    layout_routing_pass = routing_pass(fake_run=True, **routing_args)
-    layout = layout_pass(coupling_map, routing_pass=layout_routing_pass, 
+    if triv_layout:
+        layout = TrivialLayout(coupling_map)
+    else:
+        layout_routing_pass = routing_pass(fake_run=True, **routing_args)
+        layout = layout_pass(coupling_map, routing_pass=layout_routing_pass, 
                         seed=seed)
 
     return PassManager([
