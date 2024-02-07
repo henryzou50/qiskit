@@ -251,7 +251,6 @@ class SabreSwap(TransformationPass):
                     if depth <= self.lowest_depth:
                         self.lowest_depth = depth
                         self.end_candidate_gates = trial_state.gates_seq.copy()
-                        print(f"{'Update End Candidate:':<20} {self.lowest_depth}")
                 elif depth < self.lowest_depth:
                     next_level.append(trial_state)
 

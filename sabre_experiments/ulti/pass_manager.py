@@ -2,13 +2,15 @@
 
 from qiskit.transpiler import PassManager
 from qiskit.transpiler.passes import ApplyLayout, FullAncillaAllocation, \
-                                     EnlargeWithAncilla, TrivialLayout  
+                                     EnlargeWithAncilla, TrivialLayout
+from qiskit.transpiler.passes.routing.sabre_swap import SabreSwap
+from qiskit.transpiler.passes.layout.sabre_layout import SabreLayout
 import time
 import numpy as np
 import pandas as pd
 
 def build_pm(routing_pass, layout_pass, coupling_map, heuristic="basic", seed=42, look=0, beam=1,
-             triv_layout=False):
+             triv_layout=False, fast_layout=False):
     """ Builds a pass manager with the given parameters. 
     
     Args: 
@@ -35,6 +37,13 @@ def build_pm(routing_pass, layout_pass, coupling_map, heuristic="basic", seed=42
 
     if triv_layout:
         layout = TrivialLayout(coupling_map)
+    elif fast_layout:
+        return PassManager([
+            SabreLayout(coupling_map, seed=seed),
+            EnlargeWithAncilla(),
+            ApplyLayout(),
+            SabreSwap(**routing_args)
+        ])
     else:
         layout_routing_pass = routing_pass(fake_run=True, **routing_args)
         layout = layout_pass(coupling_map, routing_pass=layout_routing_pass, 
@@ -49,7 +58,7 @@ def build_pm(routing_pass, layout_pass, coupling_map, heuristic="basic", seed=42
     ])
 
 def build_pm_list(routing_pass, layout_pass, coupling_map, num_pm=4, heuristic="basic", seed=42, 
-                  look=0, beam=1):
+                  look=0, beam=1, triv_layout=False, fast_layout=False):
     """ Builds a list of pass managers with the given parameters, and where each pm has the 
     same parameters except for the seed.
 
@@ -68,7 +77,7 @@ def build_pm_list(routing_pass, layout_pass, coupling_map, num_pm=4, heuristic="
 
     for i in range(num_pm):
         pm_list.append(build_pm(routing_pass, layout_pass, coupling_map, heuristic, 
-                                seed+i, look, beam))
+                                seed+i, look, beam, triv_layout=triv_layout, fast_layout=fast_layout))
     return pm_list
 
 def run_one_circuit(qc, pm_list):
@@ -143,7 +152,7 @@ def round_to_sig_figures(num, n=4):
     return round(num, -int(np.floor(np.log10(abs(num))) - (n - 1)))
 
 def run_experiment(filename, qc_list, routing_pass, layout_pass, coupling_map, num_pm=4, 
-                   heuristic="basic", seed=42, look=0, beam=1):
+                   heuristic="basic", seed=42, look=0, beam=1, triv_layout=False, fast_layout=False):
     """ Runs the experiment for the given parameters and saves the results to a CSV file.
 
     Args:
@@ -163,7 +172,7 @@ def run_experiment(filename, qc_list, routing_pass, layout_pass, coupling_map, n
 
     # Build the pass managers
     pm_list = build_pm_list(routing_pass, layout_pass, coupling_map, num_pm, heuristic, 
-                            seed, look, beam)
+                            seed, look, beam, triv_layout=False, fast_layout=fast_layout)
 
     # Initialize an empty list to hold the data frames
     data_frames = []
