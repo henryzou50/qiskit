@@ -1,0 +1,2 @@
+depth,cx gates,time,depth_std,cx_std,time_std,look,beam,heuristic
+62,213,0.06609034538269043,4.867,12.9,0.01962,0,1,basic

@@ -403,7 +403,7 @@ class SabreSwap(TransformationPass):
             curr_cost = self.dist_matrix[layout_map[node.qargs[0]], layout_map[node.qargs[1]]]
             # reduce cost for gates on the critical path
             if node in self.critical_path:
-                curr_cost = curr_cost / 2
+                curr_cost *= 0.8
             cost += curr_cost
         return cost
 
