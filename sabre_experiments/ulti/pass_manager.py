@@ -41,7 +41,7 @@ def build_routing_pass(rp_str, coupling_map, seed=42, look=0, beam=1, crit=1):
         routing_pass = SabreDepth(coupling_map=coupling_map, seed=seed)
     elif rp_str == "sabre_025_crit":
         print("Successfully built Sabre_Crit. Seed: ", seed, " Crit: ", crit)
-        routing_pass = SabreCrit(coupling_map=coupling_map, seed=seed, crit=crit)
+        routing_pass = SabreCrit(coupling_map=coupling_map, seed=seed, crit_weight=crit)
     elif rp_str == "sabre_025_dive":
         print("Successfully built Sabre_Dive. Seed: ", seed, " Beam: ", beam)
         routing_pass = SabreDive(coupling_map=coupling_map, seed=seed,  beam=beam)
