@@ -170,6 +170,8 @@ class SabreSwap(TransformationPass):
         
         # obtain the critical path as the longest path in the dag
         self.critical_path = dag.longest_path()
+        # convert critical path to a list of node ids
+        self.critical_path = [node._node_id for node in self.critical_path]
 
         # Normally this isn't necessary, but here we want to log some objects that have some
         # non-trivial cost to create.
@@ -403,9 +405,10 @@ class SabreSwap(TransformationPass):
         layout_map = layout._v2p
         for node in layer:
             curr_cost = self.dist_matrix[layout_map[node.qargs[0]], layout_map[node.qargs[1]]]
-            # reduce cost for gates on the critical path
-            if node in self.critical_path:
-                curr_cost *= self.crit_weight
+            # reduce cost for gates on the critical path by checking if node_id matches
+            if isinstance(node, DAGOpNode):
+                if node._node_id in self.critical_path:
+                    curr_cost *= self.crit_weight
             cost += curr_cost
         return cost
 
