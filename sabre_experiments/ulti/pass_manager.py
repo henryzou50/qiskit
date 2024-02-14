@@ -33,19 +33,19 @@ def build_routing_pass(rp_str, coupling_map, seed=42, look=0, beam=1, crit=1):
     elif rp_str == "sabre_025":
         print("Successfully built Sabre_025. Seed: ", seed)
         routing_pass = Sabre025(coupling_map=coupling_map, seed=seed)
-    elif rp_str == "sabre_extended":
+    elif rp_str == "sabre_025_extended":
         print("Successfully built Sabre_Extended. Seed: ", seed)
         routing_pass = Sabre025(coupling_map=coupling_map, heuristic="lookahead", seed=seed)
-    elif rp_str == "sabre_depth":
+    elif rp_str == "sabre_025_depth":
         print("Successfully built Sabre_Depth. Seed: ", seed)
         routing_pass = SabreDepth(coupling_map=coupling_map, seed=seed)
-    elif rp_str == "sabre_crit":
+    elif rp_str == "sabre_025_crit":
         print("Successfully built Sabre_Crit. Seed: ", seed, " Crit: ", crit)
         routing_pass = SabreCrit(coupling_map=coupling_map, seed=seed, crit=crit)
-    elif rp_str == "sabre_dive":
+    elif rp_str == "sabre_025_dive":
         print("Successfully built Sabre_Dive. Seed: ", seed, " Beam: ", beam)
         routing_pass = SabreDive(coupling_map=coupling_map, seed=seed,  beam=beam)
-    elif rp_str == "sabre_look":
+    elif rp_str == "sabre_025_look":
         print("Successfully built Sabre_Look. Seed: ", seed, " Look: ", look, " Beam: ", beam)
         routing_pass = SabreLook(coupling_map=coupling_map, seed=seed, look=look, beam=beam)
     else:
@@ -61,10 +61,10 @@ def build_layout_pass(lp_str, coupling_map, routing_pass, seed=42):
     """
     layout_pass = None
     if lp_str == "sabre_layout":
-        print("Successfully built Sabre_Layout.")
+        print("Successfully built Sabre_Layout. Seed: ", seed)
         layout_pass = SabreLayout(coupling_map=coupling_map, routing_pass=routing_pass, seed=seed)
     elif lp_str == "trivial_layout":
-        print("Successfully built Trivial_Layout.")
+        print("Successfully built Trivial_Layout")
         layout_pass = TrivialLayout(coupling_map=coupling_map)
     else:
         raise ValueError("Invalid layout pass string")
