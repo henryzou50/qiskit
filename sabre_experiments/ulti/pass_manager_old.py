@@ -3,79 +3,12 @@
 from qiskit.transpiler import PassManager
 from qiskit.transpiler.passes import ApplyLayout, FullAncillaAllocation, \
                                      EnlargeWithAncilla, TrivialLayout
-from qiskit.transpiler.passes.routing.sabre_swap     import SabreSwap as Sabre
-from qiskit.transpiler.passes.routing.sabre_swap_025 import SabreSwap as Sabre025
-from qiskit.transpiler.passes.routing.sabre_depth    import SabreSwap as SabreDepth
-from qiskit.transpiler.passes.routing.sabre_crit     import SabreSwap as SabreCrit
-from qiskit.transpiler.passes.routing.sabre_dive     import SabreSwap as SabreDive
-from qiskit.transpiler.passes.routing.sabre_look     import SabreSwap as SabreLook
-
-from qiskit.transpiler.passes.layout.sabre_layout    import SabreLayout
-
 import time
 import numpy as np
 import pandas as pd
 
-def build_routing_pass(rp_str, coupling_map, heuristic="basic", seed=42, look=0, beam=1, crit=1):
-    """ Builds a routing pass with the given parameters. 
-    
-    Args: 
-        rp_str (str): The routing pass to use. 
-        coupling_map (CouplingMap): The coupling map to use.
-        heuristic (str): The heuristic to use (for regular Sabre). 
-        seed (int): The seed to use. 
-        look (int): The lookahead steps to use (for Sabre Look). 
-        beam (int): The beam width to use (for Sabre Look, Sabre Dive).    
-    """
-    routing_pass = None
-    if rp_str == "sabre":
-        print("Successfully built Sabre. Heuristic: ", heuristic, " Seed: ", seed)
-        routing_pass = Sabre(coupling_map=coupling_map, heuristic=heuristic, seed=seed)
-    elif rp_str == "sabre_025":
-        print("Successfully built Sabre_025. Heuristic: ", heuristic, " Seed: ", seed)
-        routing_pass = Sabre025(coupling_map=coupling_map, heuristic=heuristic, seed=seed)
-    elif rp_str == "sabre_depth":
-        print("Successfully built Sabre_Depth. Heuristic: ", heuristic, " Seed: ", seed)
-        routing_pass = SabreDepth(coupling_map=coupling_map, heuristic=heuristic, seed=seed)
-    elif rp_str == "sabre_crit":
-        print("Successfully built Sabre_Crit. Heuristic: ", heuristic, " Seed: ", seed, 
-              " Crit: ", crit)
-        routing_pass = SabreCrit(coupling_map=coupling_map, heuristic=heuristic, seed=seed, 
-                                 crit=crit)
-    elif rp_str == "sabre_dive":
-        print("Successfully built Sabre_Dive. Heuristic: ", heuristic, " Seed: ", seed, 
-              " Beam: ", beam)
-        routing_pass = SabreDive(coupling_map=coupling_map, heuristic=heuristic, seed=seed, 
-                                 beam=beam)
-    elif rp_str == "sabre_look":
-        print("Successfully built Sabre_Look. Heuristic: ", heuristic, " Seed: ", seed, 
-              " Look: ", look, " Beam: ", beam)
-        routing_pass = SabreLook(coupling_map=coupling_map, heuristic=heuristic, seed=seed, 
-                                 look=look, beam=beam)
-    else:
-        raise ValueError("Invalid routing pass string")
-    return routing_pass
-
-def build_layout_pass(lp_str, coupling_map, routing_pass, seed=42):
-    """ Builds a layout pass with the given parameters. 
-    
-    Args: 
-        lp_str (str): The layout pass to use. 
-        coupling_map (CouplingMap): The coupling map to use. 
-    """
-    layout_pass = None
-    if lp_str == "sabre_layout":
-        print("Successfully built Sabre_Layout.")
-        layout_pass = SabreLayout(coupling_map=coupling_map, routing_pass=routing_pass, seed=seed)
-    elif lp_str == "trivial_layout":
-        print("Successfully built Trivial_Layout.")
-        layout_pass = TrivialLayout(coupling_map=coupling_map)
-    else:
-        raise ValueError("Invalid layout pass string")
-    return layout_pass
-
-
-def build_pm(routing_pass, layout_pass, coupling_map):
+def build_pm(routing_pass, layout_pass, coupling_map, heuristic="basic", seed=42, look=0, beam=1,
+             triv_layout=False):
     """ Builds a pass manager with the given parameters. 
     
     Args: 
@@ -91,39 +24,51 @@ def build_pm(routing_pass, layout_pass, coupling_map):
         PassManager: The pass manager with the five passes for transpilation.
     """
 
+
+    routing_args = {'coupling_map': coupling_map, 'seed': seed}
+    if look > 0:
+        routing_args['look'] = look
+    if beam > 1:
+        routing_args['beam_width'] = beam
+    if heuristic != "basic":
+        routing_args['heuristic'] = heuristic
+
+    if triv_layout:
+        layout = TrivialLayout(coupling_map)
+    else:
+        layout_routing_pass = routing_pass(fake_run=True, **routing_args)
+        layout = layout_pass(coupling_map, routing_pass=layout_routing_pass, 
+                        seed=seed)
+
     return PassManager([
-        layout_pass,
+        layout,
         FullAncillaAllocation(coupling_map),
         EnlargeWithAncilla(),
         ApplyLayout(),
-        routing_pass
+        routing_pass(**routing_args)
     ])
 
-def build_pm_list(rp_str, lp_str, coupling_map, num_pm=4, heuristic="basic", seed=42, 
-                  look=0, beam=1, crit=1):
+def build_pm_list(routing_pass, layout_pass, coupling_map, num_pm=4, heuristic="basic", seed=42, 
+                  look=0, beam=1, triv_layout=False):
     """ Builds a list of pass managers with the given parameters, and where each pm has the 
     same parameters except for the seed.
 
     Args: 
-        rp_str (str): The routing pass to use. 
-        lp_str (str): The layout pass to use. 
+        num_pm (int): The number of pass managers to build. 
+        routing_pass (str): The routing pass to use. 
+        layout_pass (str): The layout pass to use. 
         coupling_map (CouplingMap): The coupling map to use. 
-        num_pm (int): The number of pass managers to
-        heuristic (str): The heuristic to use (for regular Sabre).
-        seed (int): The seed to use.
-        look (int): The lookahead steps to use (for Sabre Look).
+        heuristic (str): The heuristic to use (for regular Sabre). 
+        seed (int): The seed to use. 
+        look (int): The lookahead steps to use (for Sabre Look). 
         beam (int): The beam width to use (for Sabre Look, Sabre Dive).
-        crit (int): The criticality to use (for Sabre Crit).
     """
 
     pm_list = []
 
     for i in range(num_pm):
-        routing_pass = build_routing_pass(rp_str, coupling_map, heuristic, seed+i, 
-                                          look, beam, crit)
-        layout_pass = build_layout_pass(lp_str, coupling_map, routing_pass, seed+i)
-        pm_list.append(build_pm(routing_pass, layout_pass, coupling_map))
-        
+        pm_list.append(build_pm(routing_pass, layout_pass, coupling_map, heuristic, 
+                                seed+i, look, beam, triv_layout=triv_layout))
     return pm_list
 
 def run_one_circuit(qc, pm_list):
@@ -202,7 +147,7 @@ def round_to_sig_figures(num, n=4):
     return round(num, -int(np.floor(np.log10(abs(num))) - (n - 1)))
 
 def run_experiment(filename, qc_list, routing_pass, layout_pass, coupling_map, num_pm=4, 
-                   heuristic="basic", seed=42, look=0, beam=1, crit=1):
+                   heuristic="basic", seed=42, look=0, beam=1, triv_layout=False):
     """ Runs the experiment for the given parameters and saves the results to a CSV file.
 
     Args:
@@ -216,14 +161,13 @@ def run_experiment(filename, qc_list, routing_pass, layout_pass, coupling_map, n
         seed (int): The seed to use.
         look (int): The lookahead steps to use (for Sabre Look).
         beam (int): The beam width to use (for Sabre Look, Sabre Dive).
-        crit (int): The criticality to use (for Sabre Crit).
     Returns:
         df (pd.DataFrame): A dataframe with the results of the experiment.
     """ 
 
     # Build the pass managers
     pm_list = build_pm_list(routing_pass, layout_pass, coupling_map, num_pm, heuristic, 
-                            seed, look, beam, crit)
+                            seed, look, beam, triv_layout=triv_layout)
 
     # Initialize an empty list to hold the data frames
     data_frames = []

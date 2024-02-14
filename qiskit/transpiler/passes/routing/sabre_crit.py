@@ -72,6 +72,7 @@ class SabreSwap(TransformationPass):
         heuristic="basic",
         seed=None,
         fake_run=False,
+        crit_weight=1,
     ):
         r"""SabreSwap initializer.
 
@@ -144,6 +145,7 @@ class SabreSwap(TransformationPass):
         self._bit_indices = None
         self.dist_matrix = None
         self.critical_path = None
+        self.crit_weight = crit_weight
 
     def run(self, dag):
         """Run the SabreSwap pass on `dag`.
@@ -403,7 +405,7 @@ class SabreSwap(TransformationPass):
             curr_cost = self.dist_matrix[layout_map[node.qargs[0]], layout_map[node.qargs[1]]]
             # reduce cost for gates on the critical path
             if node in self.critical_path:
-                curr_cost *= 1.1
+                curr_cost *= self.crit_weight
             cost += curr_cost
         return cost
 
