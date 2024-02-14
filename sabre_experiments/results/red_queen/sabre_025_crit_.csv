@@ -96,3 +96,5 @@ depth,cx gates,time,depth_std,cx_std,time_std,look,beam,crit,rp,lp
 530,703,0.9379959106445312,14.01,22.2,0.03093,0,1,1.1,sabre_025_crit,sabre_layout
 3191,4150,12.802954912185669,82.03,129.3,0.4565,0,1,1.1,sabre_025_crit,sabre_layout
 1323,2100,2.059868097305298,78.53,176.3,0.04362,0,1,1.1,sabre_025_crit,sabre_layout
+7384,11118,143.8803038597107,67.36,503.1,8.706,0,1,1.1,sabre_025_crit,sabre_layout
+664,343,0.30608296394348145,9.407,7.462,0.02566,0,1,1.1,sabre_025_crit,sabre_layout

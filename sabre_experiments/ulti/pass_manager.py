@@ -2,7 +2,7 @@
 
 from qiskit.transpiler import PassManager
 from qiskit.transpiler.passes import ApplyLayout, FullAncillaAllocation, \
-                                     EnlargeWithAncilla, TrivialLayout
+                                     EnlargeWithAncilla, TrivialLayout, SetLayout
 from qiskit.transpiler.passes.routing.sabre_swap     import SabreSwap as Sabre
 from qiskit.transpiler.passes.routing.sabre_swap_025 import SabreSwap as Sabre025
 from qiskit.transpiler.passes.routing.sabre_depth    import SabreSwap as SabreDepth
@@ -66,6 +66,9 @@ def build_layout_pass(lp_str, coupling_map, routing_pass, seed=42):
     elif lp_str == "trivial_layout":
         print("Successfully built Trivial_Layout")
         layout_pass = TrivialLayout(coupling_map=coupling_map)
+    elif lp_str == "set_layout":
+        print("Successfully built Set_Layout")
+        layout_pass = SetLayout([1,2,5,6,9,10])
     else:
         raise ValueError("Invalid layout pass string")
     return layout_pass
@@ -180,20 +183,6 @@ def run_one_circuit(qc, pm_list):
 
     return best_data
 
-def round_to_sig_figures(num, n=4):
-    """ Rounds the given number to n significant figures. 
-    
-    Args:
-        num (float): The number to round. 
-        n (int): The number of significant figures to round to.
-    
-    Returns:
-        float: The number rounded to n significant figures.
-    """
-    if num == 0:
-        return 0
-    return round(num, -int(np.floor(np.log10(abs(num))) - (n - 1)))
-
 def run_experiment(filename, qc_list, rp_str, lp_str, coupling_map, num_pm=4, seed=42, 
                    look=0, beam=1, crit=1):
     """ Runs the experiment for the given parameters and saves the results to a CSV file.
@@ -241,6 +230,124 @@ def run_experiment(filename, qc_list, rp_str, lp_str, coupling_map, num_pm=4, se
         counter += 1
 
     return all_data_df
+
+
+def run_one_circuit_info(qc, pm_list):
+    """ Runs the experiment for the given pass managers. and returns a dictionary of the 
+    transpilation data for th best transpiled circuit (determined as th one with the lowest 
+    depth) after transpiling it with each pass maanger in the list.
+     
+    In these experiments, the goal is to run the same type of pass managers (only different 
+    in the seeds) and run the transpilation for the same circuit, and then return the best 
+    transpiled circuit data, but also the standard deviation of each of the parameters.
+    
+    Args:
+        qc (QuantumCircuit): The quantum circuit to transpile. 
+        pm_list (list): The list of pass managers to use.
+        
+    Returns:
+        dict: A dictionary with the best transpiled circuit data, and the standard deviation 
+              of each of the parameters. 
+    """
+    best_data = {
+        'depth': np.inf,
+        'cx gates': np.inf,
+        'time': np.inf,
+    }
+    #qc_decomposed = qc.decompose()
+    
+    depths = []
+    cx_gates = []
+    times = []
+
+    qc_tr_list = []
+    
+    for pm in pm_list:
+        # Timing the transpilation
+        start = time.time()
+        qc_tr = pm.run(qc)
+        end = time.time()
+
+        # Decompose the swaps gate in the circuit
+        #qc_tr = qc_tr.decompose()
+        # qc_tr = qc_tr.decompose()
+
+        # Obtaining data
+        depth = qc_tr.depth()
+        ops = qc_tr.count_ops()
+        if 'cx' not in ops:
+            cx = 0
+        else:
+            cx = qc_tr.count_ops()['cx']
+        time_ = end - start
+
+        depths.append(depth)
+        cx_gates.append(cx)
+        times.append(time_)
+
+        if depth < best_data['depth']:
+            best_data['depth'] = depth
+            best_data['cx gates'] = cx
+            best_data['time'] = time_
+        qc_tr_list.append(qc_tr)
+
+    best_data['depth_std'] = round_to_sig_figures(np.std(depths))
+    best_data['cx_std']    = round_to_sig_figures(np.std(cx_gates))
+    best_data['time_std']  = round_to_sig_figures(np.std(times))
+
+    return best_data, qc_tr_list
+
+def run_experiment_info(filename, qc_list, rp_str, lp_str, coupling_map, num_pm=4, seed=42, 
+                   look=0, beam=1, crit=1):
+    """ Runs the experiment for the given parameters and saves the results to a CSV file.
+
+    Args:
+        filename (str): The name of the file to save the results.
+        qc_list: list of quantum circuits to transpile.
+        rp_str (str): The routing pass to use.
+        lp_str (str): The layout pass to use.
+        coupling_map (CouplingMap): The coupling map to use.
+        num_pm (int): The number of pass managers to build.
+        seed (int): The seed to use.
+        look (int): The lookahead steps to use (for Sabre Look).
+        beam (int): The beam width to use (for Sabre Look, Sabre Dive).
+        crit (int): The criticality to use (for Sabre Crit).
+    Returns:
+        df (pd.DataFrame): A dataframe with the results of the experiment.
+    """ 
+
+    # Build the pass managers
+    pm_list = build_pm_list(rp_str, lp_str, coupling_map, num_pm, seed, look, beam, crit)
+
+    # Initialize an empty list to hold the data frames
+    data_frames = []
+
+    # Run the experiment for each of the qc in the list
+    counter = 0
+    
+    qc_tr_list = []
+    for qc in qc_list:
+        data, qc_tr = run_one_circuit_info(qc, pm_list)
+        data['look'] = look
+        data['beam'] = beam
+        data['crit'] = crit
+        data['rp'] = rp_str
+        data['lp'] = lp_str
+        
+        # Convert the data to a DataFrame and append it to the list
+        data_df = pd.DataFrame([data])
+        data_frames.append(data_df)
+
+        # Concatenate all the DataFrames and save to CSV after each iteration
+        all_data_df = pd.concat(data_frames, ignore_index=True)
+        all_data_df.to_csv(filename, index=False)
+
+        print("Finished: ", counter, " out of ", len(qc_list))
+        counter += 1
+        qc_tr_list += qc_tr
+
+    return all_data_df, qc_tr_list
+
 
 # TODO Adjust below functions
 
@@ -323,4 +430,16 @@ def run_experiment_look(filename, qc, routing_pass, layout_pass, coupling_map, l
     return all_data_df
 
 
-
+def round_to_sig_figures(num, n=4):
+    """ Rounds the given number to n significant figures. 
+    
+    Args:
+        num (float): The number to round. 
+        n (int): The number of significant figures to round to.
+    
+    Returns:
+        float: The number rounded to n significant figures.
+    """
+    if num == 0:
+        return 0
+    return round(num, -int(np.floor(np.log10(abs(num))) - (n - 1)))
