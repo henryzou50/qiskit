@@ -110,7 +110,11 @@ def run_one_circuit(qc, pm_list):
 
         # Obtaining data
         depth = qc_tr.depth()
-        cx = qc_tr.count_ops()['cx']
+        ops = qc_tr.count_ops()
+        if 'cx' not in ops:
+            cx = 0
+        else:
+            cx = qc_tr.count_ops()['cx']
         time_ = end - start
 
         depths.append(depth)
