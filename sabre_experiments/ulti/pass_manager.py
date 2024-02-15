@@ -16,7 +16,7 @@ import time
 import numpy as np
 import pandas as pd
 
-def build_routing_pass(rp_str, coupling_map, seed=42, look=0, beam=1, crit=1):
+def build_routing_pass(rp_str, coupling_map, seed=42, look=0, beam=1, crit=1, num_iter=1):
     """ Builds a routing pass with the given parameters. 
     
     Args: 
@@ -24,7 +24,9 @@ def build_routing_pass(rp_str, coupling_map, seed=42, look=0, beam=1, crit=1):
         coupling_map (CouplingMap): The coupling map to use.
         seed (int): The seed to use. 
         look (int): The lookahead steps to use (for Sabre Look). 
-        beam (int): The beam width to use (for Sabre Look, Sabre Dive).    
+        beam (int): The beam width to use (for Sabre Look, Sabre Dive).
+        crit (int): The criticality to use (for Sabre Crit).
+        num_iter (int): The number of iterations to use (for Sabre Dive).    
     """
     routing_pass = None
     if rp_str == "sabre":
@@ -43,8 +45,9 @@ def build_routing_pass(rp_str, coupling_map, seed=42, look=0, beam=1, crit=1):
         print("Successfully built Sabre_Crit. Seed: ", seed, " Crit: ", crit)
         routing_pass = SabreCrit(coupling_map=coupling_map, seed=seed, crit_weight=crit)
     elif rp_str == "sabre_025_dive":
-        print("Successfully built Sabre_Dive. Seed: ", seed, " Beam: ", beam)
-        routing_pass = SabreDive(coupling_map=coupling_map, seed=seed,  beam_width=beam)
+        print("Successfully built Sabre_Dive. Seed: ", seed, " Beam: ", beam, " Iter: ", num_iter)
+        routing_pass = SabreDive(coupling_map=coupling_map, seed=seed, 
+                                 beam_width=beam, num_iterations=num_iter)
     elif rp_str == "sabre_025_look":
         print("Successfully built Sabre_Look. Seed: ", seed, " Look: ", look, " Beam: ", beam)
         routing_pass = SabreLook(coupling_map=coupling_map, seed=seed, look=look, beam=beam)
@@ -102,7 +105,7 @@ def build_pm(routing_pass, layout_pass, coupling_map):
         routing_pass
     ])
 
-def build_pm_list(rp_str, lp_str, coupling_map, num_pm=4, seed=42, look=0, beam=1, crit=1):
+def build_pm_list(rp_str, lp_str, coupling_map, num_pm=4, seed=42, look=0, beam=1, crit=1, num_iter=1):
     """ Builds a list of pass managers with the given parameters, and where each pm has the 
     same parameters except for the seed.
 
@@ -115,12 +118,13 @@ def build_pm_list(rp_str, lp_str, coupling_map, num_pm=4, seed=42, look=0, beam=
         look (int): The lookahead steps to use (for Sabre Look).
         beam (int): The beam width to use (for Sabre Look, Sabre Dive).
         crit (int): The criticality to use (for Sabre Crit).
+        num_iter (int): The number of iterations to use (for Sabre Dive).
     """
 
     pm_list = []
 
     for i in range(num_pm):
-        routing_pass = build_routing_pass(rp_str, coupling_map, seed+i, look, beam, crit)
+        routing_pass = build_routing_pass(rp_str, coupling_map, seed+i, look, beam, crit, num_iter)
         layout_pass = build_layout_pass(lp_str, coupling_map, routing_pass, seed+i)
         pm_list.append(build_pm(routing_pass, layout_pass, coupling_map))
 
@@ -188,7 +192,7 @@ def run_one_circuit(qc, pm_list):
     return best_data
 
 def run_experiment(filename, qc_list, rp_str, lp_str, coupling_map, num_pm=4, seed=42, 
-                   look=0, beam=1, crit=1):
+                   look=0, beam=1, crit=1, num_iter=1):
     """ Runs the experiment for the given parameters and saves the results to a CSV file.
 
     Args:
@@ -202,12 +206,13 @@ def run_experiment(filename, qc_list, rp_str, lp_str, coupling_map, num_pm=4, se
         look (int): The lookahead steps to use (for Sabre Look).
         beam (int): The beam width to use (for Sabre Look, Sabre Dive).
         crit (int): The criticality to use (for Sabre Crit).
+        num_iter (int): The number of iterations to use (for Sabre Dive).
     Returns:
         df (pd.DataFrame): A dataframe with the results of the experiment.
     """ 
 
     # Build the pass managers
-    pm_list = build_pm_list(rp_str, lp_str, coupling_map, num_pm, seed, look, beam, crit)
+    pm_list = build_pm_list(rp_str, lp_str, coupling_map, num_pm, seed, look, beam, crit, num_iter)
 
     # Initialize an empty list to hold the data frames
     data_frames = []
@@ -221,6 +226,7 @@ def run_experiment(filename, qc_list, rp_str, lp_str, coupling_map, num_pm=4, se
         data['crit'] = crit
         data['rp'] = rp_str
         data['lp'] = lp_str
+        data['num_iter'] = num_iter
         
         # Convert the data to a DataFrame and append it to the list
         data_df = pd.DataFrame([data])

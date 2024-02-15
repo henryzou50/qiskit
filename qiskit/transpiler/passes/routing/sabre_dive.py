@@ -62,6 +62,7 @@ class SabreSwap(TransformationPass):
         seed=None,
         fake_run=False,
         beam_width=1,
+        num_iterations=1
     ):
         r"""SabreSwap initializer.
 
@@ -97,7 +98,7 @@ class SabreSwap(TransformationPass):
         self.beam_width = beam_width
         self.lowest_depth = float('inf')
         self.end_candidate_gates = None
-        self.num_iterations = 2
+        self.num_iterations = 1
 
     def run(self, dag):
         print("Running SabreSwap")
