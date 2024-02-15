@@ -1,2 +1,23 @@
-depth,cx gates,time,depth_std,cx_std,time_std,look,beam,crit,rp,lp
-915,4793,24.46345019340515,23.14,242.2,0.8371,0,1,1,sabre_025_dive,fast_layout
+depth,cx gates,time,depth_std,cx_std,time_std,look,beam,crit,rp,lp,num_iter
+951,4184,26.532416820526123,0,0,0,0,5,1,sabre_025_dive,fast_layout,1
+919,4253,161.4639859199524,0,0,0,0,5,1,sabre_025_dive,fast_layout,2
+901,4343,293.0007610321045,0,0,0,0,5,1,sabre_025_dive,fast_layout,3
+893,4253,433.0416169166565,0,0,0,0,5,1,sabre_025_dive,fast_layout,4
+883,4232,579.8671038150787,0,0,0,0,5,1,sabre_025_dive,fast_layout,5
+880,4250,1635.8895428180695,0,0,0,0,5,1,sabre_025_dive,fast_layout,6
+880,4256,1795.3281021118164,0,0,0,0,5,1,sabre_025_dive,fast_layout,7
+880,4250,1921.7729320526123,0,0,0,0,5,1,sabre_025_dive,fast_layout,8
+880,4250,2072.50501203537,0,0,0,0,5,1,sabre_025_dive,fast_layout,9
+877,4304,2283.962916135788,0,0,0,0,5,1,sabre_025_dive,fast_layout,10
+877,4304,1389.0064949989319,0,0,0,0,5,1,sabre_025_dive,fast_layout,11
+877,4304,1654.0366587638855,0,0,0,0,5,1,sabre_025_dive,fast_layout,12
+877,4304,1660.9479870796204,0,0,0,0,5,1,sabre_025_dive,fast_layout,13
+877,4304,1922.3868496418,0,0,0,0,5,1,sabre_025_dive,fast_layout,14
+877,4304,1922.3868496418,0,0,0,0,5,1,sabre_025_dive,fast_layout,14
+877,4304,2143.659873008728,0,0,0,0,5,1,sabre_025_dive,fast_layout,15
+877,4304,2336.571580171585,0,0,0,0,5,1,sabre_025_dive,fast_layout,16
+877,4304,2699.6817469596863,0,0,0,0,5,1,sabre_025_dive,fast_layout,17
+874,4268,2593.5886709690094,0,0,0,0,5,1,sabre_025_dive,fast_layout,18
+874,4268,2979.444916009903,0,0,0,0,5,1,sabre_025_dive,fast_layout,19
+874,4268,3090.2367401123047,0,0,0,0,5,1,sabre_025_dive,fast_layout,20
+874,4268,3186.4707992076874,0,0,0,0,5,1,sabre_025_dive,fast_layout,21

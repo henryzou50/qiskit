@@ -94,6 +94,7 @@ class SabreSwap(TransformationPass):
         self.dist_matrix = None
         self.dag = None
         self.rng = None
+        self.cnot_qargs = None
 
     def run(self, dag):
         """Run the SabreSwap pass on `dag`.
@@ -122,6 +123,8 @@ class SabreSwap(TransformationPass):
         self.rng = np.random.default_rng(self.seed)
         canonical_register = dag.qregs["q"]
         self._bit_indices = {bit: idx for idx, bit in enumerate(canonical_register)}
+
+        self.cnot_qargs = set()
 
         # Initialize state variables
         front_layer    = dag.front_layer()
@@ -229,6 +232,12 @@ class SabreSwap(TransformationPass):
                     if not trial:
                         state.gates_seq.append(node)
                         state.gates_count += 1
+
+                        # update cnot_qargs
+                        # check if gate has 2 qargs
+                        if len(node.qargs) == 2:
+                            self.cnot_qargs.add(node.qargs)
+                            
                     # Update qubit depth
                     self._update_qubit_depth(node, state.qubit_depth)
 
@@ -284,8 +293,14 @@ class SabreSwap(TransformationPass):
                 continue
 
             trial_qubit_depth = state.qubit_depth.copy()
-            # update depth 
-            self._update_qubit_depth(DAGOpNode(op=SwapGate(), qargs=swap), trial_qubit_depth)
+
+            # get qargs of swap
+            qarg1 = swap[0]
+            qarg2 = swap[1]
+            # if both qargs are in cnot_qargs, then we need to update the qubit depth
+            if (qarg1, qarg2) in self.cnot_qargs or (qarg2, qarg1) in self.cnot_qargs:
+                # update depth 
+                self._update_qubit_depth(DAGOpNode(op=SwapGate(), qargs=swap), trial_qubit_depth)
             trial_state = State(trial_layout, state.front_layer.copy(), state.predecessors.copy(),
                                 trial_qubit_depth, None, 0)
             self._update_state(trial_state, trial=True)
@@ -298,11 +313,23 @@ class SabreSwap(TransformationPass):
 
         # Update layout
         state.layout.swap(*best_swap)
-        # Update gate sequence (note that gate count is not updated)
-        best_swap_node = DAGOpNode(op=SwapGate(), qargs=best_swap)
-        state.gates_seq.append(best_swap_node)
-        # Update qubit depth
-        self._update_qubit_depth(best_swap_node, state.qubit_depth)
+
+        # get qargs of swap
+        qarg1 = best_swap[0]
+        qarg2 = best_swap[1]
+        # if both qargs are in cnot_qargs, then we need to update the qubit depth
+        if (qarg1, qarg2) in self.cnot_qargs or (qarg2, qarg1) in self.cnot_qargs:
+            # Update gate sequence (note that gate count is not updated)
+            best_swap_node = DAGOpNode(op=SwapGate(), qargs=best_swap)
+            state.gates_seq.append(best_swap_node)
+            # Update qubit depth
+            self._update_qubit_depth(best_swap_node, state.qubit_depth)
+
+            # Remove qargs from cnot_qargs, first check if they are in cnot_qargs
+            if (qarg1, qarg2) in self.cnot_qargs:
+                self.cnot_qargs.remove((qarg1, qarg2))
+            elif (qarg2, qarg1) in self.cnot_qargs:
+                self.cnot_qargs.remove((qarg2, qarg1))
 
     def _apply_gate(self, mapped_dag, node, current_layout, canonical_register):
         new_node = _transform_gate_for_layout(node, current_layout, canonical_register)

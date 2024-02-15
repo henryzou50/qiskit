@@ -6,6 +6,7 @@ from qiskit.transpiler.passes import ApplyLayout, FullAncillaAllocation, \
 from qiskit.transpiler.passes.routing.sabre_swap     import SabreSwap as Sabre
 from qiskit.transpiler.passes.routing.sabre_swap_025 import SabreSwap as Sabre025
 from qiskit.transpiler.passes.routing.sabre_depth    import SabreSwap as SabreDepth
+from qiskit.transpiler.passes.routing.sabre_depth_mirror import SabreSwap as SabreDepthMirror
 from qiskit.transpiler.passes.routing.sabre_crit     import SabreSwap as SabreCrit
 from qiskit.transpiler.passes.routing.sabre_dive     import SabreSwap as SabreDive
 from qiskit.transpiler.passes.routing.sabre_look     import SabreSwap as SabreLook
@@ -41,6 +42,9 @@ def build_routing_pass(rp_str, coupling_map, seed=42, look=0, beam=5, crit=1, nu
     elif rp_str == "sabre_025_depth":
         print("Successfully built Sabre_Depth. Seed: ", seed)
         routing_pass = SabreDepth(coupling_map=coupling_map, seed=seed)
+    elif rp_str == "sabre_025_depth_mirror":
+        print("Successfully built Sabre_Depth_Mirror. Seed: ", seed)
+        routing_pass = SabreDepthMirror(coupling_map=coupling_map, seed=seed)
     elif rp_str == "sabre_025_crit":
         print("Successfully built Sabre_Crit. Seed: ", seed, " Crit: ", crit)
         routing_pass = SabreCrit(coupling_map=coupling_map, seed=seed, crit_weight=crit)
