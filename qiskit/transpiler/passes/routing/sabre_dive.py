@@ -98,6 +98,7 @@ class SabreSwap(TransformationPass):
         self.beam_width = beam_width
         self.lowest_depth = float('inf')
         self.end_candidate_gates = None
+        self.num_iterations = 10
 
     def run(self, dag):
         """Run the SabreSwap pass on `dag`.
@@ -149,7 +150,7 @@ class SabreSwap(TransformationPass):
 
         # Phase 3: Perform beam search to get a list of candidate States 
         if initial_state.front_layer:
-            for i in range(100):
+            for i in range(self.num_iterations):
                 candidate_states = self._get_next_states(candidate_states_orig)
 
                 # Phase 3a: Get copies of each candidate state, as we need to return to its original state

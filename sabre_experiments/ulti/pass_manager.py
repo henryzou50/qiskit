@@ -44,7 +44,7 @@ def build_routing_pass(rp_str, coupling_map, seed=42, look=0, beam=1, crit=1):
         routing_pass = SabreCrit(coupling_map=coupling_map, seed=seed, crit_weight=crit)
     elif rp_str == "sabre_025_dive":
         print("Successfully built Sabre_Dive. Seed: ", seed, " Beam: ", beam)
-        routing_pass = SabreDive(coupling_map=coupling_map, seed=seed,  beam=beam)
+        routing_pass = SabreDive(coupling_map=coupling_map, seed=seed,  beam_width=beam)
     elif rp_str == "sabre_025_look":
         print("Successfully built Sabre_Look. Seed: ", seed, " Look: ", look, " Beam: ", beam)
         routing_pass = SabreLook(coupling_map=coupling_map, seed=seed, look=look, beam=beam)
@@ -63,6 +63,10 @@ def build_layout_pass(lp_str, coupling_map, routing_pass, seed=42):
     if lp_str == "sabre_layout":
         print("Successfully built Sabre_Layout. Seed: ", seed)
         layout_pass = SabreLayout(coupling_map=coupling_map, routing_pass=routing_pass, seed=seed)
+    elif lp_str == "fast_layout":
+        print("Successfully built Fast_Layout")
+        layout_pass = SabreLayout(coupling_map=coupling_map, 
+                                  routing_pass=Sabre(coupling_map=coupling_map, seed=seed), seed=seed)
     elif lp_str == "trivial_layout":
         print("Successfully built Trivial_Layout")
         layout_pass = TrivialLayout(coupling_map=coupling_map)
