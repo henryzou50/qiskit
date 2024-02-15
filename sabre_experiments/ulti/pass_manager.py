@@ -16,7 +16,7 @@ import time
 import numpy as np
 import pandas as pd
 
-def build_routing_pass(rp_str, coupling_map, seed=42, look=0, beam=1, crit=1, num_iter=1):
+def build_routing_pass(rp_str, coupling_map, seed=42, look=0, beam=5, crit=1, num_iter=1):
     """ Builds a routing pass with the given parameters. 
     
     Args: 
@@ -105,7 +105,7 @@ def build_pm(routing_pass, layout_pass, coupling_map):
         routing_pass
     ])
 
-def build_pm_list(rp_str, lp_str, coupling_map, num_pm=4, seed=42, look=0, beam=1, crit=1, num_iter=1):
+def build_pm_list(rp_str, lp_str, coupling_map, num_pm=4, seed=42, look=0, beam=5, crit=1, num_iter=1):
     """ Builds a list of pass managers with the given parameters, and where each pm has the 
     same parameters except for the seed.
 
@@ -192,7 +192,7 @@ def run_one_circuit(qc, pm_list):
     return best_data
 
 def run_experiment(filename, qc_list, rp_str, lp_str, coupling_map, num_pm=4, seed=42, 
-                   look=0, beam=1, crit=1, num_iter=1):
+                   look=0, beam=5, crit=1, num_iter=1):
     """ Runs the experiment for the given parameters and saves the results to a CSV file.
 
     Args:
