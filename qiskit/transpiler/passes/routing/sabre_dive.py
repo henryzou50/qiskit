@@ -97,7 +97,7 @@ class SabreSwap(TransformationPass):
         self.beam_width = beam_width
         self.lowest_depth = float('inf')
         self.end_candidate_gates = None
-        self.num_iterations = 10
+        self.num_iterations = 2
 
     def run(self, dag):
         print("Running SabreSwap")
@@ -153,6 +153,7 @@ class SabreSwap(TransformationPass):
             for i in range(self.num_iterations):
                 print(f"Beam Search Iteration {i}")
                 candidate_states = self._get_next_states(candidate_states_orig)
+                print(f"Number of Candidate States: {len(candidate_states)}")
 
                 # Phase 3a: Get copies of each candidate state, as we need to return to its original state
                 candidate_states_orig = []
