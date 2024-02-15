@@ -23,6 +23,7 @@ from qiskit.transpiler.basepasses import TransformationPass
 from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.layout import Layout
 from qiskit.dagcircuit import DAGOpNode
+from qiskit.converters import dag_to_circuit
 
 class SabreSwap(TransformationPass):
     r"""Map input circuit onto a backend topology via insertion of SWAPs.
@@ -146,7 +147,6 @@ class SabreSwap(TransformationPass):
             while initial_state.front_layer:
                 self._apply_swap(initial_state)
                 self._update_state(initial_state)
-
 
         # Phase 5: Use gate sequence to apply the gates to the mapped dag
         current_layout = Layout.generate_trivial_layout(canonical_register) # Reset layout

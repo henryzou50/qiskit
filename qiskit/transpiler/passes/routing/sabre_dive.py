@@ -23,7 +23,6 @@ from qiskit.transpiler.basepasses import TransformationPass
 from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.layout import Layout
 from qiskit.dagcircuit import DAGOpNode
-from termcolor import colored
 
 class SabreSwap(TransformationPass):
     r"""Map input circuit onto a backend topology via insertion of SWAPs.
@@ -101,6 +100,7 @@ class SabreSwap(TransformationPass):
         self.num_iterations = 10
 
     def run(self, dag):
+        print("Running SabreSwap")
         """Run the SabreSwap pass on `dag`.
 
         Args:
@@ -151,6 +151,7 @@ class SabreSwap(TransformationPass):
         # Phase 3: Perform beam search to get a list of candidate States 
         if initial_state.front_layer:
             for i in range(self.num_iterations):
+                print(f"Beam Search Iteration {i}")
                 candidate_states = self._get_next_states(candidate_states_orig)
 
                 # Phase 3a: Get copies of each candidate state, as we need to return to its original state
@@ -173,6 +174,7 @@ class SabreSwap(TransformationPass):
                         self.lowest_depth = depths[-1]
                         # Make a copy for the end candidate
                         self.end_candidate_gates = state.gates_seq.copy()
+                        print(f"New Lowest Depth: {self.lowest_depth}")
                 
                 # Make a dict that corresponds candidate_states to candidates_states_orig
                 candidate_states_dict = {}
@@ -252,6 +254,7 @@ class SabreSwap(TransformationPass):
                     if depth <= self.lowest_depth:
                         self.lowest_depth = depth
                         self.end_candidate_gates = trial_state.gates_seq.copy()
+                        print(f"New Lowest Depth: {self.lowest_depth}")
                 elif depth < self.lowest_depth:
                     next_level.append(trial_state)
 

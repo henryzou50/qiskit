@@ -1,2 +1,2 @@
 depth,cx gates,time,depth_std,cx_std,time_std,look,beam,crit,rp,lp
-1332,4382,0.8719167709350586,51.29,156.5,0.02055,0,1,1,sabre_025_depth,fast_layout
+1024,4382,1.042168140411377,53.46,156.5,0.02144,0,1,1,sabre_025_depth,fast_layout

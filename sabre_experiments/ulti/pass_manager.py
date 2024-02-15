@@ -164,7 +164,7 @@ def run_one_circuit(qc, pm_list):
         qc_tr = qc_tr.decompose()
 
         # Obtaining data
-        depth = qc_tr.depth()
+        depth = qc_tr.depth(lambda x: x.operation.num_qubits == 2)
         ops = qc_tr.count_ops()
         if 'cx' not in ops:
             cx = 0
