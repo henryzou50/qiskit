@@ -1,5 +1,4 @@
 from qiskit.transpiler import CouplingMap
-import os
 import ast
 
 def file_to_coupling_map(file_path):
