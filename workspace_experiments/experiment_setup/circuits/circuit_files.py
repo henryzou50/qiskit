@@ -6,7 +6,14 @@ from qiskit import QuantumCircuit
 
 def get_circuits_from_directory(directory):
     """ Return a list of QuantumCircuits from the files in the directory. 
-    The files are sorted by the number of lines in the file. """
+    The files are sorted by the number of lines in the file.
+     
+    Args: 
+        directory (str): The path to the directory containing the files.
+
+    Returns:
+        list[QuantumCircuit]: The QuantumCircuits from the files in the directory.
+    """
 
     # Check if the directory exists, if not raise an error
     if not os.path.exists(directory):
