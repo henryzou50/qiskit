@@ -7,8 +7,9 @@ import numpy as np
 import pandas as pd
 
 # routing passes
-from qiskit.transpiler.passes.routing.sabre_swap        import SabreSwap as Sabre
-from qiskit.transpiler.passes.routing.sabre_swap_v0_20_ import SabreSwap as SabreSwap_v0_20
+from qiskit.transpiler.passes.routing.sabre_swap             import SabreSwap as Sabre
+from qiskit.transpiler.passes.routing.sabre_swap_v0_20_      import SabreSwap as SabreSwap_v0_20
+from qiskit.transpiler.passes.routing.sabre_swap_v0_20_depth import SabreSwap as SabreSwap_v0_20_depth
 
 def build_rp(rp_str, cm, seed=42, look=0, beam=1, num_iter=1, crit=1):
     """ Build a routing pass based on the routing pass string rp_str. 
@@ -35,6 +36,9 @@ def build_rp(rp_str, cm, seed=42, look=0, beam=1, num_iter=1, crit=1):
     elif rp_str == "sabre_v0_20_extended":
         print(f"    Building Sabre v0.20 extended routing pass")
         rp = SabreSwap_v0_20(cm, seed=seed, heuristic="lookahead")
+    elif rp_str == "sabre_v0_20_depth":
+        print(f"    Building Sabre v0.20 depth routing pass")
+        rp = SabreSwap_v0_20_depth(cm, seed=seed)
     else:
         raise ValueError(f"Unknown routing pass {rp_str}")
     
