@@ -40,7 +40,7 @@ def build_rp(rp_str, cm, seed=42, look=0, beam=0, num_iter=1, crit=1):
     
     return rp 
 
-def build_lp(lp_str, cm, rp, seed=42):
+def build_lp(lp_str, cm, rp, seed=42, max_iter=1):
     """ Build a layout pass based on the layout pass string lp_str. 
     
     Args: 
@@ -51,15 +51,14 @@ def build_lp(lp_str, cm, rp, seed=42):
     """
 
     lp = None
-    print(f"Using seed {seed} for layout pass.")
-
+    print(f"Using seed {seed} and max iterations {max_iter} for layout pass.")
 
     if lp_str   == "sabre_layout":
         print(f"    Building Sabre layout pass")
-        lp = SabreLayout(cm, rp, seed=seed)
+        lp = SabreLayout(cm, rp, seed=seed, max_iterations=max_iter)
     elif lp_str == "fast_layout":
         print(f"    Building Fast layout pass")
-        lp = SabreLayout(cm, Sabre(cm, seed=seed), seed=seed)
+        lp = SabreLayout(cm, Sabre(cm, seed=seed), seed=seed, max_iterations=max_iter)
     elif lp_str == "trivial_layout":
         print(f"    Building Trivial layout pass")
         lp = TrivialLayout()
