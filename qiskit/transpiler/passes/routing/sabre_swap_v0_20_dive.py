@@ -61,7 +61,7 @@ class SabreSwap(TransformationPass):
         coupling_map,
         seed=None,
         fake_run=False,
-        beam_width=100,
+        beam_width=1,
         num_iterations=1
     ):
         r"""SabreSwap initializer.
@@ -170,7 +170,12 @@ class SabreSwap(TransformationPass):
                 # Phase 3a: Get copies of each candidate state, as we need to return to its original state
                 candidate_states_orig = []
                 for state in candidate_states:
-                    candidate_states_orig.append(state._copy())
+                    # check if depth of current state is higher than self.lowest_depth
+                    depth = max(state.qubit_depth.values())
+                    if depth > self.lowest_depth:
+                        continue
+
+                    candidate_states_orig.append(state._copy())            
 
                 # Phase 3b: Perform the regular algorithm on each of the beam states
                 for state in candidate_states:
@@ -201,6 +206,7 @@ class SabreSwap(TransformationPass):
 
                 # Prune the candidates_states_orig to only include the beam_width number of states
                 candidate_states_orig = candidate_states_orig[:self.beam_width]
+                print(f"        Length of Candidate States: {len(candidate_states_orig)}")
 
         # Phase 5: Use gate sequence to apply the gates to the mapped dag
         current_layout = Layout.generate_trivial_layout(canonical_register) # Reset layout
