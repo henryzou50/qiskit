@@ -170,6 +170,7 @@ class SabreSwap(TransformationPass):
                 # Phase 3a: Get copies of each candidate state, as we need to return to its original state
                 candidate_states_orig = []
                 for state in candidate_states:
+                    candidate_states_orig.append(state._copy())
 
                 # Phase 3b: Perform the regular algorithm on each of the beam states
                 for state in candidate_states:
