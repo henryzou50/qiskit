@@ -7,10 +7,10 @@ import numpy as np
 import pandas as pd
 
 # routing passes
-from qiskit.transpiler.passes.routing.sabre_swap import SabreSwap as Sabre
-from sabre_mods.sabre_swap_v0_20_   import SabreSwap as SabreSwap_v0_20
+from qiskit.transpiler.passes.routing.sabre_swap        import SabreSwap as Sabre
+from qiskit.transpiler.passes.routing.sabre_swap_v0_20_ import SabreSwap as SabreSwap_v0_20
 
-def build_rp(rp_str, cm, seed=42, look=0, beam=0, num_iter=1, crit=1):
+def build_rp(rp_str, cm, seed=42, look=0, beam=1, num_iter=1, crit=1):
     """ Build a routing pass based on the routing pass string rp_str. 
     
     Args: 
@@ -51,16 +51,16 @@ def build_lp(lp_str, cm, rp, seed=42, max_iter=1):
     """
 
     lp = None
-    print(f"Using seed {seed} and max iterations {max_iter} for layout pass.")
+    print(f"        Using seed {seed} and max iterations {max_iter} for layout pass.")
 
     if lp_str   == "sabre_layout":
-        print(f"    Building Sabre layout pass")
+        print(f"            Building Sabre layout pass")
         lp = SabreLayout(cm, rp, seed=seed, max_iterations=max_iter)
     elif lp_str == "fast_layout":
-        print(f"    Building Fast layout pass")
+        print(f"            Building Fast layout pass")
         lp = SabreLayout(cm, Sabre(cm, seed=seed), seed=seed, max_iterations=max_iter)
     elif lp_str == "trivial_layout":
-        print(f"    Building Trivial layout pass")
+        print(f"            Building Trivial layout pass")
         lp = TrivialLayout()
     else:
         raise ValueError(f"Unknown layout pass {lp_str}")
@@ -84,3 +84,169 @@ def build_pm(rp, lp, cm):
         ApplyLayout(),
         rp
     ])
+
+def build_pm_list(rp_str, lp_str, cm, num_pm=4, seed=42, look=0, beam=1, num_iter=1, crit=1, max_iter=1):
+    """ Builds a list of pass managers with the given parameters, and where each pm has the 
+    same parameters except for the seed.
+
+    Args: 
+        rp_str (str): The routing pass to use. 
+        lp_str (str): The layout pass to use. 
+        coupling_map (CouplingMap): The coupling map to use. 
+        num_pm (int): The number of pass managers to
+        seed (int): The seed to use.
+        look (int): The lookahead steps to use (for Sabre Look).
+        beam (int): The beam width to use (for Sabre Look, Sabre Dive).
+        crit (int): The criticality to use (for Sabre Crit).
+        num_iter (int): The number of iterations to use (for Sabre Dive).
+        max_iter (int): The number of iterations for the layout pass.
+    """
+
+    pm_list = []
+
+    for i in range(num_pm):
+        rp = build_rp(rp_str, cm, seed+i, look, beam, num_iter, crit)
+        lp = build_lp(lp_str, cm, rp, seed+i, max_iter)
+        pm_list.append(build_pm(rp, lp, cm))
+
+    return pm_list
+
+
+def run_one_circuit(qc, pm_list):
+    """ Runs the experiment for the given pass managers. and returns a dictionary of the 
+    transpilation data for th best transpiled circuit (determined as the one with the lowest 
+    depth) after transpiling it with each pass maanger in the list.
+     
+    In these experiments, the goal is to run the same type of pass managers (only different 
+    in the seeds) and run the transpilation for the same circuit, and then return the best 
+    transpiled circuit data, but also the standard deviation of each of the parameters.
+    
+    Args:
+        qc (QuantumCircuit): The quantum circuit to transpile. 
+        pm_list (list): The list of pass managers to use.
+        
+    Returns:
+        dict: A dictionary with the best transpiled circuit data, and the standard deviation 
+              of each of the parameters. 
+    """
+    best_data = {
+        'depth': np.inf,
+        'cx gates': np.inf,
+        'time': np.inf,
+    }
+    
+    depths   = []
+    cx_gates = []
+    times    = []
+    seed_idx = 0
+    
+    for pm in pm_list:
+        # Timing the transpilation
+        start = time.time()
+        qc_tr = pm.run(qc)
+        end = time.time()
+
+        # Decompose the swaps gate in the circuit
+        qc_tr = qc_tr.decompose()
+
+        # Obtaining data
+        depth = qc_tr.depth(lambda x: x.operation.num_qubits == 2)
+        ops = qc_tr.count_ops()
+        if 'cx' not in ops:
+            cx = 0
+        else:
+            cx = qc_tr.count_ops()['cx']
+        time_ = end - start
+
+        depths.append(depth)
+        cx_gates.append(cx)
+        times.append(time_)
+
+        if depth < best_data['depth']:
+            best_data['depth'] = depth
+            best_data['cx gates'] = cx
+            best_data['time'] = time_
+            best_data['seed'] = seed_idx
+        elif depth == best_data['depth'] and cx < best_data['cx gates']:
+            best_data['depth'] = depth
+            best_data['cx gates'] = cx
+            best_data['time'] = time_
+            best_data['seed'] = seed_idx
+        seed_idx += 1
+
+    best_data['depth_std'] = round_to_sig_figures(np.std(depths))
+    best_data['cx_std']    = round_to_sig_figures(np.std(cx_gates))
+    best_data['time_std']  = round_to_sig_figures(np.std(times))
+
+    return best_data
+
+
+def run_experiment(filename, qc_list, rp_str, lp_str, coupling_map, num_pm=4, seed=42, 
+                   look=0, beam=1, num_iter=1, crit=1, max_iter=1):
+    """ Runs the experiment for the given parameters and saves the results to a CSV file.
+
+    Args:
+        filename (str): The name of the file to save the results.
+        qc_list: list of quantum circuits to transpile.
+        rp_str (str): The routing pass to use.
+        lp_str (str): The layout pass to use.
+        coupling_map (CouplingMap): The coupling map to use.
+        num_pm (int): The number of pass managers to build.
+        seed (int): The seed to use.
+        look (int): The lookahead steps to use (for Sabre Look).
+        beam (int): The beam width to use (for Sabre Look, Sabre Dive).
+        num_iter (int): The number of iterations to use (for Sabre Dive).
+        crit (int): The criticality to use (for Sabre Crit).
+        max_iter (int): The number of iterations for the layout pass.
+    Returns:
+        df (pd.DataFrame): A dataframe with the results of the experiment.
+    """ 
+
+    # Build the pass managers
+
+
+    pm_list = build_pm_list(rp_str, lp_str, coupling_map, num_pm, seed, look, beam, num_iter, crit, max_iter)
+
+    # Initialize an empty list to hold the data frames
+    data_frames = []
+
+    # Run the experiment for each of the qc in the list
+    counter = 0
+    for qc in qc_list:
+        data = run_one_circuit(qc, pm_list)
+        data['rp'] = rp_str
+        data['lp'] = lp_str
+        data['look'] = look
+        data['beam'] = beam
+        data['num_iter'] = num_iter
+        data['crit'] = crit
+        data['max_iter'] = max_iter
+        
+        # Convert the data to a DataFrame and append it to the list
+        data_df = pd.DataFrame([data])
+        data_frames.append(data_df)
+
+        # Concatenate all the DataFrames and save to CSV after each iteration
+        all_data_df = pd.concat(data_frames, ignore_index=True)
+        all_data_df.to_csv(filename, index=False)
+
+        depth = data['depth']
+        time_ = data['time']
+        print(f"Finished: {counter} out of {len(qc_list)} with depth {depth} and time {time_}")
+        counter += 1
+
+    return all_data_df
+
+def round_to_sig_figures(num, n=4):
+    """ Rounds the given number to n significant figures. 
+    
+    Args:
+        num (float): The number to round. 
+        n (int): The number of significant figures to round to.
+    
+    Returns:
+        float: The number rounded to n significant figures.
+    """
+    if num == 0:
+        return 0
+    return round(num, -int(np.floor(np.log10(abs(num))) - (n - 1)))

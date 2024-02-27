@@ -145,7 +145,6 @@ class SabreSwap(TransformationPass):
         self.dist_matrix = None
 
     def run(self, dag):
-        print("Running SabreSwap_v0_20")
         """Run the SabreSwap pass on `dag`.
 
         Args:
