@@ -244,13 +244,13 @@ def run_experiment(filename, qc_list, rp_str, lp_str, coupling_map, num_pm=4, se
 
     return all_data_df
 
-def run_beam_experiment(filename, qc, rp_str, lp_str, coupling_map, beam_list, seed=42, num_pm=1,
+def run_beam_experiment(filename, qc_list, rp_str, lp_str, coupling_map, beam_list, seed=42, num_pm=1,
                    look=0, num_iter=1, crit=1, max_iter=1):
     """ Runs the experiment for the given parameters and saves the results to a CSV file.
 
     Args:
         filename (str): The name of the file to save the results.
-        qc: quantum circuit to transpile.
+        qc_list: list
         rp_str (str): The routing pass to use.
         lp_str (str): The layout pass to use.
         coupling_map (CouplingMap): The coupling map to use.
@@ -265,29 +265,35 @@ def run_beam_experiment(filename, qc, rp_str, lp_str, coupling_map, beam_list, s
 
     counter = 0
     data_frames = []
+
     for beam in beam_list:
-        pm_list = build_pm_list(rp_str, lp_str, coupling_map, num_pm, seed, look, beam, 
-                                num_iter, crit, max_iter)
-        data = run_one_circuit(qc, pm_list)
-        data['rp'] = rp_str
-        data['lp'] = lp_str
-        data['look'] = look
-        data['beam'] = beam
-        data['num_iter'] = num_iter
-        data['crit'] = crit
-        data['max_iter'] = max_iter
+        qc_label = 0
+        for qc in qc_list:
+            pm_list = build_pm_list(rp_str, lp_str, coupling_map, num_pm, seed, look, beam, 
+                                    num_iter, crit, max_iter)
+            data = run_one_circuit(qc, pm_list)
+            data['rp'] = rp_str
+            data['lp'] = lp_str
+            data['look'] = look
+            data['beam'] = beam
+            data['num_iter'] = num_iter
+            data['crit'] = crit
+            data['max_iter'] = max_iter
+            data['qc_label'] = qc_label
 
-        data_df = pd.DataFrame([data])
-        data_frames.append(data_df)
+            qc_label += 1
 
-        all_data_df = pd.concat(data_frames, ignore_index=True)
-        all_data_df.to_csv(filename, index=False)
+            data_df = pd.DataFrame([data])
+            data_frames.append(data_df)
 
-        depth = data['depth']
-        time_ = data['time']
+            all_data_df = pd.concat(data_frames, ignore_index=True)
+            all_data_df.to_csv(filename, index=False)
 
-        print(f"Finished: {counter} out of {len(beam_list)} with depth {depth} and time {time_}")
-        counter += 1
+            depth = data['depth']
+            time_ = data['time']
+
+            print(f"Finished: {counter} out of {len(beam_list)} with depth {depth} and time {time_}, for qc {qc_label}")
+            counter += 1
     return all_data_df
 
 
