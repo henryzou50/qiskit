@@ -212,8 +212,6 @@ def run_experiment(filename, qc_list, rp_str, lp_str, coupling_map, num_pm=4, se
     """ 
 
     # Build the pass managers
-
-
     pm_list = build_pm_list(rp_str, lp_str, coupling_map, num_pm, seed, look, beam, num_iter, crit, max_iter)
 
     # Initialize an empty list to hold the data frames
