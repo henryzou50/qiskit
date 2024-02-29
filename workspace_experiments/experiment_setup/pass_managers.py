@@ -11,7 +11,7 @@ from qiskit.transpiler.passes.routing.sabre_swap             import SabreSwap as
 from qiskit.transpiler.passes.routing.sabre_swap_v0_20_      import SabreSwap as SabreSwap_v0_20
 from qiskit.transpiler.passes.routing.sabre_swap_v0_20_depth import SabreSwap as SabreSwap_v0_20_depth
 from qiskit.transpiler.passes.routing.sabre_swap_v0_20_dive  import SabreSwap as SabreSwap_v0_20_dive
-
+from qiskit.transpiler.passes.routing.sabre_swap_v0_20_look  import SabreSwap as SabreSwap_v0_20_look
 
 def build_rp(rp_str, cm, seed=42, look=0, beam=1, num_iter=1, crit=1):
     """ Build a routing pass based on the routing pass string rp_str. 
@@ -44,6 +44,9 @@ def build_rp(rp_str, cm, seed=42, look=0, beam=1, num_iter=1, crit=1):
     elif rp_str == "sabre_v0_20_dive":
         print(f"    Building Sabre v0.20 dive routing pass with beam {beam}")
         rp = SabreSwap_v0_20_dive(cm, seed=seed, beam_width=beam)
+    elif rp_str == "sabre_v0_20_look":
+        print(f"    Building Sabre v0.20 look routing pass with look {look}")
+        rp = SabreSwap_v0_20_look(cm, seed=seed, look=look, beam_width=beam)
     else:
         raise ValueError(f"Unknown routing pass {rp_str}")
     
@@ -293,6 +296,59 @@ def run_beam_experiment(filename, qc_list, rp_str, lp_str, coupling_map, beam_li
             time_ = data['time']
 
             print(f"Finished: {counter} out of {len(beam_list)} with depth {depth} and time {time_}, for qc {qc_label}")
+            counter += 1
+    return all_data_df
+
+
+def run_look_experiment(filename, qc_list, rp_str, lp_str, coupling_map, look_list, seed=42, num_pm=1,
+                   beam=1, num_iter=1, crit=1, max_iter=1):
+    """ Runs the experiment for the given parameters and saves the results to a CSV file.
+
+    Args:
+        filename (str): The name of the file to save the results.
+        qc_list: list
+        rp_str (str): The routing pass to use.
+        lp_str (str): The layout pass to use.
+        coupling_map (CouplingMap): The coupling map to use.
+        beam_list (list): The list of beam widths to use.
+        seed (int): The seed to use.
+        num_pm (int): The number of pass managers to build.
+        look (int): The lookahead steps to use (for Sabre Look).
+        num_iter (int): The number of iterations to use (for Sabre Dive).
+        crit (int): The criticality to use (for Sabre Crit).
+        max_iter (int): The number of iterations for the layout pass.
+    """
+
+    counter = 0
+    data_frames = []
+
+    for look in look_list:
+        qc_label = 0
+        for qc in qc_list:
+            pm_list = build_pm_list(rp_str, lp_str, coupling_map, num_pm, seed, look, beam, 
+                                    num_iter, crit, max_iter)
+            data = run_one_circuit(qc, pm_list)
+            data['rp'] = rp_str
+            data['lp'] = lp_str
+            data['look'] = look
+            data['beam'] = beam
+            data['num_iter'] = num_iter
+            data['crit'] = crit
+            data['max_iter'] = max_iter
+            data['qc_label'] = qc_label
+
+            qc_label += 1
+
+            data_df = pd.DataFrame([data])
+            data_frames.append(data_df)
+
+            all_data_df = pd.concat(data_frames, ignore_index=True)
+            all_data_df.to_csv(filename, index=False)
+
+            depth = data['depth']
+            time_ = data['time']
+
+            print(f"Finished: {counter} out of {len(look_list)} with depth {depth} and time {time_}, for qc {qc_label}")
             counter += 1
     return all_data_df
 
