@@ -1,0 +1,11 @@
+depth,cx gates,time,seed,depth_std,cx_std,time_std,rp,lp,look,beam,num_iter,crit,max_iter,qc_label
+213,227,42.63267976276733,0,0,0,0,sabre_v0_20_depth,fast_layout,0,1120,1,1,1,0
+77,118,20.37850794193732,0,0,0,0,sabre_v0_20_depth,fast_layout,0,1120,1,1,1,1
+139,155,22.98547662355396,0,0,0,0,sabre_v0_20_depth,fast_layout,0,1120,1,1,1,2
+110,261,65.6764351752274,0,0,0,0,sabre_v0_20_depth,fast_layout,0,1120,1,1,1,3
+110,261,34.882675101655714,0,0,0,0,sabre_v0_20_depth,fast_layout,0,1120,1,1,1,4
+340,637,92.39443994724199,0,0,0,0,sabre_v0_20_depth,fast_layout,0,1120,1,1,1,5
+133,176,35.493125273007834,0,0,0,0,sabre_v0_20_depth,fast_layout,0,1120,1,1,1,6
+494,651,99.65807185854344,0,0,0,0,sabre_v0_20_depth,fast_layout,0,1120,1,1,1,7
+90,253,36.643392797821164,0,0,0,0,sabre_v0_20_depth,fast_layout,0,1120,1,1,1,8
+95,188,142.4054292381904,0,0,0,0,sabre_v0_20_depth,fast_layout,0,1120,1,1,1,9
