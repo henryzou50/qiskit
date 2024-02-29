@@ -4,7 +4,7 @@ from os.path import isfile, join
 from qiskit import QuantumCircuit
 
 
-def get_circuits_from_directory(directory):
+def get_circuits_from_directory(directory, print_files=False):
     """ Return a list of QuantumCircuits from the files in the directory. 
     The files are sorted by the number of lines in the file.
      
@@ -27,12 +27,14 @@ def get_circuits_from_directory(directory):
 
     # Read the files and return the QuantumCircuits
     circuits = []
-    counter = 2
+
+    counter = 2 # to make the csv file rows
     for file in files:
         with open(join(directory, file), 'r') as f:
             # print the file name
-            #print(f"{counter}. {file}")
-            counter += 1
+            if print_files:
+                print(f"Row {counter}: {file}")
+                counter += 1
 
             circuits.append(QuantumCircuit.from_qasm_str(f.read()))
 
