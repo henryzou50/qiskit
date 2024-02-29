@@ -31,7 +31,7 @@ def get_circuits_from_directory(directory):
     for file in files:
         with open(join(directory, file), 'r') as f:
             # print the file name
-            print(f"{counter}. {file}")
+            #print(f"{counter}. {file}")
             counter += 1
 
             circuits.append(QuantumCircuit.from_qasm_str(f.read()))

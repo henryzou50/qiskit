@@ -145,11 +145,11 @@ class SabreSwap(TransformationPass):
         self._bit_indices = None
         self.dist_matrix = None
         self.crit_weight = crit_weight
-        self.crit_weight_1 = 1 + (crit_weight * 0.1)
-        self.crit_weight_2 = 1 + (crit_weight * 0.01)
-        self.crit_weight_3 = 1 + (crit_weight * 0.001)
-        self.crit_weight_4 = 1 + (crit_weight * 0.0001)
-        self.crit_weight_5 = 1 + (crit_weight * 0.00001)
+        self.crit_weight_1 = crit_weight
+        self.crit_weight_2 = float((crit_weight - 1) * 0.1 + 1)
+        self.crit_weight_3 = float((crit_weight - 1) * 0.01 + 1)
+        self.crit_weight_4 = float((crit_weight - 1) * 0.001 + 1)
+        self.crit_weight_5 = float((crit_weight - 1) * 0.0001 + 1)
         self.crit_path_1 = [] # contains nodes in the longest path
         self.crit_path_2 = [] # contains nodes in the second longest path
         self.crit_path_3 = [] # contains nodes in the third longest path
@@ -178,12 +178,16 @@ class SabreSwap(TransformationPass):
         max_iterations_without_progress = 10 * len(dag.qubits)  # Arbitrary.
         ops_since_progress = []
         extended_set = None
+
+        # print all of the crit values
+        print(self.crit_weight_1)
+        print(self.crit_weight_2)
+        print(self.crit_weight_3)
+        print(self.crit_weight_4)
+        print(self.crit_weight_5)
         
         # obtain the top 5 longest paths in the dag
         longest_paths = dag.find_top_n_longest_paths(5)
-        # print length of each of the top 5 longest paths
-        for i, path in enumerate(longest_paths):
-            print(f"        The length of the {i}th longest path is {len(path)}")
 
         # obtain the critical paths
         self.crit_path_1 = []
