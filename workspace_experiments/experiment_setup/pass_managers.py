@@ -12,6 +12,7 @@ from qiskit.transpiler.passes.routing.sabre_swap_v0_20_      import SabreSwap as
 from qiskit.transpiler.passes.routing.sabre_swap_v0_20_depth import SabreSwap as SabreSwap_v0_20_depth
 from qiskit.transpiler.passes.routing.sabre_swap_v0_20_dive  import SabreSwap as SabreSwap_v0_20_dive
 from qiskit.transpiler.passes.routing.sabre_swap_v0_20_look  import SabreSwap as SabreSwap_v0_20_look
+from qiskit.transpiler.passes.routing.sabre_swap_v0_20_crit  import SabreSwap as SabreSwap_v0_20_crit
 
 def build_rp(rp_str, cm, seed=42, look=0, beam=1, num_iter=1, crit=1):
     """ Build a routing pass based on the routing pass string rp_str. 
@@ -47,6 +48,9 @@ def build_rp(rp_str, cm, seed=42, look=0, beam=1, num_iter=1, crit=1):
     elif rp_str == "sabre_v0_20_look":
         print(f"    Building Sabre v0.20 look routing pass with look {look}")
         rp = SabreSwap_v0_20_look(cm, seed=seed, look=look, beam_width=beam)
+    elif rp_str == "sabre_v0_20_crit":
+        print(f"    Building Sabre v0.20 crit routing pass with crit {crit}")
+        rp = SabreSwap_v0_20_crit(cm, seed=seed, crit_weight=crit)
     else:
         raise ValueError(f"Unknown routing pass {rp_str}")
     

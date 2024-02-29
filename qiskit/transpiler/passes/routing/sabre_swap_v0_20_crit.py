@@ -144,8 +144,19 @@ class SabreSwap(TransformationPass):
         self.qubits_decay = None
         self._bit_indices = None
         self.dist_matrix = None
-        self.critical_path = None
         self.crit_weight = crit_weight
+        self.crit_weight_1 = 1 + (crit_weight * 0.1)
+        self.crit_weight_2 = 1 + (crit_weight * 0.01)
+        self.crit_weight_3 = 1 + (crit_weight * 0.001)
+        self.crit_weight_4 = 1 + (crit_weight * 0.0001)
+        self.crit_weight_5 = 1 + (crit_weight * 0.00001)
+        self.crit_path_1 = [] # contains nodes in the longest path
+        self.crit_path_2 = [] # contains nodes in the second longest path
+        self.crit_path_3 = [] # contains nodes in the third longest path
+        self.crit_path_4 = [] # contains nodes in the fourth longest path
+        self.crit_path_5 = [] # contains nodes in the fifth longest path
+
+
 
     def run(self, dag):
         """Run the SabreSwap pass on `dag`.
@@ -168,10 +179,28 @@ class SabreSwap(TransformationPass):
         ops_since_progress = []
         extended_set = None
         
-        # obtain the critical path as the longest path in the dag
-        self.critical_path = dag.longest_path()
-        # convert critical path to a list of node ids
-        self.critical_path = [node._node_id for node in self.critical_path]
+        # obtain the top 5 longest paths in the dag
+        longest_paths = dag.find_top_n_longest_paths(5)
+        # print length of each of the top 5 longest paths
+        for i, path in enumerate(longest_paths):
+            print(f"        The length of the {i}th longest path is {len(path)}")
+
+        # obtain the critical paths
+        self.crit_path_1 = []
+        for node in longest_paths[0]:
+            self.crit_path_1.append(node)
+        self.crit_path_2 = []
+        for node in longest_paths[1]:
+            self.crit_path_2.append(node)
+        self.crit_path_3 = []
+        for node in longest_paths[2]:
+            self.crit_path_3.append(node)
+        self.crit_path_4 = []
+        for node in longest_paths[3]:
+            self.crit_path_4.append(node)
+        self.crit_path_5 = []
+        for node in longest_paths[4]:
+            self.crit_path_5.append(node)
 
         # Normally this isn't necessary, but here we want to log some objects that have some
         # non-trivial cost to create.
@@ -407,8 +436,16 @@ class SabreSwap(TransformationPass):
             curr_cost = self.dist_matrix[layout_map[node.qargs[0]], layout_map[node.qargs[1]]]
             # reduce cost for gates on the critical path by checking if node_id matches
             if isinstance(node, DAGOpNode):
-                if node._node_id in self.critical_path:
-                    curr_cost *= self.crit_weight
+                if node._node_id in self.crit_path_1:
+                    curr_cost *= self.crit_weight_1
+                elif node._node_id in self.crit_path_2:
+                    curr_cost *= self.crit_weight_2
+                elif node._node_id in self.crit_path_3:
+                    curr_cost *= self.crit_weight_3
+                elif node._node_id in self.crit_path_4:
+                    curr_cost *= self.crit_weight_4
+                elif node._node_id in self.crit_path_5:
+                    curr_cost *= self.crit_weight_5
             cost += curr_cost
         return cost
 

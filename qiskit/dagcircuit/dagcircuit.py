@@ -27,6 +27,7 @@ from typing import Dict, Generator, Any, List
 
 import numpy as np
 import rustworkx as rx
+import networkx as nx
 
 from qiskit.circuit import (
     ControlFlowOp,
@@ -45,6 +46,7 @@ from qiskit.circuit.parameterexpression import ParameterExpression
 from qiskit.dagcircuit.exceptions import DAGCircuitError
 from qiskit.dagcircuit.dagnode import DAGNode, DAGOpNode, DAGInNode, DAGOutNode
 from qiskit.circuit.bit import Bit
+
 
 
 BitLocations = namedtuple("BitLocations", ("index", "registers"))
@@ -1655,6 +1657,32 @@ class DAGCircuit:
     def longest_path(self):
         """Returns the longest path in the dag as a list of DAGOpNodes, DAGInNodes, and DAGOutNodes."""
         return [self._multi_graph[x] for x in rx.dag_longest_path(self._multi_graph)]
+    
+    def find_top_n_longest_paths(self, n):
+        pydag = self._multi_graph
+
+        original_graph = pydag.copy()  # Copy to preserve the original graph
+        top_paths = []
+        
+        for _ in range(n):
+            # Check if the graph is not empty
+            if original_graph.num_nodes() == 0:
+                break
+            
+            # Find the longest path
+            longest_path = rx.dag_longest_path(original_graph)
+            
+            # If a path is found, add to the results and remove its nodes
+            if longest_path:
+                top_paths.append(longest_path)
+                # Remove nodes in the found path from the graph
+                original_graph.remove_nodes_from(longest_path)
+            else:
+                # No path found, exit loop
+                break
+        
+        return top_paths
+
 
     def successors(self, node):
         """Returns iterator of the successors of a node as DAGOpNodes and DAGOutNodes."""
