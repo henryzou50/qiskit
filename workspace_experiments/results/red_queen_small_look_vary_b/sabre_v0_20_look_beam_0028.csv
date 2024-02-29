@@ -7,5 +7,5 @@ depth,cx gates,time,seed,depth_std,cx_std,time_std,rp,lp,look,beam,num_iter,crit
 424,945,4.005578626774628,0,0,0,0,sabre_v0_20_depth,fast_layout,10,28,1,1,1,5
 173,286,1.5387344094750197,0,0,0,0,sabre_v0_20_depth,fast_layout,10,28,1,1,1,6
 608,972,4.320479055342416,0,0,0,0,sabre_v0_20_depth,fast_layout,10,28,1,1,1,7
-111,378,1.5886019882502806,0,0,0,0,sabre_v0_20_depth,fast_layout,10,28,1,1,1,8
-120,293,6.173706383402234,0,0,0,0,sabre_v0_20_depth,fast_layout,10,28,1,1,1,9
+131,378,1.5886019882502806,0,0,0,0,sabre_v0_20_depth,fast_layout,10,28,1,1,1,8
+130,293,6.173706383402234,0,0,0,0,sabre_v0_20_depth,fast_layout,10,28,1,1,1,9
