@@ -1,4 +1,5 @@
 from qiskit import QuantumCircuit
+import numpy as np
 import random
 
 random.seed(42)
@@ -68,3 +69,38 @@ def apply_swaps_and_get_matching_circuit(qc):
     
     return new_qc
 
+
+def scramble_qubits(circuit, seed=None):
+    """
+    Creates a new circuit with qubits scrambled according to a random permutation.
+    The permutation can be made reproducible by specifying a seed value.
+
+    Parameters:
+    - circuit: The input QuantumCircuit object to be scrambled.
+    - seed: An optional seed value for the random number generator for reproducibility.
+
+    Returns:
+    - A new QuantumCircuit object with qubits scrambled.
+    """
+    # Set the seed for numpy's random number generator only if it is not None
+    if seed is not None:
+        np.random.seed(seed)
+    
+    num_qubits = circuit.num_qubits
+    # Generate a random permutation of qubit indices
+    perm = np.random.permutation(num_qubits)
+    
+    # Create a new quantum circuit with the same number of qubits
+    new_circuit = QuantumCircuit(num_qubits)
+    
+    # Mapping of original qubit indices to their new positions
+    qubit_mapping = {original: permuted for original, permuted in enumerate(perm)}
+    
+    # Iterate through each instruction in the original circuit
+    for instruction, qargs, cargs in circuit._data:
+        # Correctly map the qubits according to the permutation
+        new_qargs = [new_circuit.qubits[qubit_mapping[qarg._index]] for qarg in qargs]
+        # Apply the same instruction to the new circuit with permuted qubits
+        new_circuit.append(instruction, new_qargs, cargs)
+    
+    return new_circuit

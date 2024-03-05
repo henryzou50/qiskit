@@ -51,6 +51,9 @@ def build_rp(rp_str, cm, seed=42, look=0, beam=1, num_iter=1, crit=1):
     elif rp_str == "sabre_v0_20_crit":
         print(f"    Building Sabre v0.20 crit routing pass with crit {crit}")
         rp = SabreSwap_v0_20_crit(cm, seed=seed, crit_weight=crit)
+    elif rp_str == "None":
+        print(f"    Building None routing pass")
+        rp = None
     else:
         raise ValueError(f"Unknown routing pass {rp_str}")
     
@@ -77,7 +80,7 @@ def build_lp(lp_str, cm, rp, seed=42, max_iter=1):
         lp = SabreLayout(cm, Sabre(cm, seed=seed), seed=seed, max_iterations=max_iter)
     elif lp_str == "trivial_layout":
         print(f"            Building Trivial layout pass")
-        lp = TrivialLayout()
+        lp = TrivialLayout(cm)
     else:
         raise ValueError(f"Unknown layout pass {lp_str}")
     
@@ -92,6 +95,13 @@ def build_pm(rp, lp, cm):
         lp (obj): layout pass
         cm (list): coupling map
     """
+    if rp is None:
+        return PassManager([
+            lp,
+            FullAncillaAllocation(cm),
+            EnlargeWithAncilla(),
+            ApplyLayout(),
+        ])
 
     return PassManager([
         lp,
