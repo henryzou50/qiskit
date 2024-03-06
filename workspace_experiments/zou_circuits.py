@@ -17,11 +17,14 @@ def add_randomized_non_overlapping_layer(qc, coupling_list, gate_type='cx'):
         if edge[0] not in used_qubits and edge[1] not in used_qubits:
             selected_edges.append(edge)
             used_qubits.update(edge)
-    
-    # Randomly reduce the number of selected edges to between half and all of them
+
     min_edges = len(selected_edges) // 2 if len(selected_edges) % 2 == 0 else (len(selected_edges) // 2) + 1
     num_edges_to_include = random.randint(min_edges, len(selected_edges))
     edges_to_include = random.sample(selected_edges, num_edges_to_include)
+    
+    # if gate_type is 'swap', then include only one edge
+    if gate_type == 'swap':
+        edges_to_include = [edges_to_include[0]]
     
     # Add CNOT or SWAP gates for each selected edge to the existing quantum circuit
     for edge in edges_to_include:
