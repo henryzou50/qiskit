@@ -11,6 +11,7 @@ from qiskit.transpiler.passes.routing.sabre_swap             import SabreSwap as
 from qiskit.transpiler.passes.routing.sabre_swap_v0_20_      import SabreSwap as SabreSwap_v0_20
 from qiskit.transpiler.passes.routing.sabre_swap_v0_20_depth import SabreSwap as SabreSwap_v0_20_depth
 from qiskit.transpiler.passes.routing.sabre_swap_v0_20_depth_old import SabreSwap as SabreSwap_v0_20_depth_old
+from qiskit.transpiler.passes.routing.sabre_swap_v0_20_depth_crit import SabreSwap as SabreSwap_v0_20_depth_crit
 from qiskit.transpiler.passes.routing.sabre_swap_v0_20_dive  import SabreSwap as SabreSwap_v0_20_dive
 from qiskit.transpiler.passes.routing.sabre_swap_v0_20_look  import SabreSwap as SabreSwap_v0_20_look
 from qiskit.transpiler.passes.routing.sabre_swap_v0_20_crit  import SabreSwap as SabreSwap_v0_20_crit
@@ -46,6 +47,9 @@ def build_rp(rp_str, cm, seed=42, look=0, beam=1, num_iter=1, crit=1):
     elif rp_str == "sabre_v0_20_depth_old":
         print(f"    Building Sabre v0.20 depth old routing pass")
         rp = SabreSwap_v0_20_depth_old(cm, seed=seed)
+    elif rp_str == "sabre_v0_20_depth_crit":
+        print(f"    Building Sabre v0.20 depth crit routing pass with crit {crit}")
+        rp = SabreSwap_v0_20_depth_crit(cm, seed=seed, crit_weight=crit)
     elif rp_str == "sabre_v0_20_dive":
         print(f"    Building Sabre v0.20 dive routing pass with beam {beam}")
         rp = SabreSwap_v0_20_dive(cm, seed=seed, beam_width=beam)

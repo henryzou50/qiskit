@@ -1,11 +1,6 @@
 depth,cx gates,time,seed,depth_std,cx_std,time_std,rp,lp,look,beam,num_iter,crit,max_iter
-23,143,0.006722927093505859,0,0,0,0.0002124,sabre_v0_20_depth_old,trivial_layout,0,1,1,1,1
-41,292,0.016635894775390625,0,0,0,0.0001222,sabre_v0_20_depth_old,trivial_layout,0,1,1,1,1
-94,563,0.037139892578125,0,0,0,0.0005409,sabre_v0_20_depth_old,trivial_layout,0,1,1,1,1
-98,619,0.04131722450256348,0,0,0,0.0004201,sabre_v0_20_depth_old,trivial_layout,0,1,1,1,1
-155,887,0.05803704261779785,0,0,0,0.0007976,sabre_v0_20_depth_old,trivial_layout,0,1,1,1,1
-299,1383,0.08120512962341309,0,0,0,0.0005435,sabre_v0_20_depth_old,trivial_layout,0,1,1,1,1
-173,1090,0.0731668472290039,0,0,0,0.002134,sabre_v0_20_depth_old,trivial_layout,0,1,1,1,1
-204,1295,0.0931541919708252,0,0,0,0.0005214,sabre_v0_20_depth_old,trivial_layout,0,1,1,1,1
-295,1639,0.15665173530578613,0,0,0,0.01596,sabre_v0_20_depth_old,trivial_layout,0,1,1,1,1
-319,1878,0.137800931930542,0,0,0,0.001314,sabre_v0_20_depth_old,trivial_layout,0,1,1,1,1
+23,143,0.006507158279418945,0,0,0,0.0001066,sabre_v0_20_depth_old,trivial_layout,0,1,1,1,1
+41,292,0.016206026077270508,0,0,0,5.21e-05,sabre_v0_20_depth_old,trivial_layout,0,1,1,1,1
+94,563,0.03620290756225586,0,0,0,0.000303,sabre_v0_20_depth_old,trivial_layout,0,1,1,1,1
+98,619,0.040585994720458984,0,0,0,0.0006003,sabre_v0_20_depth_old,trivial_layout,0,1,1,1,1
+155,887,0.05411577224731445,0,0,0,0.0006197,sabre_v0_20_depth_old,trivial_layout,0,1,1,1,1
