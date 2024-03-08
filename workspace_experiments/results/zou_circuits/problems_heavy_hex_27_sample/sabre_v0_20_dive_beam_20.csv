@@ -1,0 +1,6 @@
+depth,cx gates,time,seed,depth_std,cx_std,time_std,rp,lp,look,beam,num_iter,crit,max_iter
+19,114,5.467205286026001,0,0,0,0.103,sabre_v0_20_dive,trivial_layout,0,20,1,1,1
+43,243,38.85707187652588,0,0,0,0.272,sabre_v0_20_dive,trivial_layout,0,20,1,1,1
+97,563,231.50910210609436,0,0,0,0.2632,sabre_v0_20_dive,trivial_layout,0,20,1,1,1
+93,576,246.45626187324524,0,0,0,0.07692,sabre_v0_20_dive,trivial_layout,0,20,1,1,1
+128,756,541.7090365886688,0,0,0,1.36,sabre_v0_20_dive,trivial_layout,0,20,1,1,1
