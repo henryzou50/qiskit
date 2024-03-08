@@ -22,3 +22,16 @@ depth,cx gates,time,seed,depth_std,cx_std,time_std,rp,lp,look,beam,num_iter,crit
 45,254,1.7333109378814697,0,0,0,0.01322,sabre_v0_20_dive,trivial_layout,0,1,1,1,1
 64,331,3.5542590618133545,0,0,0,0.02905,sabre_v0_20_dive,trivial_layout,0,1,1,1,1
 55,319,4.993829011917114,0,0,0,0.00909,sabre_v0_20_dive,trivial_layout,0,1,1,1,1
+78,414,5.2397379875183105,0,0,0,0.1258,sabre_v0_20_dive,trivial_layout,0,1,1,1,1
+66,424,7.545520305633545,0,0,0,0.05104,sabre_v0_20_dive,trivial_layout,0,1,1,1,1
+86,477,11.908184051513672,0,0,0,0.02146,sabre_v0_20_dive,trivial_layout,0,1,1,1,1
+60,353,4.930725812911987,0,0,0,0.07461,sabre_v0_20_dive,trivial_layout,0,1,1,1,1
+77,435,8.067204236984253,0,0,0,0.009678,sabre_v0_20_dive,trivial_layout,0,1,1,1,1
+90,500,7.0813210010528564,0,0,0,0.01683,sabre_v0_20_dive,trivial_layout,0,1,1,1,1
+72,408,8.619424819946289,0,0,0,0.02008,sabre_v0_20_dive,trivial_layout,0,1,1,1,1
+72,417,6.5871031284332275,0,0,0,0.02132,sabre_v0_20_dive,trivial_layout,0,1,1,1,1
+72,385,7.245328903198242,0,0,0,0.01854,sabre_v0_20_dive,trivial_layout,0,1,1,1,1
+101,523,13.431764841079712,0,0,0,0.1258,sabre_v0_20_dive,trivial_layout,0,1,1,1,1
+83,424,7.012318849563599,0,0,0,0.07663,sabre_v0_20_dive,trivial_layout,0,1,1,1,1
+89,484,9.679441928863525,0,0,0,0.006359,sabre_v0_20_dive,trivial_layout,0,1,1,1,1
+106,595,16.810879945755005,0,0,0,0.02303,sabre_v0_20_dive,trivial_layout,0,1,1,1,1
