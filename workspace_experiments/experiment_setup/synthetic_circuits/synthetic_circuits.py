@@ -1,8 +1,42 @@
 from qiskit import QuantumCircuit
 import numpy as np
 import random
+import math
 
 random.seed(42)
+
+def generate_random_density_list(size, seed, 
+                                 cx_min_density=0, swap_min_density=0, 
+                                 cx_max_density=1.0, swap_max_density=1.0,
+                                 cx_zero_percentage=0, swap_zero_percentage=0):
+    random.seed(seed)  # Set the seed for random number generation
+
+    # Ensure max densities are not lower than min densities
+    cx_max_density = max(cx_max_density, cx_min_density)
+    swap_max_density = max(swap_max_density, swap_min_density)
+
+    # Generate a list of random cx gate densities
+    cx_density_list = [random.uniform(cx_min_density, cx_max_density) for _ in range(size)]
+    # Calculate the number of elements to set to 0 based on zero_percentage
+    num_zeros = int(len(cx_density_list) * cx_zero_percentage)
+    # Randomly select indices to set to 0
+    indices_to_zero = random.sample(range(len(cx_density_list)), num_zeros)
+    for index in indices_to_zero:
+        cx_density_list[index] = 0
+
+    # Generate a list of random swap gate densities
+    swap_density_list = [random.uniform(swap_min_density, swap_max_density) for _ in range(size)]
+    # Calculate the number of elements to set to 0 based on zero_percentage
+    num_zeros = int(len(swap_density_list) * swap_zero_percentage)
+    # Randomly select indices to set to 0
+    indices_to_zero = random.sample(range(len(swap_density_list)), num_zeros)
+    for index in indices_to_zero:
+        swap_density_list[index] = 0
+
+    # Combine the lists
+    total_list = cx_density_list + swap_density_list
+
+    return total_list
 
 def add_randomized_non_overlapping_layer(qc, coupling_list, gate_type='cx', density=0.5, seed=None):
 
@@ -29,7 +63,7 @@ def add_randomized_non_overlapping_layer(qc, coupling_list, gate_type='cx', dens
 
     # Determine the number of edges to include based on the density parameter
     total_edges = len(selected_edges)
-    num_edges_to_include = int(total_edges * density)
+    num_edges_to_include = math.ceil(total_edges * density)
     
     # Handle case where density results in 0 edges to ensure function's robustness
     if num_edges_to_include == 0 and density > 0:
@@ -47,7 +81,12 @@ def add_randomized_non_overlapping_layer(qc, coupling_list, gate_type='cx', dens
             raise ValueError('Invalid gate type')
         
 
-def create_parallel_circuit( coupling_map, num_layers, density, barrier=False, seed=None):
+def create_parallel_circuit(coupling_map, num_layers, 
+                            density_list=None, 
+                            barrier=False, seed=None,
+                            cx_min_density=0, swap_min_density=0,
+                            cx_max_density=1.0, swap_max_density=1.0,
+                            cx_zero_percentage=0, swap_zero_percentage=0):
     # Create a quantum circuit with the given number of qubits
     qc = QuantumCircuit(coupling_map.size())
     coupling_list = list(coupling_map.get_edges())
@@ -56,15 +95,23 @@ def create_parallel_circuit( coupling_map, num_layers, density, barrier=False, s
     if seed is not None:
         random.seed(seed)
 
+    # If density_list is not provided, then generate a default random one
+    if density_list is None:
+        density_list = generate_random_density_list(num_layers, seed, 
+                                                    cx_min_density, swap_min_density,
+                                                    cx_max_density, swap_max_density,
+                                                    cx_zero_percentage, swap_zero_percentage)
+        
+
     # Create a list of random seeds based on `seed`, where len(list_seeds) = 2 * len(num_layers)
     list_seeds = random.sample(range(100000), 2 * num_layers) 
     
     # Add layers of randomized non-overlapping CNOT gates and SWAP gates
     for i in range(num_layers):
-        add_randomized_non_overlapping_layer(qc, coupling_list, gate_type='cx', density=density, seed=list_seeds[i])
+        add_randomized_non_overlapping_layer(qc, coupling_list, gate_type='cx', density=density_list[i], seed=list_seeds[i])
         if barrier:
             qc.barrier()
-        add_randomized_non_overlapping_layer(qc, coupling_list, gate_type='swap', density=density, seed=list_seeds[i + num_layers])
+        add_randomized_non_overlapping_layer(qc, coupling_list, gate_type='swap', density=density_list[i + num_layers], seed=list_seeds[i + num_layers])
         if barrier:
             qc.barrier()
     
