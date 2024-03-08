@@ -1,0 +1,11 @@
+depth,cx gates,time,seed,depth_std,cx_std,time_std,rp,lp,look,beam,num_iter,crit,max_iter
+25,130,0.008921146392822266,0,0,0,0.0001991,sabre_v0_20_depth_old,trivial_layout,0,1,1,1,1
+114,603,0.057044029235839844,0,0,0,0.000318,sabre_v0_20_depth_old,trivial_layout,0,1,1,1,1
+174,873,0.07735586166381836,0,0,0,0.0002097,sabre_v0_20_depth_old,trivial_layout,0,1,1,1,1
+234,1213,0.1173408031463623,0,0,0,0.001605,sabre_v0_20_depth_old,trivial_layout,0,1,1,1,1
+315,1599,0.1638650894165039,0,0,0,0.001835,sabre_v0_20_depth_old,trivial_layout,0,1,1,1,1
+410,2193,0.2454829216003418,0,0,0,0.0146,sabre_v0_20_depth_old,trivial_layout,0,1,1,1,1
+343,1934,0.21270990371704102,0,0,0,0.0005677,sabre_v0_20_depth_old,trivial_layout,0,1,1,1,1
+601,3163,0.3858211040496826,0,0,0,0.001292,sabre_v0_20_depth_old,trivial_layout,0,1,1,1,1
+601,3200,0.38257408142089844,0,0,0,0.01376,sabre_v0_20_depth_old,trivial_layout,0,1,1,1,1
+754,3830,0.4688229560852051,0,0,0,0.005524,sabre_v0_20_depth_old,trivial_layout,0,1,1,1,1
