@@ -60,10 +60,11 @@ def build_qvol_circuits(num_qubits, num_circuits, seeds):
     return circuits
 
 
-# main
+# Run the file to build and store the circuits
 if __name__ == "__main__":
-    directory = "sabre_mods/experiments/setup/circuits/"
+    directory = "sabre_mods/experiments/circuits/"
 
+    # set the flags to run the circuits
     run_ghz  = False
     run_qvol = True
 
