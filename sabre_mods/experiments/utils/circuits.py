@@ -48,3 +48,17 @@ def get_circuits_depth(circuits):
     """
 
     return [circuit.depth(lambda x: x.operation.num_qubits == 2) for circuit in circuits]
+
+def rename_circuits(circuits, files):
+    """ Renames the circuits to the file names.
+    
+    Args:
+        circuits (list): a list of QuantumCircuits.
+        files (list): a list of file names.
+        
+    Returns:
+        circuits (list): a list of QuantumCircuits with the file names as the names.
+    """
+    for i in range(len(circuits)):
+        circuits[i].name = files[i]
+    return circuits
