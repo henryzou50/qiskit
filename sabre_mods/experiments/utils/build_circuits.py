@@ -7,6 +7,7 @@ The types of circuits are:
 from qiskit.qasm2 import dump
 from qiskit import QuantumCircuit
 from qiskit.circuit.library import QuantumVolume
+from circuits import directory_to_circuits
 import random 
 import os
 
@@ -59,6 +60,23 @@ def build_qvol_circuits(num_qubits, num_circuits, seeds):
         circuits.append(qv)
     return circuits
 
+def build_decomposed_circuits(circuits, num_times):
+    """ Decompose the circuits num_times. Used to prepare the circuits like QVOL and red 
+    queen for the experiments. 
+    
+    Args:
+        circuits (list): a list of QuantumCircuits.
+        num_times (int): the number of times to decompose the circuits.
+    Returns:
+        list: a list of decomposed circuits.
+    """
+    decomposed_circuits = []
+    for circuit in circuits:
+        for _ in range(num_times):
+            circuit = circuit.decompose()
+        decomposed_circuits.append(circuit)
+    return decomposed_circuits
+
 
 # Run the file to build and store the circuits
 if __name__ == "__main__":
@@ -66,7 +84,9 @@ if __name__ == "__main__":
 
     # set the flags to run the circuits
     run_ghz  = False
-    run_qvol = True
+    run_qvol = False
+    run_qvol_decomposed_1 = False
+    run_qvol_decomposed_2 = True
 
     if run_ghz:
         # build GHZ circuits of 2 to 127 qubits
@@ -112,5 +132,43 @@ if __name__ == "__main__":
             dump(qvol_circuits[i], file_names[i])
         print("     QVOL circuit id:", i+1, "is stored.")
         print("All QVOL circuits are stored.\n")
+
+    if run_qvol_decomposed_1:
+        print("Decomposing the QVOL circuits 1 time.")
+
+        # build the QVOL circuits from the directory from the previous step
+        prev_directory = "sabre_mods/experiments/circuits/qvol/"
+        circuits, files = directory_to_circuits(prev_directory)
+
+        new_directory = "sabre_mods/experiments/circuits/qvol_d1/"
+        # check if the directory exists, if not create it
+        if not os.path.exists(new_directory):
+            os.makedirs(new_directory)
+        
+        # decompose the circuits 1
+        decomposed_circuits = build_decomposed_circuits(circuits, 1)
+        # store the circuits
+        for i in range(len(decomposed_circuits)):
+            dump(decomposed_circuits[i], new_directory + files[i])
+            print("     Decomposed QVOL circuit id:", i+1, "is stored.")
+
+    if run_qvol_decomposed_2:
+        print("Decomposing the QVOL circuits 2 times.")
+
+        # build the QVOL circuits from the directory from the original step
+        prev_directory = "sabre_mods/experiments/circuits/qvol/"
+        circuits, files = directory_to_circuits(prev_directory)
+
+        new_directory = "sabre_mods/experiments/circuits/qvol_d2/"
+        # check if the directory exists, if not create it
+        if not os.path.exists(new_directory):
+            os.makedirs(new_directory)
+        
+        # decompose the circuits 2
+        decomposed_circuits = build_decomposed_circuits(circuits, 2)
+        # store the circuits
+        for i in range(len(decomposed_circuits)):
+            dump(decomposed_circuits[i], new_directory + files[i])
+            print("     Decomposed QVOL circuit id:", i+1, "is stored.")
 
     print("All circuits are stored.")
