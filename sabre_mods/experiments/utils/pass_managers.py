@@ -6,6 +6,7 @@ from qiskit.transpiler.passes import ApplyLayout, FullAncillaAllocation, \
 import time
 import numpy as np
 import pandas as pd
+import os
 
 def build_pm(coupling_map, layout_pass, routing_pass):
     """ Build a pass manager for the given routing and layout passes. 
@@ -102,3 +103,52 @@ def run_circuit(qc, pm, num_times):
 
     return best_data
         
+def run_circuits(filename, circuits, pm, num_times=4, max_iter=3, beam=1, look=1, crit=1):
+    """ Run the experiment for the given circuits and pass manager num_times, 
+    and store the results in a pandas DataFrame. After running 1 circuit, 
+    update the filename (a csv file) each time. 
+
+    Args:
+        filename (str): The name of the file to store the results.
+        circuits (list): The list of QuantumCircuits to transpile.
+        pm (PassManager): The pass manager to use.
+        num_times (int): The number of times to transpile the circuits.
+        max_iter (int): The maximum number of iterations for the routing pass.
+        beam (int): The beam width for the SabreDive and SabreLook
+        look (int): The number of look ahead for the SabreLook
+        crit (int): The critical path weight for the SabreCrit
+
+    Returns:
+        df (DataFrame): The DataFrame containing the results of the experiment.
+    """
+
+    # Create the DataFrame
+    df = []
+
+    # Get the string of layout pass from pm
+    lp_str = pm._tasks[0][0].__class__.__name__
+
+    # check if directory of the filename exists, if not create it
+    directory = '/'.join(filename.split('/')[:-1])
+    if directory != '' and not os.path.exists(directory):
+        os.makedirs(directory)
+
+    for qc in circuits:
+        data = run_circuit(qc, pm, num_times)
+        data['circuit'] = qc.name
+        data['layout_pass'] = lp_str
+        data['num_times'] = num_times
+        data['max_iter'] = max_iter
+        data['beam'] = beam
+        data['look'] = look
+        data['crit'] = crit
+        df.append(data)
+
+        pd.DataFrame(df).to_csv(filename, index=False)
+
+        depth = data['depth']
+        time_ = data['time']
+
+        print(f'    Circuit {qc.name} transpiled with best depth {depth} and time {time_}.')
+
+    return pd.DataFrame(df)
