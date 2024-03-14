@@ -1,180 +1,124 @@
-from qiskit import QuantumCircuit
 import numpy as np
-import random
-import math
+from qiskit.circuit import QuantumCircuit
+from qiskit.transpiler import CouplingMap
+from typing import Optional, Union
 
 
-def build_synthetic_circuit(coupling_map, layers, barrier=False, seed=None):
-    """ Builds a synthetic circuit that respects the coupling_map and 
-    is built from the layers. 
-
-    Args: 
-        coupling_map (CouplingMap): The coupling map of the device
-        layers: A list of tuples where each tuple contains the gate type and density
-                of the gate type. The gate type can be either 'cx' or 'swap'. The density
-                is a float between 0 and 1.
-
-    Returns:
-        A QuantumCircuit object that represents the synthetic circuit  
-    """
-    qc = QuantumCircuit(coupling_map.size())
-    coupling_list = list(coupling_map.get_edges())
-
-    # Set the seed for the random number generator only if it is not None
-    if seed is not None:
-        random.seed(seed)
-    list_seeds = random.sample(range(100000), len(layers))  # Create a list of random seeds based on `seed`
-
-    for i, layer in enumerate(layers):
-        gate_type, density = layer
-        build_layer(qc, coupling_list, gate_type, density, list_seeds[i])
-        if barrier:
-            qc.barrier()
+class SyntheticCircuit(QuantumCircuit):
+    """ A synthetic circuit model. 
     
-    return qc
+    The model circuit represents a circuit that respects the edges of the coupling 
+    map of device and is built synthetically from a list of layers. Each layer 
+    exhibit a depth of 1, and all of the gates in one specific layer are the
+    same gate type. 
+
+    i.e., if there are n layers, then the original depth of the circuit is n.
+    """
+
+    def __init__(
+        self,
+        coupling_map: CouplingMap,
+        layers: list,
+        seed: Optional[Union[int, np.random.Generator]] = None,
+        barriers: bool = False,
+    ) -> None:
+        """ Initializes the synthetic circuit from the coupling map and layers.
+
+        Args:
+            coupling_map (CouplingMap): The coupling map of the device
+            layers: A list of tuples where each tuple contains the gate type and density
+                    of the gate type. The gate type can be either 'cx' or 'swap'. The density
+                    is a float between 0 and 1.
+            seed: The seed for the random number generator
+            barriers: If True, a barrier is added after each layer
+        """ 
+        # Initialize RNG
+        if seed is None:
+            rng_set = np.random.default_rng()
+            seed = rng_set.integers(low=1, high=1000)
+        if isinstance(seed, np.random.Generator):
+            rng = seed
+        else:
+            rng = np.random.default_rng(seed)
+        unitary_seeds = rng.integers(low=1, high=1000, size=len(layers))
+
+        # Build circuit
+        circuit = QuantumCircuit(coupling_map.size())
+        # Respects the edges of the coupling map
+        coupling_list = list(coupling_map.get_edges())
+
+        for i, layer in enumerate(layers):
+            gate_type, density = layer
+            self._build_layer(circuit, coupling_list, gate_type, density, unitary_seeds[i])
+            if barriers:
+                circuit.barrier()
 
         
+        super().__init__(*circuit.qregs, name=circuit.name)
+        self.compose(circuit.to_instruction(), qubits=self.qubits, inplace=True)
 
-def build_layer(qc, coupling_list, gate_type, density, seed=None):
-    """ Builds a layer of gates in the quantum circuit. 
+    def _build_layer(self, circuit, coupling_list, gate_type, density, seed):
+        """ Builds a layer of gates in the quantum circuit. 
 
-    Args:
-        qc (QuantumCircuit): The quantum circuit to add the gates to
-        coupling_list: A list of tuples that represent the coupling map of the device
-        gate_type: The type of gate to add. Can be either 'cx' or 'swap'
-        density: The density of the gate type to add. A float between 0 and 1
-        seed: The seed for the random number generator
+        Args:
+            circuit (QuantumCircuit): The quantum circuit to add the gates to
+            coupling_list: A list of tuples that represent the coupling map of the device
+            gate_type: The type of gate to add. Can be either 'cx' or 'swap'
+            density: The density of the gate type to add. A float between 0 and 1
+            seed: The seed for the random number generator
 
-    Returns:
-        None
-    """
-    # Ensure density is within the valid range
-    if not (0 <= density <= 1):
-        raise ValueError("Density parameter must be between 0 and 1")
-    
-    # Set the seed for the random number generator only if it is not None
-    if seed is not None:
-        random.seed(seed)
-
-    # Shuffle the coupling list to ensure random exploration
-    shuffled_coupling_list = coupling_list.copy()
-    random.shuffle(shuffled_coupling_list)
-    
-    selected_edges = []
-    used_qubits = set()
-    
-    # Select non-overlapping edges from the shuffled list
-    for edge in shuffled_coupling_list:
-        if edge[0] not in used_qubits and edge[1] not in used_qubits:
-            selected_edges.append(edge)
-            used_qubits.update(edge)
-
-    # Determine the number of edges to include based on the density parameter
-    total_edges = len(selected_edges)
-    num_edges_to_include = math.ceil(total_edges * density)
-    
-    # Handle case where density results in 0 edges to ensure function's robustness
-    if num_edges_to_include == 0 and density > 0:
-        num_edges_to_include = 1
-    
-    edges_to_include = random.sample(selected_edges, num_edges_to_include)
-    
-    # Add CNOT or SWAP gates for each selected edge to the existing quantum circuit
-    for edge in edges_to_include:
-        if gate_type == 'cx':
-            qc.cx(edge[0], edge[1])
-        elif gate_type == 'swap':
-            qc.swap(edge[0], edge[1])
-        else:
-            raise ValueError('Invalid gate type')
+        Returns:
+            None
+        """
+        # Ensure density is within the valid range
+        if not (0 <= density <= 1):
+            raise ValueError("Density parameter must be between 0 and 1")
         
-def build_test_layers(n):
-    """ Builds a list of test layers for the synthetic circuit.
+        # Set the seed for the random number generator only if it is not None
+        rng = np.random.default_rng(seed)
 
-    Args:
-        n: The number of layers to build
-    Returns:
-        A list of tuples where each tuple contains the gate type and density
-        of the gate type. The gate type can be either 'cx' or 'swap'. The density
-        is a float between 0 and 1.
-    """
+        # Shuffle the coupling list to ensure random exploration
+        shuffled_coupling_list = coupling_list.copy()
+        rng.shuffle(shuffled_coupling_list)
 
-    layers = []
-    for i in range(n):
-        if i % 2 == 0:
-            # For even index, add 'cx' with random float between 0.5 and 1
-            layers.append(('cx', random.uniform(0.5, 1)))
-        else:
-            # For odd index, add 'swap' with density 0.0001
-            layers.append(('swap', 0.0001))
-    return layers
+        # Select non-overlapping edges from the shuffled list
+        selected_edges = []
+        used_qubits = set()
 
+        for edge in shuffled_coupling_list:
+            if edge[0] not in used_qubits and edge[1] not in used_qubits:
+                selected_edges.append(edge)
+                used_qubits.add(edge[0])
+                used_qubits.add(edge[1])
 
-def apply_swaps_and_get_matching_circuit(qc):
-    """ 
-    Applies swaps to the input quantum circuit and returns the matching circuit.
-    The matching circuit is the circuit that would be executed on a device with
-    a different coupling map, but with the same qubits.
+            if len(used_qubits) == circuit.num_qubits:
+                break
 
-    Args:
-        qc (QuantumCircuit): The input quantum circuit
-    
-    Returns:
-        A new QuantumCircuit object with the same qubits as the input circuit, 
-        but with the gates modified to match the new coupling map.
-    """
-    # Initialize a new quantum circuit with the same number of qubits
-    new_qc = QuantumCircuit(qc.num_qubits)
-    
-    # Mapping of qubit indices to their positions after swaps
-    qubit_map = {i: i for i in range(qc.num_qubits)}
-    
-    # Iterate through the circuit instructions in reverse order
-    for instr, qargs, _ in reversed(qc.data):
-        if instr.name == 'swap':
-            # Update the qubit mapping based on the swap
-            qubit_map[qargs[0]._index], qubit_map[qargs[1]._index] = qubit_map[qargs[1]._index], qubit_map[qargs[0]._index]
-        elif instr.name == 'cx':
-            # Apply the current qubit mapping to the CNOT gate and add it to the new circuit
-            new_qc.cx(qubit_map[qargs[0]._index], qubit_map[qargs[1]._index])
-    
-    # Reverse the order of gates in the new circuit to reflect the original order
-    new_qc = new_qc.reverse_ops()
-    
-    return new_qc
+        # Add the gates to the circuit
+        for edge in selected_edges:
+            if gate_type == "cx":
+                circuit.cx(edge[0], edge[1])
+            elif gate_type == "swap":
+                circuit.swap(edge[0], edge[1])
+            else:
+                raise ValueError("Gate type must be either 'cx' or 'swap'")
+            
+    def _scramble_qubits(self, circuit, seed):
+        """ Scrambles the qubits in the quantum circuit. 
+
+        Args:
+            circuit (QuantumCircuit): The quantum circuit to scramble the qubits
+            seed: The seed for the random number generator
+
+        Returns:
+            None
+        """
+        # Set the seed for the random number generator only if it is not None
+        rng = np.random.default_rng(seed)
+        qubits = list(range(circuit.num_qubits))
+        rng.shuffle(qubits)
+        circuit.reorder_qubits(qubits)
+        return circuit
 
 
-def scramble_qubits(circuit, seed=None):
-    """
-    Creates a new circuit with qubits scrambled according to a random permutation.
-    The permutation can be made reproducible by specifying a seed value.
 
-    Parameters:
-    - circuit: The input QuantumCircuit object to be scrambled.
-    - seed: An optional seed value for the random number generator for reproducibility.
-
-    Returns:
-    - A new QuantumCircuit object with qubits scrambled.
-    """
-    # Set the seed for numpy's random number generator only if it is not None
-    if seed is not None:
-        np.random.seed(seed)
-    
-    num_qubits = circuit.num_qubits
-    # Generate a random permutation of qubit indices
-    perm = np.random.permutation(num_qubits)
-    
-    # Create a new quantum circuit with the same number of qubits
-    new_circuit = QuantumCircuit(num_qubits)
-    
-    # Mapping of original qubit indices to their new positions
-    qubit_mapping = {original: permuted for original, permuted in enumerate(perm)}
-    
-    # Iterate through each instruction in the original circuit
-    for instruction, qargs, cargs in circuit._data:
-        # Correctly map the qubits according to the permutation
-        new_qargs = [new_circuit.qubits[qubit_mapping[qarg._index]] for qarg in qargs]
-        # Apply the same instruction to the new circuit with permuted qubits
-        new_circuit.append(instruction, new_qargs, cargs)
-    
-    return new_circuit
