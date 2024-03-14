@@ -3,43 +3,51 @@ import numpy as np
 import random
 import math
 
-random.seed(42)
 
-def generate_random_density_list(size, seed, 
-                                 cx_min_density=0, swap_min_density=0, 
-                                 cx_max_density=1.0, swap_max_density=1.0,
-                                 cx_zero_percentage=0, swap_zero_percentage=0):
-    random.seed(seed)  # Set the seed for random number generation
+def build_synthetic_circuit(coupling_map, layers, barrier=False, seed=None):
+    """ Builds a synthetic circuit that respects the coupling_map and 
+    is built from the layers. 
 
-    # Ensure max densities are not lower than min densities
-    cx_max_density = max(cx_max_density, cx_min_density)
-    swap_max_density = max(swap_max_density, swap_min_density)
+    Args: 
+        coupling_map (CouplingMap): The coupling map of the device
+        layers: A list of tuples where each tuple contains the gate type and density
+                of the gate type. The gate type can be either 'cx' or 'swap'. The density
+                is a float between 0 and 1.
 
-    # Generate a list of random cx gate densities
-    cx_density_list = [random.uniform(cx_min_density, cx_max_density) for _ in range(size)]
-    # Calculate the number of elements to set to 0 based on zero_percentage
-    num_zeros = int(len(cx_density_list) * cx_zero_percentage)
-    # Randomly select indices to set to 0
-    indices_to_zero = random.sample(range(len(cx_density_list)), num_zeros)
-    for index in indices_to_zero:
-        cx_density_list[index] = 0
+    Returns:
+        A QuantumCircuit object that represents the synthetic circuit  
+    """
+    qc = QuantumCircuit(coupling_map.size())
+    coupling_list = list(coupling_map.get_edges())
 
-    # Generate a list of random swap gate densities
-    swap_density_list = [random.uniform(swap_min_density, swap_max_density) for _ in range(size)]
-    # Calculate the number of elements to set to 0 based on zero_percentage
-    num_zeros = int(len(swap_density_list) * swap_zero_percentage)
-    # Randomly select indices to set to 0
-    indices_to_zero = random.sample(range(len(swap_density_list)), num_zeros)
-    for index in indices_to_zero:
-        swap_density_list[index] = 0
+    # Set the seed for the random number generator only if it is not None
+    if seed is not None:
+        random.seed(seed)
+    list_seeds = random.sample(range(100000), len(layers))  # Create a list of random seeds based on `seed`
 
-    # Combine the lists
-    total_list = cx_density_list + swap_density_list
+    for i, layer in enumerate(layers):
+        gate_type, density = layer
+        build_layer(qc, coupling_list, gate_type, density, list_seeds[i])
+        if barrier:
+            qc.barrier()
+    
+    return qc
 
-    return total_list
+        
 
-def add_randomized_non_overlapping_layer(qc, coupling_list, gate_type='cx', density=0.5, seed=None):
+def build_layer(qc, coupling_list, gate_type, density, seed=None):
+    """ Builds a layer of gates in the quantum circuit. 
 
+    Args:
+        qc (QuantumCircuit): The quantum circuit to add the gates to
+        coupling_list: A list of tuples that represent the coupling map of the device
+        gate_type: The type of gate to add. Can be either 'cx' or 'swap'
+        density: The density of the gate type to add. A float between 0 and 1
+        seed: The seed for the random number generator
+
+    Returns:
+        None
+    """
     # Ensure density is within the valid range
     if not (0 <= density <= 1):
         raise ValueError("Density parameter must be between 0 and 1")
@@ -80,44 +88,41 @@ def add_randomized_non_overlapping_layer(qc, coupling_list, gate_type='cx', dens
         else:
             raise ValueError('Invalid gate type')
         
+def build_test_layers(n):
+    """ Builds a list of test layers for the synthetic circuit.
 
-def create_parallel_circuit(coupling_map, num_layers, 
-                            density_list=None, 
-                            barrier=False, seed=None,
-                            cx_min_density=0, swap_min_density=0,
-                            cx_max_density=1.0, swap_max_density=1.0,
-                            cx_zero_percentage=0, swap_zero_percentage=0):
-    # Create a quantum circuit with the given number of qubits
-    qc = QuantumCircuit(coupling_map.size())
-    coupling_list = list(coupling_map.get_edges())
+    Args:
+        n: The number of layers to build
+    Returns:
+        A list of tuples where each tuple contains the gate type and density
+        of the gate type. The gate type can be either 'cx' or 'swap'. The density
+        is a float between 0 and 1.
+    """
 
-    # Set the seed for the random number generator only if it is not None
-    if seed is not None:
-        random.seed(seed)
+    layers = []
+    for i in range(n):
+        if i % 2 == 0:
+            # For even index, add 'cx' with random float between 0.5 and 1
+            layers.append(('cx', random.uniform(0.5, 1)))
+        else:
+            # For odd index, add 'swap' with density 0.0001
+            layers.append(('swap', 0.0001))
+    return layers
 
-    # If density_list is not provided, then generate a default random one
-    if density_list is None:
-        density_list = generate_random_density_list(num_layers, seed, 
-                                                    cx_min_density, swap_min_density,
-                                                    cx_max_density, swap_max_density,
-                                                    cx_zero_percentage, swap_zero_percentage)
-        
-
-    # Create a list of random seeds based on `seed`, where len(list_seeds) = 2 * len(num_layers)
-    list_seeds = random.sample(range(100000), 2 * num_layers) 
-    
-    # Add layers of randomized non-overlapping CNOT gates and SWAP gates
-    for i in range(num_layers):
-        add_randomized_non_overlapping_layer(qc, coupling_list, gate_type='cx', density=density_list[i], seed=list_seeds[i])
-        if barrier:
-            qc.barrier()
-        add_randomized_non_overlapping_layer(qc, coupling_list, gate_type='swap', density=density_list[i + num_layers], seed=list_seeds[i + num_layers])
-        if barrier:
-            qc.barrier()
-    
-    return qc
 
 def apply_swaps_and_get_matching_circuit(qc):
+    """ 
+    Applies swaps to the input quantum circuit and returns the matching circuit.
+    The matching circuit is the circuit that would be executed on a device with
+    a different coupling map, but with the same qubits.
+
+    Args:
+        qc (QuantumCircuit): The input quantum circuit
+    
+    Returns:
+        A new QuantumCircuit object with the same qubits as the input circuit, 
+        but with the gates modified to match the new coupling map.
+    """
     # Initialize a new quantum circuit with the same number of qubits
     new_qc = QuantumCircuit(qc.num_qubits)
     
