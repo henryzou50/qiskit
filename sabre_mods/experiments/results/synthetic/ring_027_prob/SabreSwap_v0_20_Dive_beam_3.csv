@@ -1,0 +1,11 @@
+depth,cx,time,depth_std,cx_std,time_std,circuit,layout_pass,num_times,max_iter,beam,look,crit
+42,306,2.726524829864502,0.0,0.0,0.0,_10_prob.qasm,SabreLayout,1,3,3,1,1
+36,244,1.4543368816375732,0.0,0.0,0.0,_20_prob.qasm,SabreLayout,1,3,3,1,1
+77,453,7.304456949234009,0.0,0.0,0.0,_30_prob.qasm,SabreLayout,1,3,3,1,1
+77,532,7.2859697341918945,0.0,0.0,0.0,_40_prob.qasm,SabreLayout,1,3,3,1,1
+128,746,26.639406204223633,0.0,0.0,0.0,_50_prob.qasm,SabreLayout,1,3,3,1,1
+158,930,34.990904092788696,0.0,0.0,0.0,_60_prob.qasm,SabreLayout,1,3,3,1,1
+280,2002,210.709575176239,0.0,0.0,0.0,_70_prob.qasm,SabreLayout,1,3,3,1,1
+337,2594,317.0703649520874,0.0,0.0,0.0,_80_prob.qasm,SabreLayout,1,3,3,1,1
+297,2020,364.87241315841675,0.0,0.0,0.0,_90_prob.qasm,SabreLayout,1,3,3,1,1
+217,1461,92.4539361000061,0.0,0.0,0.0,_100_prob.qasm,SabreLayout,1,3,3,1,1

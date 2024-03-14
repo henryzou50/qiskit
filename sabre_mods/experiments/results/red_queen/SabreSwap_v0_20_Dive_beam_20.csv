@@ -26,3 +26,9 @@ depth,cx,time,depth_std,cx_std,time_std,circuit,layout_pass,num_times,max_iter,b
 134,432,48.544450998306274,0.0,0.0,0.0,swap_test_n25.qasm,SabreLayout,1,3,20,1,1
 51,144,2.758078098297119,0.0,0.0,0.0,ising_n10.qasm,SabreLayout,1,3,20,1,1
 72,112,0.052574872970581055,0.0,0.0,0.0,ft_1.qasm,SabreLayout,1,3,20,1,1
+237,655,120.20254898071289,0.0,0.0,0.0,bigadder_n18.qasm,SabreLayout,1,3,20,1,1
+223,643,128.81457018852234,0.0,0.0,0.0,qram_n20.qasm,SabreLayout,1,3,20,1,1
+208,388,43.76117205619812,0.0,0.0,0.0,qf21_n15.qasm,SabreLayout,1,3,20,1,1
+424,1038,409.5378487110138,0.0,0.0,0.0,multiplier_n15.qasm,SabreLayout,1,3,20,1,1
+559,1149,324.88417506217957,0.0,0.0,0.0,sat_n11.qasm,SabreLayout,1,3,20,1,1
+209,1005,627.9107110500336,0.0,0.0,0.0,qft_n18.qasm,SabreLayout,1,3,20,1,1
