@@ -2,6 +2,7 @@ import numpy as np
 from qiskit.circuit import QuantumCircuit
 from qiskit.transpiler import CouplingMap
 from typing import Optional, Union
+from qiskit.circuit import Gate
 import networkx as nx
 
 
@@ -27,8 +28,8 @@ class SyntheticCircuit(QuantumCircuit):
 
         Args:
             coupling_map (CouplingMap): The coupling map of the device
-            layers: A list of tuples where each tuple contains (gate_type, param).
-                    The gate_type can be either 'cx' or 'swap'. 
+            layers: A list of tuples where each tuple contains (gate, param).
+                    The gate is a two-qubit gate type.  
                     The param is can either be a float between 0 and 1 (represents density,
                     where the number of gates in the layer is the density * len(coupling_map)),
                     or a integer (represents the number of gates in the layer, cannot be 
@@ -39,15 +40,15 @@ class SyntheticCircuit(QuantumCircuit):
         Example Layers:
             - Circuit that alternates between cx and swap gates, and each layer has a density of 0.5
             layers = [
-                ('cx', 0.5),
-                ('swap', 0.5),
-                ('cx', 0.5),
-                ('swap', 0.5)
+                (CXGate, 0.5),
+                (SwapGate, 0.5),
+                (CXGATE, 0.5),
+                (SwapGate, 0.5)
             ]
             - Circuit that has 10 cx gates in the first layer and 5 swap gates in the second layer
             layers = [
-                ('cx', 10),
-                ('swap', 5)
+                (CXGate, 10),
+                (SwapGate, 5)
             ]
         """
         # Initialize RNG
@@ -66,9 +67,16 @@ class SyntheticCircuit(QuantumCircuit):
         coupling_list = list(coupling_map.get_edges())
 
         for i, layer in enumerate(layers):
-            gate_type, param = layer
+            gate, param = layer
 
-            # Verify if param is a valid float or an integer
+            # Verify that gate is a valid two-qubit gate
+            if isinstance(gate, Gate):
+                if gate.num_qubits != 2:
+                    raise ValueError("Gate type must be a two-qubit gate")
+            else:
+                raise ValueError("Gate type must be a valid gate")
+
+            # Verify that param is a valid float or an integer
             max_matching = self._max_matching(coupling_list)
             if isinstance(param, float):
                 if not (0 <= param <= 1):
@@ -77,7 +85,7 @@ class SyntheticCircuit(QuantumCircuit):
                 if param > max_matching:
                     raise ValueError("The number of gates in the layer cannot be greater than the maximum matching of the coupling map")
 
-            self._build_layer(circuit, coupling_list, gate_type, param, unitary_seeds[i])
+            self._build_layer(circuit, coupling_list, gate, param, unitary_seeds[i])
             if barriers:
                 circuit.barrier()
 
@@ -85,13 +93,13 @@ class SyntheticCircuit(QuantumCircuit):
         super().__init__(*circuit.qregs, name=circuit.name)
         self.compose(circuit.to_instruction(), qubits=self.qubits, inplace=True)
 
-    def _build_layer(self, circuit, coupling_list, gate_type, param, seed):
+    def _build_layer(self, circuit, coupling_list, gate, param, seed):
         """ Builds a layer of gates in the quantum circuit. 
 
         Args:
             circuit (QuantumCircuit): The quantum circuit to add the gates to
             coupling_list: A list of tuples that represent the coupling map of the device
-            gate_type: The type of gate to add. Can be either 'cx' or 'swap'
+            gate: The gate class to add. Has to be a two-qubit gate. 
             param: The parameter of the gate type to add. If param is a float, it represents
                      the density of the gate type to add. If param is an integer, it represents
                      the number of gates in the layer.
@@ -132,12 +140,7 @@ class SyntheticCircuit(QuantumCircuit):
 
         # Add the gates to the circuit
         for edge in selected_edges:
-            if gate_type == "cx":
-                circuit.cx(edge[0], edge[1])
-            elif gate_type == "swap":
-                circuit.swap(edge[0], edge[1])
-            else:
-                raise ValueError("Gate type must be either 'cx' or 'swap'")
+            circuit.append(gate, [edge[0], edge[1]])
             
     def _max_matching(self, coupling_list):
         """ Returns the maximum matching of the coupling map, i.e. the maximum number of
@@ -154,22 +157,36 @@ class SyntheticCircuit(QuantumCircuit):
         graph.add_edges_from(coupling_list)
         return len(nx.algorithms.matching.max_weight_matching(graph, maxcardinality=True))
             
-    def _scramble_qubits(self, circuit, seed):
-        """ Scrambles the qubits in the quantum circuit. 
+    def scramble_qubits(self, seed=None) -> QuantumCircuit:
+        """Scrambles the qubits in the quantum circuit, returning a new circuit with scrambled qubits.
 
         Args:
-            circuit (QuantumCircuit): The quantum circuit to scramble the qubits
-            seed: The seed for the random number generator
+            seed: The seed for the random number generator.
 
         Returns:
-            None
+            QuantumCircuit: A new quantum circuit with scrambled qubits.
         """
-        # Set the seed for the random number generator only if it is not None
-        rng = np.random.default_rng(seed)
-        qubits = list(range(circuit.num_qubits))
-        rng.shuffle(qubits)
-        circuit.reorder_qubits(qubits)
-        return circuit
+        if seed is not None:
+            np.random.seed(seed)
+        
+        num_qubits = self.num_qubits
+        # Generate a random permutation of qubit indices
+        perm = np.random.permutation(num_qubits)
+        
+        # Create a new quantum circuit with permuted qubits
+        new_circuit = QuantumCircuit(num_qubits)
+        
+        # Mapping of original qubit indices to their new positions
+        qubit_mapping = {original: permuted for original, permuted in enumerate(perm)}
+        
+        # Iterate through each instruction in the original circuit
+        for instruction, qargs, cargs in self.data:
+            # Correctly map the qubits according to the permutation
+            new_qargs = [new_circuit.qubits[qubit_mapping[qarg._index]] for qarg in qargs]
+            # Apply the same instruction to the new circuit with permuted qubits
+            new_circuit.append(instruction, new_qargs, cargs)
+        
+        return new_circuit
 
 
 
