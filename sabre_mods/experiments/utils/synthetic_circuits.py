@@ -115,6 +115,11 @@ class SyntheticCircuit(QuantumCircuit):
         selected_edges = []
         used_qubits = set()
 
+
+        # Note that if num_gates = max_matching, then it is not guaranteed that the selected_edges
+        # will have num_gates. This is because the selected_edges are selected based on the shuffled_coupling_list
+        # and the used_qubits. If the shuffled_coupling_list does not have enough non-overlapping edges, then the
+        # selected_edges will have less than num_gates.
         for edge in shuffled_coupling_list:
             # Check if the number of gates has been reached
             if len(selected_edges) >= num_gates:
