@@ -148,7 +148,9 @@ class ForwardMatch:
 
         if self.template_dag_dep.direct_successors(node_id_t):
             maximal_index = self.template_dag_dep.direct_successors(node_id_t)[-1]
-            pred = [elem for elem in pred if elem <= maximal_index]
+            for elem in pred:
+                if elem > maximal_index:
+                    pred.remove(elem)
 
         block = []
         for node_id in pred:

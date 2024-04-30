@@ -16,7 +16,6 @@ import ddt
 
 from qiskit import pulse, circuit, transpile
 from qiskit.providers.fake_provider import Fake27QPulseV1, GenericBackendV2
-from qiskit.providers.models import GateConfig
 from qiskit.quantum_info.random import random_unitary
 from test import QiskitTestCase  # pylint: disable=wrong-import-order
 
@@ -186,12 +185,6 @@ class TestPulseGate(QiskitTestCase):
         backend.defaults().instruction_schedule_map.add(
             "my_gate", (1,), self.my_gate_q1, arguments=["P0"]
         )
-        # Add gate to backend configuration
-        backend.configuration().basis_gates.append("my_gate")
-        dummy_config = GateConfig(
-            name="my_gate", parameters=[], qasm_def="", coupling_map=[(0,), (1,)]
-        )
-        backend.configuration().gates.append(dummy_config)
         # Remove timing constraints to avoid triggering
         # scheduling passes.
         backend.configuration().timing_constraints = {}
@@ -219,10 +212,6 @@ class TestPulseGate(QiskitTestCase):
         backend.defaults().instruction_schedule_map.add(
             "my_gate", (0,), self.my_gate_q0, arguments=["P0"]
         )
-        # Add gate to backend configuration
-        backend.configuration().basis_gates.append("my_gate")
-        dummy_config = GateConfig(name="my_gate", parameters=[], qasm_def="", coupling_map=[(0,)])
-        backend.configuration().gates.append(dummy_config)
         # Remove timing constraints to avoid triggering
         # scheduling passes.
         backend.configuration().timing_constraints = {}
@@ -248,10 +237,6 @@ class TestPulseGate(QiskitTestCase):
         backend.defaults().instruction_schedule_map.add(
             "my_gate", (0,), self.my_gate_q0, arguments=["P0"]
         )
-        # Add gate to backend configuration
-        backend.configuration().basis_gates.append("my_gate")
-        dummy_config = GateConfig(name="my_gate", parameters=[], qasm_def="", coupling_map=[(0,)])
-        backend.configuration().gates.append(dummy_config)
         # Remove timing constraints to avoid triggering
         # scheduling passes.
         backend.configuration().timing_constraints = {}
@@ -278,10 +263,6 @@ class TestPulseGate(QiskitTestCase):
         backend.defaults().instruction_schedule_map.add(
             "my_gate", (0,), self.my_gate_q0, arguments=["P0"]
         )
-        # Add gate to backend configuration
-        backend.configuration().basis_gates.append("my_gate")
-        dummy_config = GateConfig(name="my_gate", parameters=[], qasm_def="", coupling_map=[(0,)])
-        backend.configuration().gates.append(dummy_config)
         # Remove timing constraints to avoid triggering
         # scheduling passes.
         backend.configuration().timing_constraints = {}

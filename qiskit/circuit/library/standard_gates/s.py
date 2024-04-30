@@ -94,7 +94,8 @@ class SGate(SingletonGate):
         """
         return SdgGate()
 
-    def power(self, exponent: float, annotated: bool = False):
+    def power(self, exponent: float):
+        """Raise gate to a power."""
         from .p import PhaseGate
 
         return PhaseGate(0.5 * numpy.pi * exponent)
@@ -171,7 +172,8 @@ class SdgGate(SingletonGate):
         """
         return SGate()
 
-    def power(self, exponent: float, annotated: bool = False):
+    def power(self, exponent: float):
+        """Raise gate to a power."""
         from .p import PhaseGate
 
         return PhaseGate(-0.5 * numpy.pi * exponent)
@@ -257,7 +259,8 @@ class CSGate(SingletonControlledGate):
         """
         return CSdgGate(ctrl_state=self.ctrl_state)
 
-    def power(self, exponent: float, annotated: bool = False):
+    def power(self, exponent: float):
+        """Raise gate to a power."""
         from .p import CPhaseGate
 
         return CPhaseGate(0.5 * numpy.pi * exponent)
@@ -342,7 +345,8 @@ class CSdgGate(SingletonControlledGate):
         """
         return CSGate(ctrl_state=self.ctrl_state)
 
-    def power(self, exponent: float, annotated: bool = False):
+    def power(self, exponent: float):
+        """Raise gate to a power."""
         from .p import CPhaseGate
 
         return CPhaseGate(-0.5 * numpy.pi * exponent)

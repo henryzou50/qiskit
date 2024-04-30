@@ -51,7 +51,6 @@ Permutation Synthesis
 .. autofunction:: synth_permutation_depth_lnn_kms
 .. autofunction:: synth_permutation_basic
 .. autofunction:: synth_permutation_acg
-.. autofunction:: synth_permutation_reverse_lnn_kms
 
 Clifford Synthesis
 ==================
@@ -141,7 +140,6 @@ from .permutation import (
     synth_permutation_depth_lnn_kms,
     synth_permutation_basic,
     synth_permutation_acg,
-    synth_permutation_reverse_lnn_kms,
 )
 from .linear import (
     synth_cnot_count_full_pmh,

@@ -160,10 +160,8 @@ class U1Gate(Gate):
         """
         return U1Gate(-self.params[0])
 
-    def __array__(self, dtype=None, copy=None):
+    def __array__(self, dtype=None):
         """Return a numpy.array for the U1 gate."""
-        if copy is False:
-            raise ValueError("unable to avoid copy while creating an array as requested")
         lam = float(self.params[0])
         return numpy.array([[1, 0], [0, numpy.exp(1j * lam)]], dtype=dtype)
 
@@ -306,10 +304,8 @@ class CU1Gate(ControlledGate):
         """
         return CU1Gate(-self.params[0], ctrl_state=self.ctrl_state)
 
-    def __array__(self, dtype=None, copy=None):
+    def __array__(self, dtype=None):
         """Return a numpy.array for the CU1 gate."""
-        if copy is False:
-            raise ValueError("unable to avoid copy while creating an array as requested")
         eith = exp(1j * float(self.params[0]))
         if self.ctrl_state:
             return numpy.array(

@@ -174,8 +174,7 @@ class QiskitTestCase(BaseQiskitTestCase):
         # due to importing the instances from the top-level qiskit namespace.
         from qiskit.providers.basic_provider import BasicProvider
 
-        with self.assertWarns(DeprecationWarning):
-            BasicProvider()._backends = BasicProvider()._verify_backends()
+        BasicProvider()._backends = BasicProvider()._verify_backends()
 
     @classmethod
     def setUpClass(cls):

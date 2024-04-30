@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2020, 2024.
+# (C) Copyright IBM 2020.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -57,7 +57,7 @@ def convert_to_target(
         A ``Target`` instance.
     """
 
-    # importing packages where they are needed, to avoid cyclic-import.
+    # importing pacakges where they are needed, to avoid cyclic-import.
     # pylint: disable=cyclic-import
     from qiskit.transpiler.target import (
         Target,
@@ -82,7 +82,7 @@ def convert_to_target(
         "switch_case": SwitchCaseOp,
     }
 
-    in_data = {"num_qubits": configuration.num_qubits}
+    in_data = {"num_qubits": configuration.n_qubits}
 
     # Parse global configuration properties
     if hasattr(configuration, "dt"):
@@ -97,6 +97,7 @@ def convert_to_target(
     all_instructions = set.union(
         basis_gates, set(required), supported_instructions.intersection(CONTROL_FLOW_OP_NAMES)
     )
+
     inst_name_map = {}  # type: Dict[str, Instruction]
 
     faulty_ops = set()
@@ -243,8 +244,10 @@ def convert_to_target(
 
         for name in inst_sched_map.instructions:
             for qubits in inst_sched_map.qubits_with_instruction(name):
+
                 if not isinstance(qubits, tuple):
                     qubits = (qubits,)
+
                 if (
                     name not in all_instructions
                     or name not in prop_name_map
@@ -264,18 +267,17 @@ def convert_to_target(
                     continue
 
                 entry = inst_sched_map._get_calibration_entry(name, qubits)
+
                 try:
                     prop_name_map[name][qubits].calibration = entry
                 except AttributeError:
-                    # if instruction properties are "None", add entry
-                    prop_name_map[name].update({qubits: InstructionProperties(None, None, entry)})
                     logger.info(
                         "The PulseDefaults payload received contains an instruction %s on "
-                        "qubits %s which is not present in the configuration or properties payload."
-                        "A new properties entry will be added to include the new calibration data.",
+                        "qubits %s which is not present in the configuration or properties payload.",
                         name,
                         qubits,
                     )
+
     # Add parsed properties to target
     target = Target(**in_data)
     for inst_name in all_instructions:
@@ -382,7 +384,7 @@ class BackendV2Converter(BackendV2):
         super().__init__(
             provider=backend.provider,
             name=backend.name(),
-            description=getattr(self._config, "description", None),
+            description=self._config.description,
             online_date=getattr(self._config, "online_date", None),
             backend_version=self._config.backend_version,
         )

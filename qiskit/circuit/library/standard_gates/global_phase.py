@@ -69,12 +69,10 @@ class GlobalPhaseGate(Gate):
         """
         return GlobalPhaseGate(-self.params[0])
 
-    def __array__(self, dtype=None, copy=None):
+    def __array__(self, dtype=complex):
         """Return a numpy.array for the global_phase gate."""
-        if copy is False:
-            raise ValueError("unable to avoid copy while creating an array as requested")
         theta = self.params[0]
-        return numpy.array([[numpy.exp(1j * theta)]], dtype=dtype or complex)
+        return numpy.array([[numpy.exp(1j * theta)]], dtype=dtype)
 
     def __eq__(self, other):
         if isinstance(other, GlobalPhaseGate):

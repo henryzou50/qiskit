@@ -122,10 +122,8 @@ class RYYGate(Gate):
         """
         return RYYGate(-self.params[0])
 
-    def __array__(self, dtype=None, copy=None):
+    def __array__(self, dtype=None):
         """Return a numpy.array for the RYY gate."""
-        if copy is False:
-            raise ValueError("unable to avoid copy while creating an array as requested")
         theta = float(self.params[0])
         cos = math.cos(theta / 2)
         isin = 1j * math.sin(theta / 2)
@@ -134,7 +132,8 @@ class RYYGate(Gate):
             dtype=dtype,
         )
 
-    def power(self, exponent: float, annotated: bool = False):
+    def power(self, exponent: float):
+        """Raise gate to a power."""
         (theta,) = self.params
         return RYYGate(exponent * theta)
 

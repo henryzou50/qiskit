@@ -169,10 +169,8 @@ class XXMinusYYGate(Gate):
         theta, beta = self.params
         return XXMinusYYGate(-theta, beta)
 
-    def __array__(self, dtype=None, copy=None):
+    def __array__(self, dtype=complex):
         """Gate matrix."""
-        if copy is False:
-            raise ValueError("unable to avoid copy while creating an array as requested")
         theta, beta = self.params
         cos = math.cos(theta / 2)
         sin = math.sin(theta / 2)
@@ -186,7 +184,8 @@ class XXMinusYYGate(Gate):
             dtype=dtype,
         )
 
-    def power(self, exponent: float, annotated: bool = False):
+    def power(self, exponent: float):
+        """Raise gate to a power."""
         theta, beta = self.params
         return XXMinusYYGate(exponent * theta, beta)
 

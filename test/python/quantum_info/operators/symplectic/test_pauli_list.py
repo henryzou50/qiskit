@@ -33,7 +33,6 @@ from qiskit.circuit.library import (
     XGate,
     YGate,
     ZGate,
-    ECRGate,
 )
 from qiskit.quantum_info.operators import (
     Clifford,
@@ -1998,12 +1997,10 @@ class TestPauliListMethods(QiskitTestCase):
             CYGate(),
             CZGate(),
             SwapGate(),
-            ECRGate(),
             Clifford(CXGate()),
             Clifford(CYGate()),
             Clifford(CZGate()),
             Clifford(SwapGate()),
-            Clifford(ECRGate()),
         )
     )
     def test_evolve_clifford2(self, gate):
@@ -2036,7 +2033,6 @@ class TestPauliListMethods(QiskitTestCase):
             CYGate(),
             CZGate(),
             SwapGate(),
-            ECRGate(),
         )
         dtypes = [
             int,

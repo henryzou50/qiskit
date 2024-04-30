@@ -147,11 +147,8 @@ class PermutationGate(Gate):
 
         super().__init__(name="permutation", num_qubits=num_qubits, params=[pattern])
 
-    def __array__(self, dtype=None, copy=None):
+    def __array__(self, dtype=None):
         """Return a numpy.array for the Permutation gate."""
-        if copy is False:
-            raise ValueError("unable to avoid copy while creating an array as requested")
-
         nq = len(self.pattern)
         mat = np.zeros((2**nq, 2**nq), dtype=dtype)
 

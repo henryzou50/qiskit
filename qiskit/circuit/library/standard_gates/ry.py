@@ -119,15 +119,14 @@ class RYGate(Gate):
         """
         return RYGate(-self.params[0])
 
-    def __array__(self, dtype=None, copy=None):
+    def __array__(self, dtype=None):
         """Return a numpy.array for the RY gate."""
-        if copy is False:
-            raise ValueError("unable to avoid copy while creating an array as requested")
         cos = math.cos(self.params[0] / 2)
         sin = math.sin(self.params[0] / 2)
         return numpy.array([[cos, -sin], [sin, cos]], dtype=dtype)
 
-    def power(self, exponent: float, annotated: bool = False):
+    def power(self, exponent: float):
+        """Raise gate to a power."""
         (theta,) = self.params
         return RYGate(exponent * theta)
 
@@ -260,10 +259,8 @@ class CRYGate(ControlledGate):
         ."""
         return CRYGate(-self.params[0], ctrl_state=self.ctrl_state)
 
-    def __array__(self, dtype=None, copy=None):
+    def __array__(self, dtype=None):
         """Return a numpy.array for the CRY gate."""
-        if copy is False:
-            raise ValueError("unable to avoid copy while creating an array as requested")
         half_theta = float(self.params[0]) / 2
         cos = math.cos(half_theta)
         sin = math.sin(half_theta)

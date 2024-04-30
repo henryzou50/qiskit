@@ -36,7 +36,6 @@ from qiskit.circuit.library import (
     CZGate,
     CYGate,
     SwapGate,
-    ECRGate,
     EfficientSU2,
 )
 from qiskit.circuit.library.generalized_gates import PauliGate
@@ -411,11 +410,7 @@ class TestPauli(QiskitTestCase):
         self.assertEqual(value, value_h)
         self.assertEqual(value_inv, value_s)
 
-    @data(
-        *it.product(
-            (CXGate(), CYGate(), CZGate(), SwapGate(), ECRGate()), pauli_group_labels(2, False)
-        )
-    )
+    @data(*it.product((CXGate(), CYGate(), CZGate(), SwapGate()), pauli_group_labels(2, False)))
     @unpack
     def test_evolve_clifford2(self, gate, label):
         """Test evolve method for 2-qubit Clifford gates."""
@@ -444,7 +439,6 @@ class TestPauli(QiskitTestCase):
                 CYGate(),
                 CZGate(),
                 SwapGate(),
-                ECRGate(),
             ),
             [int, np.int8, np.uint8, np.int16, np.uint16, np.int32, np.uint32, np.int64, np.uint64],
         )
@@ -473,13 +467,6 @@ class TestPauli(QiskitTestCase):
         self.assertEqual(value, target)
         self.assertEqual(value, value_h)
         self.assertEqual(value_inv, value_s)
-
-    @data("s", "h")
-    def test_evolve_with_misleading_name(self, frame):
-        """Test evolve by circuit contents, not by name (fixed bug)."""
-        circ = QuantumCircuit(2, name="cx")
-        p = Pauli("IX")
-        self.assertEqual(p, p.evolve(circ, frame=frame))
 
     def test_barrier_delay_sim(self):
         """Test barrier and delay instructions can be simulated"""

@@ -85,7 +85,7 @@ def array_coerce(arr: ArrayLike | Shaped) -> NDArray | Shaped:
     """
     if isinstance(arr, Shaped):
         return arr
-    return np.asarray(arr)
+    return np.array(arr, copy=False)
 
 
 def _flatten_to_ints(arg: ShapeInput) -> Iterable[int]:
