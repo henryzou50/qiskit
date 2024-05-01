@@ -441,13 +441,6 @@ pub fn sabre_routing(
         num_trials,
         run_in_parallel,
     );
-    // Print "Parallel run" if run in parallel
-    if run_in_parallel.unwrap_or(false) {
-        println!("Parallel run");
-    }
-    else {
-        println!("Sequential run");
-    }
     (
         res.map,
         res.node_order.into_pyarray_bound(py).into(),
