@@ -183,6 +183,9 @@ class SabreSwap(TransformationPass):
             TranspilerError: if the coupling map or the layout are not
             compatible with the DAG, or if the coupling_map=None
         """
+        print("Running SabreSwap pass on DAGCircuit")
+        # Set number of trials to be 1
+        self.trials = 1
 
         if self.coupling_map is None:
             raise TranspilerError("SabreSwap cannot run with coupling_map=None")
@@ -247,6 +250,8 @@ class SabreSwap(TransformationPass):
             self._qubit_indices,
         )
         sabre_start = time.perf_counter()
+        print(" Starting Sabre routing algorithm")
+        print(" Trials: ", self.trials)
         *sabre_result, final_permutation = sabre_routing(
             sabre_dag,
             self._neighbor_table,
@@ -256,6 +261,8 @@ class SabreSwap(TransformationPass):
             self.trials,
             self.seed,
         )
+        print(*sabre_result)
+        print(" Sabre routing algorithm complete")
         sabre_stop = time.perf_counter()
         logging.debug("Sabre swap algorithm execution complete in: %s", sabre_stop - sabre_start)
         final_layout = Layout(dict(zip(dag.qubits, final_permutation)))

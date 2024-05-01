@@ -27,7 +27,7 @@ pub struct SwapMap {
 impl SwapMap {
     // Mapping Protocol
     pub fn __len__(&self) -> usize {
-        self.map.len()
+        self.map.len() 
     }
 
     pub fn __contains__(&self, object: usize) -> bool {
