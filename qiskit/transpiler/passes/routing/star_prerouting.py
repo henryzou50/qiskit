@@ -14,12 +14,17 @@
 from typing import Iterable, Union, Optional, List, Tuple
 from math import floor, log10
 
-from qiskit.circuit import Barrier
+from qiskit.circuit import Barrier, SwitchCaseOp, ControlFlowOp, Clbit, ClassicalRegister
 from qiskit.dagcircuit import DAGOpNode, DAGDepNode, DAGDependency, DAGCircuit
 from qiskit.transpiler import Layout
 from qiskit.transpiler.basepasses import TransformationPass
 from qiskit.circuit.library import SwapGate
+from qiskit.circuit.controlflow import condition_resources, node_resources
 
+from qiskit._accelerate import star_prerouting
+from qiskit._accelerate.sabre import (
+    SabreDAG,
+)
 
 class StarBlock:
     """Defines blocks representing star-shaped pieces of a circuit."""
@@ -245,6 +250,16 @@ class StarPreRouting(TransformationPass):
         return matching_blocks, processing_order
 
     def run(self, dag):
+        print("Running StarPreRouting")
+
+        num_qubits = len(dag.qubits)
+        canonical_register = dag.qregs["q"]
+        qubit_indices = {bit: idx for idx, bit in enumerate(canonical_register)}
+
+        sabre_dag, _= _build_sabre_dag(dag, num_qubits, qubit_indices)
+
+        star_prerouting.print_info(sabre_dag)
+
         # Extract StarBlocks from DAGCircuit / DAGDependency / DAGDependencyV2
         star_blocks, processing_order = self.determine_star_blocks_processing(dag, min_block_size=2)
 
@@ -274,6 +289,7 @@ class StarPreRouting(TransformationPass):
         else:
             self.property_set["virtual_permutation_layout"] = new_layout
 
+        print("StarPreRouting done")
         return new_dag
 
     def determine_star_blocks_processing(
@@ -415,3 +431,55 @@ class StarPreRouting(TransformationPass):
                     check=False,
                 )
         return new_dag, qubit_mapping
+
+
+def _build_sabre_dag(dag, num_physical_qubits, qubit_indices):
+    from qiskit.converters import circuit_to_dag
+
+    # Maps id(block): circuit_to_dag(block) for all descendant blocks
+    circuit_to_dag_dict = {}
+
+    def recurse(block, block_qubit_indices):
+        block_id = id(block)
+        if block_id in circuit_to_dag_dict:
+            block_dag = circuit_to_dag_dict[block_id]
+        else:
+            block_dag = circuit_to_dag(block)
+            circuit_to_dag_dict[block_id] = block_dag
+        return process_dag(block_dag, block_qubit_indices)
+
+    def process_dag(block_dag, wire_map):
+        dag_list = []
+        node_blocks = {}
+        for node in block_dag.topological_op_nodes():
+            cargs_bits = set(node.cargs)
+            if node.op.condition is not None:
+                cargs_bits.update(condition_resources(node.op.condition).clbits)
+            if isinstance(node.op, SwitchCaseOp):
+                target = node.op.target
+                if isinstance(target, Clbit):
+                    cargs_bits.add(target)
+                elif isinstance(target, ClassicalRegister):
+                    cargs_bits.update(target)
+                else:  # Expr
+                    cargs_bits.update(node_resources(target).clbits)
+            cargs = {block_dag.find_bit(x).index for x in cargs_bits}
+            if isinstance(node.op, ControlFlowOp):
+                node_blocks[node._node_id] = [
+                    recurse(
+                        block,
+                        {inner: wire_map[outer] for inner, outer in zip(block.qubits, node.qargs)},
+                    )
+                    for block in node.op.blocks
+                ]
+            dag_list.append(
+                (
+                    node._node_id,
+                    [wire_map[x] for x in node.qargs],
+                    cargs,
+                    getattr(node.op, "_directive", False),
+                )
+            )
+        return SabreDAG(num_physical_qubits, block_dag.num_clbits(), dag_list, node_blocks)
+
+    return process_dag(dag, qubit_indices), circuit_to_dag_dict

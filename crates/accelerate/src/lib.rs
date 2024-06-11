@@ -27,6 +27,7 @@ pub mod results;
 pub mod sabre;
 pub mod sampled_exp_val;
 pub mod sparse_pauli_op;
+pub mod star_prerouting;
 pub mod stochastic_swap;
 pub mod two_qubit_decompose;
 pub mod uc_gate;
