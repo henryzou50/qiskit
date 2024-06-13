@@ -82,8 +82,6 @@ pub fn apply_star_prerouting(
     for (node, id) in &node_to_id {
         println!("Node: {:?}, ID: {:?}", node, id);
     }
-
-
     Ok(())
 }
 
