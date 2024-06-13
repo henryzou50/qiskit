@@ -21,21 +21,17 @@ use crate::sabre::sabre_dag::SabreDAG;
 pub fn print_info(
     dag: &SabreDAG,
 ) -> PyResult<()> {
-    let num_qubits = dag.num_qubits;
-    let num_clbits = dag.num_clbits;
-    let dag_nodes_count = dag.dag.node_count();
-    let first_layer_len = dag.first_layer.len();
-    let nodes_len = dag.nodes.len();
-    let node_blocks_len = dag.node_blocks.len();
-
-    println!("num_qubits: {}", num_qubits);
-    println!("num_clbits: {}", num_clbits);
-    println!("dag_nodes_count: {}", dag_nodes_count);
-    println!("first_layer_len: {}", first_layer_len);
-    println!("nodes_len: {}", nodes_len);
-    println!("node_blocks_len: {}", node_blocks_len);
+    // Iterate through the nodes and print the qargs and cargs
+    println!("  Nodes:");
+    for node in &dag.nodes {
+        let qargs = node.1.iter().map(|q| q.index()).collect::<Vec<_>>();
+        let cargs = node.2.iter().cloned().collect::<Vec<_>>();
+        println!("Node: {}, qargs: {:?}, cargs: {:?}, directive: {}", node.0, qargs, cargs, node.3);
+    }
 
     Ok(())
+
+    
 }
 
 #[pymodule]

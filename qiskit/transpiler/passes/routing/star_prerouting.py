@@ -21,7 +21,12 @@ from qiskit.transpiler.basepasses import TransformationPass
 from qiskit.circuit.library import SwapGate
 from qiskit.circuit.controlflow import condition_resources, node_resources
 
-from qiskit._accelerate import star_prerouting
+from qiskit._accelerate import (
+    star_prerouting,
+    star_block,
+)
+from qiskit._accelerate.star_block import StarBlockInfo
+
 from qiskit._accelerate.sabre import (
     SabreDAG,
 )
@@ -251,15 +256,6 @@ class StarPreRouting(TransformationPass):
 
     def run(self, dag):
         print("Running StarPreRouting")
-
-        num_qubits = len(dag.qubits)
-        canonical_register = dag.qregs["q"]
-        qubit_indices = {bit: idx for idx, bit in enumerate(canonical_register)}
-
-        sabre_dag, _= _build_sabre_dag(dag, num_qubits, qubit_indices)
-
-        star_prerouting.print_info(sabre_dag)
-
         # Extract StarBlocks from DAGCircuit / DAGDependency / DAGDependencyV2
         star_blocks, processing_order = self.determine_star_blocks_processing(dag, min_block_size=2)
 
@@ -352,6 +348,32 @@ class StarPreRouting(TransformationPass):
 
         def tie_breaker_key(node):
             return processing_order_index_map.get(node, node.sort_key)
+        
+        # Build SabreDAG
+        num_qubits = len(dag.qubits)
+        canonical_register = dag.qregs["q"]
+        qubit_indices = {bit: idx for idx, bit in enumerate(canonical_register)}
+        sabre_dag, _= _build_sabre_dag(dag, num_qubits, qubit_indices)
+        star_prerouting.print_info(sabre_dag)
+
+        # For each star block in blocks, create a rust StarBlockInfo object
+        # For each StarBlockInfo object, only need to store the qargs indices, cargs indices, and int of num2q
+        star_block_infos = []
+        for block in blocks:
+            num2q = block.size()
+            qargs_indices_list = []
+            cargs_indices_list = []
+            phys_qubit_list = [node._node_id for node in block.get_nodes()]
+            for node in block.get_nodes():
+                qargs = node.qargs
+                qargs_indices = [dag.find_bit(qubit).index for qubit in qargs]
+                cargs_indices = [dag.find_bit(clbit).index for clbit in node.cargs]
+                qargs_indices_list.append(qargs_indices)
+                cargs_indices_list.append(cargs_indices)
+            
+            star_block_info = StarBlockInfo(num2q, phys_qubit_list, qargs_indices_list, cargs_indices_list)
+            star_block.print_info(star_block_info)
+            star_block_infos.append(star_block_info)
 
         for node in dag.topological_op_nodes(key=tie_breaker_key):
             block_id = node_to_block_id.get(node, None)
