@@ -375,13 +375,26 @@ class StarPreRouting(TransformationPass):
             star_block.print_info(star_block_info)
             star_block_infos.append(star_block_info)
 
+        # Rust approach to use the StarBlockInfo to get the new dag and qubit_mapping
+        print("\n" * 3)
+        star_prerouting.apply_star_prerouting(sabre_dag, star_block_infos, qubit_mapping)
+
+
+        # Python approach to use the StarBlocks to get the new dag and qubit_mapping
+        print("\n" * 3)
+        print("Prev qubit_mapping: ", qubit_mapping)
+        print("Prev dag: ")
+        for node in dag.topological_op_nodes():
+            print("   node: ", node.op, node.qargs, node.cargs)
+        print("\n" * 1)
+
         for node in dag.topological_op_nodes(key=tie_breaker_key):
             block_id = node_to_block_id.get(node, None)
             if block_id is not None:
                 if block_id in processed_block_ids:
                     continue
 
-                processed_block_ids.add(block_id)
+                processed_block_ids.add(block_id) 
 
                 # process the whole block
                 block = blocks[block_id]
@@ -452,6 +465,11 @@ class StarPreRouting(TransformationPass):
                     node.cargs,
                     check=False,
                 )
+        print("\n" * 1)
+        print("Post qubit_mapping: ", qubit_mapping)
+        print("Post dag: ")
+        for node in new_dag.topological_op_nodes():
+            print("   node: ", node.op, node.qargs, node.cargs)
         return new_dag, qubit_mapping
 
 

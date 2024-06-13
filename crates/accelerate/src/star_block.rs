@@ -16,7 +16,7 @@ pub struct StarBlockInfo {
     // number of two-qubit gates in the block
     pub num2q: u32,
     // First element is physcial qubit number, second element is qargs, third element is cargs
-    pub nodes: Vec<(u8, Vec<u32>, Vec<u32>)>,
+    pub nodes: Vec<(u32, Vec<u32>, Vec<u32>)>,
 }
 
 #[pymethods]
@@ -31,11 +31,11 @@ impl StarBlockInfo {
     // nodes: [(10, [0], []), (11, [0, 1], []), (12, [0, 2], []), (13, [0, 3], []), (14, [0, 4], [])]
     pub fn new(
         num2q: u32, 
-        phys_qubit_nums: Vec<u8>,
+        phys_qubit_nums: Vec<u32>,
         qargs_indices_list: Vec<Vec<u32>>,
         cargs_indices_list: Vec<Vec<u32>>,
     ) -> PyResult<Self> {
-        let mut nodes: Vec<(u8, Vec<u32>, Vec<u32>)> = Vec::new();
+        let mut nodes: Vec<(u32, Vec<u32>, Vec<u32>)> = Vec::new();
         for i in 0..qargs_indices_list.len() {
             let phys_qubit_num = phys_qubit_nums[i];
             let qargs = qargs_indices_list[i].clone();
