@@ -315,6 +315,7 @@ class StarPreRouting(TransformationPass):
             new_dag: a dag specifying the pre-routed circuit
             qubit_mapping: the final qubit mapping after pre-routing
         """
+        # Getting the Rust representation of the DAG
         num_qubits = len(dag.qubits)
         canonical_register = dag.qregs["q"]
         qubit_indices = {bit: idx for idx, bit in enumerate(canonical_register)}
@@ -322,11 +323,14 @@ class StarPreRouting(TransformationPass):
 
         rust_blocks = []
         for block in blocks:
-            rust_blocks.append((_extract_nodes(block.get_nodes(), dag)))
+            # Create a bool if the center exist or not, true if it exist, false if none
+            center = True if block.center is not None else False
+            rust_blocks.append((center, (_extract_nodes(block.get_nodes(), dag))))
         rust_processing_order = _extract_nodes(processing_order, dag)
 
         star_prerouting.star_preroute(sabre_dag, rust_blocks, rust_processing_order)
-        
+
+        # Start of the Python implementation of the star prerouting, will be removed in the future to solely use the Rust implementation
         node_to_block_id = {}
         for i, block in enumerate(blocks):
             for node in block.get_nodes():
@@ -437,7 +441,7 @@ class StarPreRouting(TransformationPass):
                     node.cargs,
                     check=False,
                 )
-        print("Expected Qubit mapping:", qubit_mapping, "\n")
+        print("Qubit Mapping: ", qubit_mapping)
         return new_dag, qubit_mapping
 
 def _extract_nodes(nodes, dag): 

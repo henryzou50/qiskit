@@ -13,6 +13,7 @@
 #![allow(unused_variables)]
 #![warn(unused_mut)]
 
+
 /// Type alias for a node representation.
 /// Each node is represented as a tuple containing:
 /// - Operation index (usize)
@@ -20,6 +21,12 @@
 /// - Set of involved classical bit indices (HashSet<usize>)
 /// - Directive flag (bool)
 type Nodes = (usize, Vec<VirtualQubit>, HashSet<usize>, bool);
+
+/// Type alias for a block representation.
+/// Each block is represented by a tuple containing:
+/// - A boolean indicating the presence of a center (bool)
+/// - A list of nodes (Vec<Nodes>)
+type Block = (bool, Vec<Nodes>);
 
 use hashbrown::HashSet;
 use pyo3::prelude::*;
@@ -34,7 +41,7 @@ use crate::nlayout::VirtualQubit;
 fn star_preroute(
     py: Python,
     dag: &mut SabreDAG,
-    blocks: Vec<Vec<Nodes>>,
+    blocks: Vec<Block>,
     processing_order: Vec<Nodes>,
 ) -> PyResult<()> {
     // Initialize qubit mapping to identity
@@ -43,6 +50,9 @@ fn star_preroute(
     let mut processed_block_ids: HashSet<usize> = HashSet::new();
     // Determine the last two-qubit gate in the processing order
     let last_2q_gate = processing_order.iter().rev().find(|node| node.1.len() > 1).cloned();
+
+    // Initialize the is_first_star flag
+    let mut is_first_star = true;
 
     // Process each node in the given processing order
     for node in processing_order {
@@ -54,13 +64,13 @@ fn star_preroute(
             }
             // Mark the block as processed and process the entire block
             processed_block_ids.insert(block_id);
-            process_block(&mut qubit_mapping, dag, &blocks[block_id], last_2q_gate.as_ref());
+            process_block(&mut qubit_mapping, dag, &blocks[block_id], last_2q_gate.as_ref(), &mut is_first_star);
         } else {
             // Apply operation for nodes not part of any block
             apply_operation(&mut qubit_mapping, dag, &node);
         }
     }
-    println!("Rust     Qubit mapping: {:?}", qubit_mapping);
+    println!("Rust Qubit Mapping: {:?}", qubit_mapping);
 
     Ok(())
 }
@@ -69,20 +79,21 @@ fn star_preroute(
 /// 
 /// # Arguments
 /// 
-/// * `blocks` - A vector of star blocks, where each block is a vector of nodes.
+/// * `blocks` - A vector of star blocks, where each block is represented by a tuple containing a boolean indicating the presence of a center and a list of nodes.
 /// * `node` - The node for which the block ID needs to be found.
 /// 
 /// # Returns
 /// 
 /// An option containing the block ID if the node is part of a block, otherwise None.
-fn find_block_id(blocks: &Vec<Vec<Nodes>>, node: &Nodes) -> Option<usize> {
+fn find_block_id(blocks: &Vec<Block>, node: &Nodes) -> Option<usize> {
     for (i, block) in blocks.iter().enumerate() {
-        if block.iter().any(|n| n.0 == node.0) {
+        if block.1.iter().any(|n| n.0 == node.0) {
             return Some(i);
         }
     }
     None
 }
+
 
 /// Processes a star block, applying operations and handling swaps.
 /// 
@@ -90,28 +101,31 @@ fn find_block_id(blocks: &Vec<Vec<Nodes>>, node: &Nodes) -> Option<usize> {
 /// 
 /// * `qubit_mapping` - A mutable reference to the qubit mapping vector.
 /// * `dag` - A mutable reference to the SabreDAG being modified.
-/// * `block` - A vector of nodes representing the star block.
+/// * `block` - A tuple containing a boolean indicating the presence of a center and a vector of nodes representing the star block.
 /// * `last_2q_gate` - The last two-qubit gate in the processing order.
+/// * `is_first_star` - A mutable reference to a boolean indicating if this is the first star block being processed.
 fn process_block(
     qubit_mapping: &mut Vec<usize>,
     dag: &mut SabreDAG,
-    block: &Vec<Nodes>,
+    block: &Block,
     last_2q_gate: Option<&Nodes>,
+    is_first_star: &mut bool,
 ) {
+    let (has_center, nodes) = block;
+
     // If the block contains exactly 2 nodes, apply them directly
-    if block.len() == 2 {
-        for node in block {
+    if nodes.len() == 2 {
+        for node in nodes {
             apply_operation(qubit_mapping, dag, node);
         }
         return;
     }
 
     let mut prev_qargs = None;
-    let mut swap_source = None;
-    let is_first_star = true;
+    let mut swap_source = false;
 
     // Process each node in the block
-    for node in block {
+    for node in nodes {
         // Apply operation directly if it's a single-qubit operation or the same as previous qargs
         if node.1.len() == 1 || prev_qargs == Some(&node.1) {
             apply_operation(qubit_mapping, dag, node);
@@ -119,8 +133,8 @@ fn process_block(
         }
 
         // If this is the first star and no swap source has been identified, set swap_source
-        if is_first_star && swap_source.is_none() {
-            swap_source = Some(node.1[0]);
+        if *is_first_star && !swap_source {
+            swap_source = *has_center;
             apply_operation(qubit_mapping, dag, node);
             prev_qargs = Some(&node.1);
             continue;
@@ -137,7 +151,7 @@ fn process_block(
         }
 
         prev_qargs = Some(&node.1);
-    
+        *is_first_star = false;
     }
 
 }
