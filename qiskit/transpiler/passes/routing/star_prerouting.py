@@ -14,12 +14,22 @@
 from typing import Iterable, Union, Optional, List, Tuple
 from math import floor, log10
 
-from qiskit.circuit import Barrier
+from qiskit.circuit import SwitchCaseOp, ControlFlowOp, Clbit, ClassicalRegister, Barrier
+from qiskit.circuit.controlflow import condition_resources, node_resources
 from qiskit.dagcircuit import DAGOpNode, DAGDepNode, DAGDependency, DAGCircuit
 from qiskit.transpiler import Layout
 from qiskit.transpiler.basepasses import TransformationPass
 from qiskit.circuit.library import SwapGate
+from qiskit.transpiler.passes.routing.sabre_swap import _build_sabre_dag
 
+from qiskit._accelerate.sabre import (
+    sabre_routing,
+    Heuristic,
+    NeighborTable,
+    SabreDAG,
+)
+
+from qiskit._accelerate import star_prerouting
 
 class StarBlock:
     """Defines blocks representing star-shaped pieces of a circuit."""
@@ -305,6 +315,18 @@ class StarPreRouting(TransformationPass):
             new_dag: a dag specifying the pre-routed circuit
             qubit_mapping: the final qubit mapping after pre-routing
         """
+        num_qubits = len(dag.qubits)
+        canonical_register = dag.qregs["q"]
+        qubit_indices = {bit: idx for idx, bit in enumerate(canonical_register)}
+        sabre_dag, _ = _build_sabre_dag(dag, num_qubits, qubit_indices)
+
+        rust_blocks = []
+        for block in blocks:
+            rust_blocks.append((_extract_nodes(block.get_nodes(), dag)))
+        rust_processing_order = _extract_nodes(processing_order, dag)
+
+        star_prerouting.star_preroute(sabre_dag, rust_blocks, rust_processing_order)
+        
         node_to_block_id = {}
         for i, block in enumerate(blocks):
             for node in block.get_nodes():
@@ -340,6 +362,7 @@ class StarPreRouting(TransformationPass):
         for node in dag.topological_op_nodes(key=tie_breaker_key):
             block_id = node_to_block_id.get(node, None)
             if block_id is not None:
+                
                 if block_id in processed_block_ids:
                     continue
 
@@ -414,4 +437,38 @@ class StarPreRouting(TransformationPass):
                     node.cargs,
                     check=False,
                 )
+        print("Expected Qubit mapping:", qubit_mapping, "\n")
         return new_dag, qubit_mapping
+
+def _extract_nodes(nodes, dag): 
+    """ Extracts and formats information from the nodes to align with the Rust representation.
+    
+    Each node is represented by a tuple containing:
+    - Operation index (int)
+    - List of involved qubit indices (list of int)
+    - Set of involved classical bit indices (set of int)
+    - Directive flag (bool, typically False for operations)
+
+    Args:
+        nodes (list[DAGOpNode]): List of DAGOpNode objects containing the processing order.
+        dag (DAGCircuit): DAGCircuit object containing the circuit information.
+    
+    Returns:
+        list [(int, list[int], set[int], bool)]
+    """
+    nodes_info = []
+    for node in nodes:
+        qargs = [dag.find_bit(qubit).index for qubit in node.qargs]
+        cargs = set()
+        if node.op.condition is not None:
+            cargs.update(condition_resources(node.op.condition).clbits)
+        if isinstance(node.op, SwitchCaseOp):
+            target = node.op.target
+            if isinstance(target, Clbit):
+                cargs.add(target)
+            elif isinstance(target, ClassicalRegister):
+                cargs.update(target)
+            else:  # Expr
+                cargs.update(node_resources(target).clbits)
+        nodes_info.append((node._node_id, qargs, cargs, getattr(node.op, "_directive", False)))
+    return nodes_info

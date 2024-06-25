@@ -14,7 +14,7 @@ mod layer;
 mod layout;
 mod neighbor_table;
 mod route;
-mod sabre_dag;
+pub mod sabre_dag;
 mod swap_map;
 
 use hashbrown::HashMap;
