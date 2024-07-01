@@ -315,11 +315,13 @@ class StarPreRouting(TransformationPass):
             new_dag: a dag specifying the pre-routed circuit
             qubit_mapping: the final qubit mapping after pre-routing
         """
+        new_dag = dag.copy_empty_like()
         # Getting the Rust representation of the DAG
+
         num_qubits = len(dag.qubits)
         canonical_register = dag.qregs["q"]
         qubit_indices = {bit: idx for idx, bit in enumerate(canonical_register)}
-        sabre_dag, _ = _build_sabre_dag(dag, num_qubits, qubit_indices)
+        sabre_dag, _ = _build_sabre_dag(new_dag, num_qubits, qubit_indices)
 
         rust_blocks = []
         for block in blocks:
@@ -336,7 +338,7 @@ class StarPreRouting(TransformationPass):
             for node in block.get_nodes():
                 node_to_block_id[node] = i
 
-        new_dag = dag.copy_empty_like()
+        #new_dag = dag.copy_empty_like()
         processed_block_ids = set()
         qubit_mapping = list(range(len(dag.qubits)))
 
@@ -442,6 +444,9 @@ class StarPreRouting(TransformationPass):
                     check=False,
                 )
         print("Qubit Mapping: ", qubit_mapping)
+        for node in new_dag.topological_op_nodes():
+            print(node.op, node.qargs, node.cargs)
+
         return new_dag, qubit_mapping
 
 def _extract_nodes(nodes, dag): 

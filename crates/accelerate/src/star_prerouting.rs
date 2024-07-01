@@ -70,7 +70,6 @@ fn star_preroute(
             apply_operation(&mut qubit_mapping, dag, &node);
         }
     }
-    println!("Rust Qubit Mapping: {:?}", qubit_mapping);
 
     Ok(())
 }
@@ -111,12 +110,12 @@ fn process_block(
     last_2q_gate: Option<&Nodes>,
     is_first_star: &mut bool,
 ) {
-    let (has_center, nodes) = block;
+    let (has_center, sequence) = block;
 
     // If the block contains exactly 2 nodes, apply them directly
-    if nodes.len() == 2 {
-        for node in nodes {
-            apply_operation(qubit_mapping, dag, node);
+    if sequence.len() == 2 {
+        for inner_node in sequence {
+            apply_operation(qubit_mapping, dag, inner_node);
         }
         return;
     }
@@ -125,32 +124,31 @@ fn process_block(
     let mut swap_source = false;
 
     // Process each node in the block
-    for node in nodes {
+    for inner_node in sequence {
         // Apply operation directly if it's a single-qubit operation or the same as previous qargs
-        if node.1.len() == 1 || prev_qargs == Some(&node.1) {
-            apply_operation(qubit_mapping, dag, node);
+        if inner_node.1.len() == 1 || prev_qargs == Some(&inner_node.1) {
+            apply_operation(qubit_mapping, dag, inner_node);
             continue;
         }
 
         // If this is the first star and no swap source has been identified, set swap_source
         if *is_first_star && !swap_source {
             swap_source = *has_center;
-            apply_operation(qubit_mapping, dag, node);
-            prev_qargs = Some(&node.1);
+            apply_operation(qubit_mapping, dag, inner_node);
+            prev_qargs = Some(&inner_node.1);
             continue;
         }
 
         // Place 2q-gate and subsequent swap gate
-        apply_operation(qubit_mapping, dag, node);
+        apply_operation(qubit_mapping, dag, inner_node);
 
         if let Some(last) = last_2q_gate {
-            apply_operation(qubit_mapping, dag, node);
-            if node != last && node.1.len() == 2 {
-                apply_swap(qubit_mapping, dag, &node.1);
+            if inner_node != last && inner_node.1.len() == 2 {
+                apply_swap(qubit_mapping, dag, &inner_node.1);
             }
         }
 
-        prev_qargs = Some(&node.1);
+        prev_qargs = Some(&inner_node.1);
         *is_first_star = false;
     }
 
@@ -181,11 +179,11 @@ fn apply_operation(qubit_mapping: &mut Vec<usize>, dag: &mut SabreDAG, node: &No
 
     // Update edges based on the predecessors of the current qubits
     for q in &node.1 {
-    if let Some(predecessor) = dag.dag.node_indices().find(|&i| {
-        dag.dag.node_weight(i).unwrap().qubits.contains(q)
-    }) {
-        dag.dag.add_edge(predecessor, new_index, ());
-    }
+        if let Some(predecessor) = dag.dag.node_indices().find(|&i| {
+            dag.dag.node_weight(i).unwrap().qubits.contains(q)
+        }) {
+            dag.dag.add_edge(predecessor, new_index, ());
+        }
     }
 }
 
@@ -203,6 +201,26 @@ fn apply_swap(qubit_mapping: &mut Vec<usize>, dag: &mut SabreDAG, qargs: &Vec<Vi
     if qargs.len() == 2 {
         let idx0 = qargs[0].index();
         let idx1 = qargs[1].index();
+
+        // Create a new swap node
+        let swap_node = DAGNode {
+            py_node_id: dag.nodes.len(),  // Assuming unique ID
+            qubits: vec![VirtualQubit::new(qubit_mapping[idx0].try_into().unwrap()), VirtualQubit::new(qubit_mapping[idx1].try_into().unwrap())],
+            directive: false,
+        };
+
+        // Add the swap node to the DAG
+        let new_index = dag.dag.add_node(swap_node);
+
+        // Update edges based on the predecessors of the current qubits
+        for q in &qargs[..2] {
+            if let Some(predecessor) = dag.dag.node_indices().find(|&i| {
+                dag.dag.node_weight(i).unwrap().qubits.contains(q)
+            }) {
+                dag.dag.add_edge(predecessor, new_index, ());
+            }
+        }
+
         qubit_mapping.swap(idx0, idx1);
     }
 }
