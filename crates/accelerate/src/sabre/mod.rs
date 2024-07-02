@@ -15,7 +15,7 @@ mod layout;
 mod neighbor_table;
 mod route;
 pub mod sabre_dag;
-mod swap_map;
+pub mod swap_map;
 
 use hashbrown::HashMap;
 use numpy::{IntoPyArray, ToPyArray};

@@ -428,6 +428,7 @@ pub fn sabre_routing(
         num_trials,
         run_in_parallel,
     );
+    println!("res: {:?}", res);
     (
         res.map,
         res.node_order.into_pyarray_bound(py).into(),

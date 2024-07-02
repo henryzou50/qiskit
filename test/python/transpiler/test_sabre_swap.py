@@ -354,6 +354,24 @@ class TestSabreSwap(QiskitTestCase):
         result = SabreSwap(CouplingMap.from_line(3), seed=12345)(qc)
         self.assertEqual(result, expected)
 
+    def test_ghz_circuit(self):
+        """ Test a GHZ circuit with 8 qubits """
+        num_qubits = 5
+        qc = QuantumCircuit(5)
+        qc.h(0)
+        for i in range(1, 5):
+            qc.cx(0, i)
+        qc.measure_all()
+        coupling_map = CouplingMap.from_line(5)
+        routing_pass = PassManager(SabreSwap(coupling_map, seed=12345))
+        routed = routing_pass.run(qc)
+        routed_ops = routed.count_ops()
+        del routed_ops["swap"]
+        self.assertEqual(routed_ops, qc.count_ops())
+        routed.draw(output="mpl", filename="ghz_circuit.png")
+
+
+
     @ddt.data("basic", "lookahead", "decay")
     def test_deterministic(self, heuristic):
         """Test that the output of the SabreSwap pass is deterministic for a given random seed."""
