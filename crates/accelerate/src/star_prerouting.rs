@@ -46,7 +46,7 @@ fn star_preroute(
     dag: &mut SabreDAG,
     blocks: Vec<Block>,
     processing_order: Vec<Nodes>,
-) -> PyResult<()> {
+) -> PyResult<(SabreResult, Vec<usize>)> {
     // Initialize qubit mapping to identity
     let mut qubit_mapping: Vec<usize> = (0..dag.num_qubits).collect();
     // Set to keep track of processed block IDs
@@ -91,7 +91,7 @@ fn star_preroute(
 
     println!("sabre_result: {:?}", sabre_result);
 
-    Ok(())
+    Ok((sabre_result, qubit_mapping))
 }
 
 /// Finds the block ID for a given node.

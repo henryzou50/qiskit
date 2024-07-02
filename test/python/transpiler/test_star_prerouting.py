@@ -55,6 +55,8 @@ class TestStarPreRouting(QiskitTestCase):
         expected.cx(3, 4)
         # expected.swap(3,4)
 
+        new_qc.draw("mpl", filename="test_star_prerouting.png")
+
         self.assertTrue(Operator(expected).equiv(Operator(new_qc)))
 
     def test_simple_ghz_dagdependency(self):

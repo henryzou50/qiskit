@@ -248,6 +248,7 @@ class SabreSwap(TransformationPass):
             self.trials,
             self.seed,
         )
+        print("final_permutation", final_permutation)
         sabre_stop = time.perf_counter()
         logging.debug("Sabre swap algorithm execution complete in: %s", sabre_stop - sabre_start)
         final_layout = Layout(dict(zip(dag.qubits, final_permutation)))
@@ -351,6 +352,15 @@ def _apply_sabre_result(
             (as returned by :func:`id`) of a control-flow block :class:`.QuantumCircuit` to a
             :class:`.DAGCircuit` that represents the same thing.
     """
+    print("out_dag", out_dag)
+
+    for node in out_dag.topological_op_nodes():
+        print("node", node.op)
+
+    print("in_dag", in_dag)
+
+    for node in in_dag.topological_op_nodes():
+        print("node", node.op)
 
     # The swap gate is a singleton instance, so we don't need to waste time reconstructing it each
     # time we need to use it.

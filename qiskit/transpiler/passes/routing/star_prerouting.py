@@ -20,7 +20,7 @@ from qiskit.dagcircuit import DAGOpNode, DAGDepNode, DAGDependency, DAGCircuit
 from qiskit.transpiler import Layout
 from qiskit.transpiler.basepasses import TransformationPass
 from qiskit.circuit.library import SwapGate
-from qiskit.transpiler.passes.routing.sabre_swap import _build_sabre_dag
+from qiskit.transpiler.passes.routing.sabre_swap import _build_sabre_dag, _apply_sabre_result
 
 from qiskit._accelerate.sabre import (
     sabre_routing,
@@ -30,6 +30,7 @@ from qiskit._accelerate.sabre import (
 )
 
 from qiskit._accelerate import star_prerouting
+from qiskit._accelerate.nlayout import NLayout
 
 class StarBlock:
     """Defines blocks representing star-shaped pieces of a circuit."""
@@ -320,8 +321,14 @@ class StarPreRouting(TransformationPass):
 
         num_qubits = len(dag.qubits)
         canonical_register = dag.qregs["q"]
+        current_layout = Layout.generate_trivial_layout(canonical_register)
         qubit_indices = {bit: idx for idx, bit in enumerate(canonical_register)}
-        sabre_dag, _ = _build_sabre_dag(new_dag, num_qubits, qubit_indices)
+        layout_mapping = {
+            qubit_indices[k]: v for k, v in current_layout.get_virtual_bits().items()
+        }
+        initial_layout = NLayout(layout_mapping, num_qubits, num_qubits)
+
+        sabre_dag, circuit_to_dag_dict = _build_sabre_dag(new_dag, num_qubits, qubit_indices)
 
         rust_blocks = []
         for block in blocks:
@@ -330,8 +337,21 @@ class StarPreRouting(TransformationPass):
             rust_blocks.append((center, (_extract_nodes(block.get_nodes(), dag))))
         rust_processing_order = _extract_nodes(processing_order, dag)
 
-        star_prerouting.star_preroute(sabre_dag, rust_blocks, rust_processing_order)
+        *sabre_result, qubit_mapping = star_prerouting.star_preroute(sabre_dag, rust_blocks, rust_processing_order)
+        print("Qubit Mapping: ", qubit_mapping)
+        print("Result: ", sabre_result)
 
+
+        res_dag = _apply_sabre_result(
+            dag.copy_empty_like(),
+            dag,
+            sabre_result,
+            initial_layout,
+            dag.qubits,
+            circuit_to_dag_dict,
+        )
+
+        """
         # Start of the Python implementation of the star prerouting, will be removed in the future to solely use the Rust implementation
         node_to_block_id = {}
         for i, block in enumerate(blocks):
@@ -446,6 +466,7 @@ class StarPreRouting(TransformationPass):
         print("Qubit Mapping: ", qubit_mapping)
         for node in new_dag.topological_op_nodes():
             print(node.op, node.qargs, node.cargs)
+        """
 
         return new_dag, qubit_mapping
 
