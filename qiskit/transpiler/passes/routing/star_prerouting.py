@@ -468,7 +468,7 @@ class StarPreRouting(TransformationPass):
             print(node.op, node.qargs, node.cargs)
         """
 
-        return new_dag, qubit_mapping
+        return res_dag, qubit_mapping
 
 def _extract_nodes(nodes, dag): 
     """ Extracts and formats information from the nodes to align with the Rust representation.
