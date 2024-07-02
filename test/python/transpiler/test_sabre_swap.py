@@ -361,7 +361,6 @@ class TestSabreSwap(QiskitTestCase):
         qc.h(0)
         for i in range(1, 5):
             qc.cx(0, i)
-        qc.measure_all()
         coupling_map = CouplingMap.from_line(5)
         routing_pass = PassManager(SabreSwap(coupling_map, seed=12345))
         routed = routing_pass.run(qc)

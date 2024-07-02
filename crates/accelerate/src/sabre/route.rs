@@ -429,7 +429,7 @@ pub fn sabre_routing(
         run_in_parallel,
     );
     println!("res: {:?}", res);
-    (
+    let final_res = (
         res.map,
         res.node_order.into_pyarray_bound(py).into(),
         res.node_block_results,
@@ -442,7 +442,9 @@ pub fn sabre_routing(
             }),
         )
         .into(),
-    )
+    );
+    println!("final_res: {:?}", final_res);
+    final_res
 }
 
 /// Run (potentially in parallel) several trials of the Sabre routing algorithm on the given

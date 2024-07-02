@@ -29,6 +29,7 @@ type Block = (bool, Vec<Nodes>);
 use hashbrown::HashMap;
 use hashbrown::HashSet;
 use pyo3::prelude::*;
+use numpy::IntoPyArray;
 use crate::nlayout::PhysicalQubit;
 use crate::sabre::sabre_dag::{SabreDAG, DAGNode};
 use crate::nlayout::VirtualQubit;
@@ -46,7 +47,7 @@ fn star_preroute(
     dag: &mut SabreDAG,
     blocks: Vec<Block>,
     processing_order: Vec<Nodes>,
-) -> PyResult<(SabreResult, Vec<usize>)> {
+) -> (SwapMap, PyObject, NodeBlockResults, PyObject) {
     // Initialize qubit mapping to identity
     let mut qubit_mapping: Vec<usize> = (0..dag.num_qubits).collect();
     // Set to keep track of processed block IDs
@@ -79,19 +80,25 @@ fn star_preroute(
         }
     }
 
-    let sabre_result = SabreResult {
+    let res = SabreResult {
         map: SwapMap { map: out_map },
         node_order: gate_order,
         node_block_results: NodeBlockResults { results: node_block_results },
     };
     println!("qubit_mapping: {:?}", qubit_mapping);
-    for node in dag.dag.node_indices() {
-        println!("node: {:?}", dag.dag.node_weight(node));
-    }
+    //for node in dag.dag.node_indices() {
+    //    println!("node: {:?}", dag.dag.node_weight(node));
+    //}
 
-    println!("sabre_result: {:?}", sabre_result);
+    println!("res: {:?}", res);
 
-    Ok((sabre_result, qubit_mapping))
+    let final_res = (
+        res.map,
+        res.node_order.into_pyarray_bound(py).into(),
+        res.node_block_results,
+        qubit_mapping.into_pyarray_bound(py).into(),
+    );
+    final_res
 }
 
 /// Finds the block ID for a given node.
@@ -237,28 +244,8 @@ fn apply_swap(
         let idx0 = qargs[0].index();
         let idx1 = qargs[1].index();
 
-        // Create a new swap node
-        let swap_node = DAGNode {
-            py_node_id: dag.nodes.len(),  // Assuming unique ID
-            qubits: vec![VirtualQubit::new(qubit_mapping[idx0].try_into().unwrap()), VirtualQubit::new(qubit_mapping[idx1].try_into().unwrap())],
-            directive: false,
-        };
-
-        // Add the swap node to the DAG
-        let new_index = dag.dag.add_node(swap_node.clone());
-        gate_order.push(swap_node.py_node_id);
-
-        // Update edges based on the predecessors of the current qubits
-        for q in &qargs[..2] {
-            if let Some(predecessor) = dag.dag.node_indices().find(|&i| {
-                dag.dag.node_weight(i).unwrap().qubits.contains(q)
-            }) {
-                dag.dag.add_edge(predecessor, new_index, ());
-            }
-        }
-
         qubit_mapping.swap(idx0, idx1);
-        out_map.insert(swap_node.py_node_id, vec![
+        out_map.insert(gate_order.last().unwrap().clone(), vec![
             [
                 PhysicalQubit::new(qubit_mapping[idx0].try_into().unwrap()), 
                 PhysicalQubit::new(qubit_mapping[idx1].try_into().unwrap())
