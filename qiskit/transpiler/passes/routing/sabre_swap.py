@@ -261,7 +261,7 @@ class SabreSwap(TransformationPass):
             )
         if self.fake_run:
             return dag
-        return _apply_sabre_result(
+        res = _apply_sabre_result(
             dag.copy_empty_like(),
             dag,
             sabre_result,
@@ -269,6 +269,9 @@ class SabreSwap(TransformationPass):
             dag.qubits,
             circuit_to_dag_dict,
         )
+        # Save DagCircuit image 
+        res.draw("mpl", filename="sabre_swap.png")
+        return res
 
 
 def _build_sabre_dag(dag, num_physical_qubits, qubit_indices):
