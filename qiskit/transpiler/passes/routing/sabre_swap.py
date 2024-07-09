@@ -395,6 +395,10 @@ def _apply_sabre_result(
         ``root_virtual_map`` is a mapping of the (virtual) qubit in ``source_dag`` to the index of
         the virtual qubit in the root source DAG that it is bound to."""
         swap_map, node_order, node_block_results = result
+        print("\n")
+        print("swap_map: ", swap_map, "\n")
+        print("node_order: ", node_order, "\n")
+        print("node_block_results: ", node_block_results, "\n")
         for node_id in node_order:
             print("node_id", node_id)
             node = source_dag._multi_graph[node_id]

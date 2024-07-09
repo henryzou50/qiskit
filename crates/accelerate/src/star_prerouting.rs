@@ -85,7 +85,7 @@ fn star_preroute(
         node_order: gate_order,
         node_block_results: NodeBlockResults { results: node_block_results },
     };
-    println!("qubit_mapping: {:?}", qubit_mapping);
+    // println!("qubit_mapping: {:?}", qubit_mapping);
     //for node in dag.dag.node_indices() {
     //    println!("node: {:?}", dag.dag.node_weight(node));
     //}
@@ -153,6 +153,8 @@ fn process_block(
 
     // Process each node in the block
     for inner_node in sequence {
+        println!("inner_node: {:?}", inner_node);
+
         // Apply operation directly if it's a single-qubit operation or the same as previous qargs
         if inner_node.1.len() == 1 || prev_qargs == Some(&inner_node.1) {
             apply_operation(qubit_mapping, dag, inner_node, gate_order, out_map);
@@ -240,6 +242,8 @@ fn apply_swap(
 ) {
     // Apply the swap operation in the `dag`
     // Update the `qubit_mapping` to reflect the swap
+    println!("gate_order: {:?}", gate_order);
+    println!("last gate: {:?}", gate_order.last().unwrap());
     if qargs.len() == 2 {
         let idx0 = qargs[0].index();
         let idx1 = qargs[1].index();

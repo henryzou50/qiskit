@@ -338,8 +338,8 @@ class StarPreRouting(TransformationPass):
         rust_processing_order = _extract_nodes(processing_order, dag)
 
         *sabre_result, qubit_mapping = star_prerouting.star_preroute(sabre_dag, rust_blocks, rust_processing_order)
-        print("Qubit Mapping: ", qubit_mapping)
-        print("Result: ", sabre_result)
+        #print("Qubit Mapping: ", qubit_mapping)
+        #print("Result: ", sabre_result)
 
 
         res_dag = _apply_sabre_result(

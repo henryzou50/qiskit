@@ -55,7 +55,7 @@ class TestStarPreRouting(QiskitTestCase):
         expected.cx(3, 4)
         # expected.swap(3,4)
 
-        new_qc.draw("mpl", filename="test_star_prerouting.png")
+        new_qc.draw("mpl", filename="ghz_star_prerouting.png")
 
         self.assertTrue(Operator(expected).equiv(Operator(new_qc)))
 
@@ -327,6 +327,10 @@ class TestStarPreRouting(QiskitTestCase):
         expected.h(3)
         expected.cx(3, 4)
         # expected.swap(3, 4)
+
+        result.draw("mpl", filename="hadamard_star_prerouting.png")
+        expected.draw("mpl", filename="hadamard_star_prerouting_expected.png")
+
         self.assertEqual(expected, result)
 
     def test_count_1_stars_starting_center(self):
