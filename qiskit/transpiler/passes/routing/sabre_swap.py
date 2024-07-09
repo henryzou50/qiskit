@@ -403,6 +403,7 @@ def _apply_sabre_result(
             print("node_id", node_id)
             node = source_dag._multi_graph[node_id]
             if node_id in swap_map:
+                print(" Swapping node_id: ", node_id, " swap_map[node_id]: ", swap_map[node_id])
                 apply_swaps(dest_dag, swap_map[node_id], layout)
             if not isinstance(node.op, ControlFlowOp):
                 dest_dag.apply_operation_back(

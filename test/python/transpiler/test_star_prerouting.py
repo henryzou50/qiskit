@@ -56,6 +56,7 @@ class TestStarPreRouting(QiskitTestCase):
         # expected.swap(3,4)
 
         new_qc.draw("mpl", filename="ghz_star_prerouting.png")
+        expected.draw("mpl", filename="ghz_star_prerouting_expected.png")
 
         self.assertTrue(Operator(expected).equiv(Operator(new_qc)))
 

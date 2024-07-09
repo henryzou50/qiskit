@@ -152,7 +152,7 @@ fn process_block(
     let mut swap_source = false;
 
     // Process each node in the block
-    for inner_node in sequence {
+    for (i, inner_node) in sequence.iter().enumerate() {
         println!("inner_node: {:?}", inner_node);
 
         // Apply operation directly if it's a single-qubit operation or the same as previous qargs
@@ -172,9 +172,10 @@ fn process_block(
         // Place 2q-gate and subsequent swap gate
         apply_operation(qubit_mapping, dag, inner_node, gate_order, out_map);
 
-        if let Some(last) = last_2q_gate {
-            if inner_node != last && inner_node.1.len() == 2 {
-                apply_swap(qubit_mapping, dag, &inner_node.1, gate_order, out_map);
+        if inner_node != last_2q_gate.unwrap() && inner_node.1.len() == 2 {
+            if let Some(next_node) = sequence.get(i + 1).cloned() {
+                // Use the node ID of the next node in the sequence
+                apply_swap(qubit_mapping, dag, &inner_node.1, next_node.0, out_map);
             }
         }
 
@@ -195,7 +196,7 @@ fn apply_operation(
     qubit_mapping: &mut Vec<usize>,
     dag: &mut SabreDAG,
     node: &Nodes,
-    gate_order: &mut Vec<usize>,
+    gate_order: &mut Vec<usize>, 
     out_map: &mut HashMap<usize, Vec<[PhysicalQubit; 2]>>,
 ) {
     // Remap the qubits based on the current qubit mapping
@@ -223,7 +224,10 @@ fn apply_operation(
         }
     }
 
-    out_map.insert(node.0, vec![]);
+    // if out_map does not contain the node id, insert it with an empty vector
+    if !out_map.contains_key(&node.0) {
+        out_map.insert(node.0, vec![]);
+    }
 }
 
 /// Applies a swap operation to the DAG and updates the qubit mapping.
@@ -237,19 +241,17 @@ fn apply_swap(
     qubit_mapping: &mut Vec<usize>,
     dag: &mut SabreDAG,
     qargs: &Vec<VirtualQubit>,
-    gate_order: &mut Vec<usize>,
+    next_node_id: usize,
     out_map: &mut HashMap<usize, Vec<[PhysicalQubit; 2]>>,
 ) {
     // Apply the swap operation in the `dag`
     // Update the `qubit_mapping` to reflect the swap
-    println!("gate_order: {:?}", gate_order);
-    println!("last gate: {:?}", gate_order.last().unwrap());
     if qargs.len() == 2 {
         let idx0 = qargs[0].index();
         let idx1 = qargs[1].index();
 
         qubit_mapping.swap(idx0, idx1);
-        out_map.insert(gate_order.last().unwrap().clone(), vec![
+        out_map.insert(next_node_id, vec![
             [
                 PhysicalQubit::new(qubit_mapping[idx0].try_into().unwrap()), 
                 PhysicalQubit::new(qubit_mapping[idx1].try_into().unwrap())
