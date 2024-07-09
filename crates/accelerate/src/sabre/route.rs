@@ -428,11 +428,6 @@ pub fn sabre_routing(
         num_trials,
         run_in_parallel,
     );
-    println!();
-    println!("res: {:?}", res);
-    println!();
-    println!("dag: {:?}", dag);
-    println!();
     let final_res = (
         res.map,
         res.node_order.into_pyarray_bound(py).into(),
@@ -447,7 +442,6 @@ pub fn sabre_routing(
         )
         .into(),
     );
-    println!("final_res: {:?}", final_res);
     final_res
 }
 

@@ -316,7 +316,6 @@ class StarPreRouting(TransformationPass):
             new_dag: a dag specifying the pre-routed circuit
             qubit_mapping: the final qubit mapping after pre-routing
         """
-        new_dag = dag.copy_empty_like()
         # Getting the Rust representation of the DAG
 
         num_qubits = len(dag.qubits)
@@ -328,31 +327,15 @@ class StarPreRouting(TransformationPass):
         }
         initial_layout = NLayout(layout_mapping, num_qubits, num_qubits)
 
-        sabre_dag, circuit_to_dag_dict = _build_sabre_dag(new_dag, num_qubits, qubit_indices)
+        sabre_dag, circuit_to_dag_dict = _build_sabre_dag(dag, num_qubits, qubit_indices)
 
         rust_blocks = []
         for block in blocks:
             # Create a bool if the center exist or not, true if it exist, false if none
             center = True if block.center is not None else False
             rust_blocks.append((center, (_extract_nodes(block.get_nodes(), dag))))
-        rust_processing_order = _extract_nodes(processing_order, dag)
 
-        *sabre_result, qubit_mapping = star_prerouting.star_preroute(sabre_dag, rust_blocks, rust_processing_order)
-        #print("Qubit Mapping: ", qubit_mapping)
-        #print("Result: ", sabre_result)
-
-
-        res_dag = _apply_sabre_result(
-            dag.copy_empty_like(),
-            dag,
-            sabre_result,
-            initial_layout,
-            dag.qubits,
-            circuit_to_dag_dict,
-        )
-
-        """
-        # Start of the Python implementation of the star prerouting, will be removed in the future to solely use the Rust implementation
+        # Extract the nodes from the processing order
         node_to_block_id = {}
         for i, block in enumerate(blocks):
             for node in block.get_nodes():
@@ -384,89 +367,23 @@ class StarPreRouting(TransformationPass):
 
         def tie_breaker_key(node):
             return processing_order_index_map.get(node, node.sort_key)
+        
+        node_order = dag.topological_op_nodes(key=tie_breaker_key)
 
-        for node in dag.topological_op_nodes(key=tie_breaker_key):
-            block_id = node_to_block_id.get(node, None)
-            if block_id is not None:
-                
-                if block_id in processed_block_ids:
-                    continue
 
-                processed_block_ids.add(block_id)
+        rust_processing_order = _extract_nodes(node_order, dag)
 
-                # process the whole block
-                block = blocks[block_id]
-                sequence = block.nodes
-                center_node = block.center
+        *sabre_result, qubit_mapping = star_prerouting.star_preroute(sabre_dag, rust_blocks, rust_processing_order)
 
-                if len(sequence) == 2:
-                    for inner_node in sequence:
-                        new_dag.apply_operation_back(
-                            inner_node.op,
-                            _apply_mapping(inner_node.qargs, qubit_mapping, dag.qubits),
-                            inner_node.cargs,
-                            check=False,
-                        )
-                    continue
-                swap_source = None
-                prev = None
-                for inner_node in sequence:
-                    if (len(inner_node.qargs) == 1) or (inner_node.qargs == prev):
-                        new_dag.apply_operation_back(
-                            inner_node.op,
-                            _apply_mapping(inner_node.qargs, qubit_mapping, dag.qubits),
-                            inner_node.cargs,
-                            check=False,
-                        )
-                        continue
-                    if is_first_star and swap_source is None:
-                        swap_source = center_node
-                        new_dag.apply_operation_back(
-                            inner_node.op,
-                            _apply_mapping(inner_node.qargs, qubit_mapping, dag.qubits),
-                            inner_node.cargs,
-                            check=False,
-                        )
 
-                        prev = inner_node.qargs
-                        continue
-                    # place 2q-gate and subsequent swap gate
-                    new_dag.apply_operation_back(
-                        inner_node.op,
-                        _apply_mapping(inner_node.qargs, qubit_mapping, dag.qubits),
-                        inner_node.cargs,
-                        check=False,
-                    )
-
-                    if not inner_node is last_2q_gate and not isinstance(inner_node.op, Barrier):
-                        new_dag.apply_operation_back(
-                            SwapGate(),
-                            _apply_mapping(inner_node.qargs, qubit_mapping, dag.qubits),
-                            inner_node.cargs,
-                            check=False,
-                        )
-                        # Swap mapping
-                        index_0 = dag.find_bit(inner_node.qargs[0]).index
-                        index_1 = dag.find_bit(inner_node.qargs[1]).index
-                        qubit_mapping[index_1], qubit_mapping[index_0] = (
-                            qubit_mapping[index_0],
-                            qubit_mapping[index_1],
-                        )
-
-                    prev = inner_node.qargs
-                is_first_star = False
-            else:
-                # the node is not part of a block
-                new_dag.apply_operation_back(
-                    node.op,
-                    _apply_mapping(node.qargs, qubit_mapping, dag.qubits),
-                    node.cargs,
-                    check=False,
-                )
-        print("Qubit Mapping: ", qubit_mapping)
-        for node in new_dag.topological_op_nodes():
-            print(node.op, node.qargs, node.cargs)
-        """
+        res_dag = _apply_sabre_result(
+            dag.copy_empty_like(),
+            dag,
+            sabre_result,
+            initial_layout,
+            dag.qubits,
+            circuit_to_dag_dict,
+        )
 
         return res_dag, qubit_mapping
 

@@ -64,7 +64,8 @@ fn star_preroute(
     let node_block_results: HashMap<usize, Vec<BlockResult>> = HashMap::new();
 
     // Process each node in the given processing order
-    for node in &processing_order {
+    for node in &processing_order 
+    {
         // Directly match the result of find_block_id
         if let Some(block_id) = find_block_id(&blocks, &node) {
             // Skip if the block has already been processed
@@ -85,12 +86,6 @@ fn star_preroute(
         node_order: gate_order,
         node_block_results: NodeBlockResults { results: node_block_results },
     };
-    // println!("qubit_mapping: {:?}", qubit_mapping);
-    //for node in dag.dag.node_indices() {
-    //    println!("node: {:?}", dag.dag.node_weight(node));
-    //}
-
-    println!("res: {:?}", res);
 
     let final_res = (
         res.map,
@@ -153,8 +148,6 @@ fn process_block(
 
     // Process each node in the block
     for (i, inner_node) in sequence.iter().enumerate() {
-        println!("inner_node: {:?}", inner_node);
-
         // Apply operation directly if it's a single-qubit operation or the same as previous qargs
         if inner_node.1.len() == 1 || prev_qargs == Some(&inner_node.1) {
             apply_operation(qubit_mapping, dag, inner_node, gate_order, out_map);

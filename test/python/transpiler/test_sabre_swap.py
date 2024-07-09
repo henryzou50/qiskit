@@ -154,6 +154,29 @@ class TestSabreSwap(QiskitTestCase):
 
         self.assertEqual(new_qc, qc)
 
+    def test_10q_bv(self):
+        num_qubits = 10
+        qc = QuantumCircuit(num_qubits, num_qubits - 1)
+        qc.x(num_qubits - 1)
+        qc.h(qc.qubits)
+        for i in range(num_qubits - 1):
+            qc.cx(i, num_qubits - 1)
+        qc.barrier()
+        qc.h(qc.qubits[:-1])
+        for i in range(num_qubits - 1):
+            qc.measure(i, i)
+        
+        coupling = CouplingMap.from_line(num_qubits)
+
+        passmanager = PassManager(SabreSwap(coupling, "basic"))
+        new_qc = passmanager.run(qc)
+
+        qc.draw(output="mpl", filename="bv_circuit_orig.png")
+        new_qc.draw(output="mpl", filename="bv_circuit.png")
+        self.assertEqual(new_qc, qc)
+
+
+
     def test_trivial_with_target(self):
         """Test that an already mapped circuit is unchanged with target."""
         coupling = CouplingMap.from_ring(5)

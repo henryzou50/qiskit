@@ -18,6 +18,7 @@ import unittest
 from test import QiskitTestCase
 import ddt
 
+from qiskit import QuantumRegister
 from qiskit.circuit.library import QFT
 from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.converters import (
@@ -174,6 +175,9 @@ class TestStarPreRouting(QiskitTestCase):
         pm = generate_preset_pass_manager(optimization_level=3, seed_transpiler=42)
         pm.init += StarPreRouting()
         result = pm.run(qc)
+
+        qc.draw("mpl", filename="no_star.png")
+        result.draw("mpl", filename="no_star_result_after.png")
 
         self.assertTrue(Operator.from_circuit(result).equiv(qc))
 
