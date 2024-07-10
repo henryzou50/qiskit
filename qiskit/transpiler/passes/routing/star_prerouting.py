@@ -316,8 +316,7 @@ class StarPreRouting(TransformationPass):
             new_dag: a dag specifying the pre-routed circuit
             qubit_mapping: the final qubit mapping after pre-routing
         """
-        # Getting the Rust representation of the DAG
-
+        # Convert the DAG to a SabreDAG
         num_qubits = len(dag.qubits)
         canonical_register = dag.qregs["q"]
         current_layout = Layout.generate_trivial_layout(canonical_register)
@@ -328,13 +327,13 @@ class StarPreRouting(TransformationPass):
         initial_layout = NLayout(layout_mapping, num_qubits, num_qubits)
         sabre_dag, circuit_to_dag_dict = _build_sabre_dag(dag, num_qubits, qubit_indices)
 
+        # Extract the nodes from the blocks for the Rust representation
         rust_blocks = []
         for block in blocks:
-            # Create a bool if the center exist or not, true if it exist, false if none
             center = True if block.center is not None else False
             rust_blocks.append((center, (_extract_nodes(block.get_nodes(), dag))))
 
-        # Extract the nodes from the processing order
+        # Determine the processing order of the nodes in the DAG
         int_digits = floor(log10(len(processing_order))) + 1
         processing_order_index_map = {
             node: f"a{str(index).zfill(int(int_digits))}"
@@ -344,6 +343,7 @@ class StarPreRouting(TransformationPass):
             return processing_order_index_map.get(node, node.sort_key)
         rust_processing_order = _extract_nodes(dag.topological_op_nodes(key=tie_breaker_key), dag)
 
+        # Run the star prerouting algorithm to obtain the new DAG and qubit mapping
         *sabre_result, qubit_mapping = star_prerouting.star_preroute(sabre_dag, rust_blocks, rust_processing_order)
 
         res_dag = _apply_sabre_result(
