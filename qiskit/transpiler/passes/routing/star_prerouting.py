@@ -328,15 +328,12 @@ class StarPreRouting(TransformationPass):
         sabre_dag, circuit_to_dag_dict = _build_sabre_dag(dag, num_qubits, qubit_indices)
 
         # Extract the nodes from the blocks for the Rust representation
-        rust_blocks = []
-        for block in blocks:
-            center = True if block.center is not None else False
-            rust_blocks.append((center, (_extract_nodes(block.get_nodes(), dag))))
+        rust_blocks = [(block.center is not None, _extract_nodes(block.get_nodes(), dag)) for block in blocks]
 
         # Determine the processing order of the nodes in the DAG
         int_digits = floor(log10(len(processing_order))) + 1
         processing_order_index_map = {
-            node: f"a{str(index).zfill(int(int_digits))}"
+            node: f"a{index:0{int_digits}}"
             for index, node in enumerate(processing_order)
         }
         def tie_breaker_key(node):
