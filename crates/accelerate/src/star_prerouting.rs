@@ -106,12 +106,7 @@ fn star_preroute(
 /// 
 /// An option containing the block ID if the node is part of a block, otherwise None.
 fn find_block_id(blocks: &[Block], node: &Nodes) -> Option<usize> {
-    for (i, block) in blocks.iter().enumerate() {
-        if block.1.iter().any(|n| n.0 == node.0) {
-            return Some(i);
-        }
-    }
-    None
+    blocks.iter().position(|block| block.1.iter().any(|n| n.0 == node.0))
 }
 
 /// Processes a star block, applying operations and handling swaps.
@@ -165,7 +160,7 @@ fn process_block(
         apply_operation(inner_node, gate_order, out_map);
 
         if inner_node != last_2q_gate.unwrap() && inner_node.1.len() == 2 {
-            if let Some(next_node) = sequence.get(i + 1).cloned() {
+            if let Some(next_node) = sequence.get(i + 1) {
                 // Use the node ID of the next node in the sequence
                 apply_swap(qubit_mapping, &inner_node.1, next_node.0, out_map);
             }
@@ -193,7 +188,7 @@ fn apply_operation(
     gate_order.push(node.0);
 
     // if out_map does not contain the node id, insert it with an empty vector
-    out_map.entry(node.0).or_insert_with(Vec::new);
+    out_map.entry(node.0).or_default();
 }
 
 /// Applies a swap operation to the DAG and updates the qubit mapping.
