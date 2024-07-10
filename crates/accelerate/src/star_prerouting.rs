@@ -57,7 +57,7 @@ fn star_preroute(
     let mut is_first_star = true;
 
     // Initialize structures for SabreResult
-    let mut out_map: HashMap<usize, Vec<[PhysicalQubit; 2]>> = HashMap::new();
+    let mut out_map: HashMap<usize, Vec<[PhysicalQubit; 2]>> = HashMap::with_capacity(dag.dag.node_count());
     let mut gate_order: Vec<usize> = Vec::with_capacity(dag.dag.node_count());
     let node_block_results: HashMap<usize, Vec<BlockResult>> = HashMap::new();
 
@@ -67,15 +67,13 @@ fn star_preroute(
         // Directly match the result of find_block_id
         if let Some(block_id) = find_block_id(&blocks, &node) {
             // Skip if the block has already been processed
-            if processed_block_ids.contains(&block_id) {
+            if !processed_block_ids.insert(block_id) {
                 continue;
             }
-            // Mark the block as processed and process the entire block
-            processed_block_ids.insert(block_id);
             process_block(&mut qubit_mapping, &blocks[block_id], last_2q_gate, &mut is_first_star, &mut gate_order, &mut out_map);
         } else {
             // Apply operation for nodes not part of any block
-            apply_operation(&node, &mut gate_order, &mut out_map);
+            apply_operation(node, &mut gate_order, &mut out_map);
         }
     }
 
@@ -106,7 +104,13 @@ fn star_preroute(
 /// 
 /// An option containing the block ID if the node is part of a block, otherwise None.
 fn find_block_id(blocks: &[Block], node: &Nodes) -> Option<usize> {
-    blocks.iter().position(|block| block.1.iter().any(|n| n.0 == node.0))
+    blocks.iter().enumerate().find_map(|(i, block)| {
+        if block.1.iter().any(|n| n.0 == node.0) {
+            Some(i)
+        } else {
+            None
+        }
+    })
 }
 
 /// Processes a star block, applying operations and handling swaps.
@@ -119,10 +123,10 @@ fn find_block_id(blocks: &[Block], node: &Nodes) -> Option<usize> {
 /// * `is_first_star` - A mutable reference to a boolean indicating if this is the first star block being processed.
 /// * `gate_order` - A mutable reference to the gate order vector.
 /// * `out_map` - A mutable reference to the output map.
-fn process_block(
+fn process_block<'a>(
     qubit_mapping: &mut Vec<usize>,
-    block: &Block,
-    last_2q_gate: Option<&Nodes>,
+    block: &'a Block,
+    last_2q_gate: Option<&'a Nodes>,
     is_first_star: &mut bool,
     gate_order: &mut Vec<usize>,
     out_map: &mut HashMap<usize, Vec<[PhysicalQubit; 2]>>,
@@ -160,8 +164,8 @@ fn process_block(
         apply_operation(inner_node, gate_order, out_map);
 
         if inner_node != last_2q_gate.unwrap() && inner_node.1.len() == 2 {
+            // Use the node ID of the next node in the sequence
             if let Some(next_node) = sequence.get(i + 1) {
-                // Use the node ID of the next node in the sequence
                 apply_swap(qubit_mapping, &inner_node.1, next_node.0, out_map);
             }
         }
