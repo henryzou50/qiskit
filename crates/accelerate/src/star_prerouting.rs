@@ -185,6 +185,8 @@ fn process_block(
 /// * `qubit_mapping` - A mutable reference to the qubit mapping vector.
 /// * `dag` - A mutable reference to the SabreDAG being modified.
 /// * `node` - The node representing the operation to be applied.
+/// * `gate_order` - A mutable reference to the gate order vector.
+/// * `out_map` - A mutable reference to the output map.
 fn apply_operation(
     qubit_mapping: &mut Vec<usize>,
     dag: &mut SabreDAG,
@@ -230,6 +232,8 @@ fn apply_operation(
 /// * `qubit_mapping` - A mutable reference to the qubit mapping vector.
 /// * `dag` - A mutable reference to the SabreDAG being modified.
 /// * `qargs` - The qubit arguments for the swap operation.
+/// * `next_node_id` - The ID of the next node in the sequence.
+/// * `out_map` - A mutable reference to the output map.
 fn apply_swap(
     qubit_mapping: &mut Vec<usize>,
     dag: &mut SabreDAG,

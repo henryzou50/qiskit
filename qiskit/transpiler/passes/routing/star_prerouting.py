@@ -326,7 +326,6 @@ class StarPreRouting(TransformationPass):
             qubit_indices[k]: v for k, v in current_layout.get_virtual_bits().items()
         }
         initial_layout = NLayout(layout_mapping, num_qubits, num_qubits)
-
         sabre_dag, circuit_to_dag_dict = _build_sabre_dag(dag, num_qubits, qubit_indices)
 
         rust_blocks = []
@@ -336,45 +335,16 @@ class StarPreRouting(TransformationPass):
             rust_blocks.append((center, (_extract_nodes(block.get_nodes(), dag))))
 
         # Extract the nodes from the processing order
-        node_to_block_id = {}
-        for i, block in enumerate(blocks):
-            for node in block.get_nodes():
-                node_to_block_id[node] = i
-
-        #new_dag = dag.copy_empty_like()
-        processed_block_ids = set()
-        qubit_mapping = list(range(len(dag.qubits)))
-
-        def _apply_mapping(qargs, qubit_mapping, qubits):
-            return tuple(qubits[qubit_mapping[dag.find_bit(qubit).index]] for qubit in qargs)
-
-        is_first_star = True
-        last_2q_gate = [
-            op
-            for op in reversed(processing_order)
-            if ((len(op.qargs) > 1) and (op.name != "barrier"))
-        ]
-        if len(last_2q_gate) > 0:
-            last_2q_gate = last_2q_gate[0]
-        else:
-            last_2q_gate = None
-
         int_digits = floor(log10(len(processing_order))) + 1
         processing_order_index_map = {
             node: f"a{str(index).zfill(int(int_digits))}"
             for index, node in enumerate(processing_order)
         }
-
         def tie_breaker_key(node):
             return processing_order_index_map.get(node, node.sort_key)
-        
-        node_order = dag.topological_op_nodes(key=tie_breaker_key)
-
-
-        rust_processing_order = _extract_nodes(node_order, dag)
+        rust_processing_order = _extract_nodes(dag.topological_op_nodes(key=tie_breaker_key), dag)
 
         *sabre_result, qubit_mapping = star_prerouting.star_preroute(sabre_dag, rust_blocks, rust_processing_order)
-
 
         res_dag = _apply_sabre_result(
             dag.copy_empty_like(),
