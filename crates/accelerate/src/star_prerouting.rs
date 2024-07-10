@@ -24,17 +24,17 @@ type Nodes = (usize, Vec<VirtualQubit>, HashSet<usize>, bool);
 /// - A list of nodes (Vec<Nodes>)
 type Block = (bool, Vec<Nodes>);
 
-use hashbrown::HashMap;
-use hashbrown::HashSet;
-use pyo3::prelude::*;
-use numpy::IntoPyArray;
 use crate::nlayout::PhysicalQubit;
-use crate::sabre::sabre_dag::SabreDAG;
 use crate::nlayout::VirtualQubit;
+use crate::sabre::sabre_dag::SabreDAG;
 use crate::sabre::swap_map::SwapMap;
+use crate::sabre::BlockResult;
 use crate::sabre::NodeBlockResults;
 use crate::sabre::SabreResult;
-use crate::sabre::BlockResult;
+use hashbrown::HashMap;
+use hashbrown::HashSet;
+use numpy::IntoPyArray;
+use pyo3::prelude::*;
 
 /// Python function to perform star prerouting on a SabreDAG.
 /// This function processes star blocks and updates the DAG and qubit mapping.
@@ -57,20 +57,27 @@ fn star_preroute(
     let mut is_first_star = true;
 
     // Initialize structures for SabreResult
-    let mut out_map: HashMap<usize, Vec<[PhysicalQubit; 2]>> = HashMap::with_capacity(dag.dag.node_count());
+    let mut out_map: HashMap<usize, Vec<[PhysicalQubit; 2]>> =
+        HashMap::with_capacity(dag.dag.node_count());
     let mut gate_order: Vec<usize> = Vec::with_capacity(dag.dag.node_count());
     let node_block_results: HashMap<usize, Vec<BlockResult>> = HashMap::new();
 
     // Process each node in the given processing order
-    for node in processing_order.iter()
-    {
+    for node in processing_order.iter() {
         // Directly match the result of find_block_id
-        if let Some(block_id) = find_block_id(&blocks, &node) {
+        if let Some(block_id) = find_block_id(&blocks, node) {
             // Skip if the block has already been processed
             if !processed_block_ids.insert(block_id) {
                 continue;
             }
-            process_block(&mut qubit_mapping, &blocks[block_id], last_2q_gate, &mut is_first_star, &mut gate_order, &mut out_map);
+            process_block(
+                &mut qubit_mapping,
+                &blocks[block_id],
+                last_2q_gate,
+                &mut is_first_star,
+                &mut gate_order,
+                &mut out_map,
+            );
         } else {
             // Apply operation for nodes not part of any block
             apply_operation(node, &mut gate_order, &mut out_map);
@@ -80,7 +87,9 @@ fn star_preroute(
     let res = SabreResult {
         map: SwapMap { map: out_map },
         node_order: gate_order,
-        node_block_results: NodeBlockResults { results: node_block_results },
+        node_block_results: NodeBlockResults {
+            results: node_block_results,
+        },
     };
 
     let final_res = (
@@ -94,14 +103,14 @@ fn star_preroute(
 }
 
 /// Finds the block ID for a given node.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `blocks` - A vector of blocks to search for the node.
 /// * `node` - The node for which the block ID needs to be found.
-/// 
+///
 /// # Returns
-/// 
+///
 /// An option containing the block ID if the node is part of a block, otherwise None.
 fn find_block_id(blocks: &[Block], node: &Nodes) -> Option<usize> {
     blocks.iter().enumerate().find_map(|(i, block)| {
@@ -114,9 +123,9 @@ fn find_block_id(blocks: &[Block], node: &Nodes) -> Option<usize> {
 }
 
 /// Processes a star block, applying operations and handling swaps.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `qubit_mapping` - A mutable reference to the qubit mapping vector.
 /// * `block` - A tuple containing a boolean indicating the presence of a center and a vector of nodes representing the star block.
 /// * `last_2q_gate` - The last two-qubit gate in the processing order.
@@ -124,7 +133,7 @@ fn find_block_id(blocks: &[Block], node: &Nodes) -> Option<usize> {
 /// * `gate_order` - A mutable reference to the gate order vector.
 /// * `out_map` - A mutable reference to the output map.
 fn process_block<'a>(
-    qubit_mapping: &mut Vec<usize>,
+    qubit_mapping: &mut [usize],
     block: &'a Block,
     last_2q_gate: Option<&'a Nodes>,
     is_first_star: &mut bool,
@@ -155,7 +164,7 @@ fn process_block<'a>(
         // If this is the first star and no swap source has been identified, set swap_source
         if *is_first_star && !swap_source {
             swap_source = *has_center;
-            apply_operation( inner_node, gate_order, out_map);
+            apply_operation(inner_node, gate_order, out_map);
             prev_qargs = Some(&inner_node.1);
             continue;
         }
@@ -173,19 +182,18 @@ fn process_block<'a>(
         prev_qargs = Some(&inner_node.1);
     }
     *is_first_star = false;
-
 }
 
 /// Applies an operation to update the gate order and output map.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `node` - The node representing the operation to be applied.
 /// * `gate_order` - A mutable reference to the gate order vector.
 /// * `out_map` - A mutable reference to the output map.
 fn apply_operation(
     node: &Nodes,
-    gate_order: &mut Vec<usize>, 
+    gate_order: &mut Vec<usize>,
     out_map: &mut HashMap<usize, Vec<[PhysicalQubit; 2]>>,
 ) {
     // Add the node ID to the gate order
@@ -196,16 +204,16 @@ fn apply_operation(
 }
 
 /// Applies a swap operation to the DAG and updates the qubit mapping.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `qubit_mapping` - A mutable reference to the qubit mapping vector.
 /// * `dag` - A mutable reference to the SabreDAG being modified.
 /// * `qargs` - A slice containing the qubit indices for the swap operation.
 /// * `next_node_id` - The ID of the next node in the sequence.
 /// * `out_map` - A mutable reference to the output map.
 fn apply_swap(
-    qubit_mapping: &mut Vec<usize>,
+    qubit_mapping: &mut [usize],
     qargs: &[VirtualQubit],
     next_node_id: usize,
     out_map: &mut HashMap<usize, Vec<[PhysicalQubit; 2]>>,
@@ -217,12 +225,13 @@ fn apply_swap(
         let idx1 = qargs[1].index();
 
         qubit_mapping.swap(idx0, idx1);
-        out_map.insert(next_node_id, vec![
-            [
-                PhysicalQubit::new(qubit_mapping[idx0].try_into().unwrap()), 
-                PhysicalQubit::new(qubit_mapping[idx1].try_into().unwrap())
-            ]
-        ]);
+        out_map.insert(
+            next_node_id,
+            vec![[
+                PhysicalQubit::new(qubit_mapping[idx0].try_into().unwrap()),
+                PhysicalQubit::new(qubit_mapping[idx1].try_into().unwrap()),
+            ]],
+        );
     }
 }
 

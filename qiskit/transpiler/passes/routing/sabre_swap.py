@@ -218,7 +218,7 @@ class SabreSwap(TransformationPass):
         elif self.heuristic == "decay":
             heuristic = Heuristic.Decay
         else:
-            raise TranspilerError(f"Heuristic {self.heuristic} not recognized.")
+            raise TranspilerError("Heuristic %s not recognized." % self.heuristic)
         disjoint_utils.require_layout_isolated_to_component(
             dag, self.coupling_map if self.target is None else self.target
         )
@@ -259,7 +259,7 @@ class SabreSwap(TransformationPass):
             )
         if self.fake_run:
             return dag
-        res = _apply_sabre_result(
+        return _apply_sabre_result(
             dag.copy_empty_like(),
             dag,
             sabre_result,
@@ -267,9 +267,6 @@ class SabreSwap(TransformationPass):
             dag.qubits,
             circuit_to_dag_dict,
         )
-        # Save DagCircuit image 
-        res.draw("mpl", filename="sabre_swap.png")
-        return res
 
 
 def _build_sabre_dag(dag, num_physical_qubits, qubit_indices):
@@ -354,6 +351,7 @@ def _apply_sabre_result(
             (as returned by :func:`id`) of a control-flow block :class:`.QuantumCircuit` to a
             :class:`.DAGCircuit` that represents the same thing.
     """
+
     # The swap gate is a singleton instance, so we don't need to waste time reconstructing it each
     # time we need to use it.
     swap_singleton = SwapGate()

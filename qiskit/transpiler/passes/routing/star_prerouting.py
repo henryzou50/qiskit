@@ -32,6 +32,7 @@ from qiskit._accelerate.sabre import (
 from qiskit._accelerate import star_prerouting
 from qiskit._accelerate.nlayout import NLayout
 
+
 class StarBlock:
     """Defines blocks representing star-shaped pieces of a circuit."""
 
@@ -321,27 +322,30 @@ class StarPreRouting(TransformationPass):
         canonical_register = dag.qregs["q"]
         current_layout = Layout.generate_trivial_layout(canonical_register)
         qubit_indices = {bit: idx for idx, bit in enumerate(canonical_register)}
-        layout_mapping = {
-            qubit_indices[k]: v for k, v in current_layout.get_virtual_bits().items()
-        }
+        layout_mapping = {qubit_indices[k]: v for k, v in current_layout.get_virtual_bits().items()}
         initial_layout = NLayout(layout_mapping, num_qubits, num_qubits)
         sabre_dag, circuit_to_dag_dict = _build_sabre_dag(dag, num_qubits, qubit_indices)
 
         # Extract the nodes from the blocks for the Rust representation
-        rust_blocks = [(block.center is not None, _extract_nodes(block.get_nodes(), dag)) for block in blocks]
+        rust_blocks = [
+            (block.center is not None, _extract_nodes(block.get_nodes(), dag)) for block in blocks
+        ]
 
         # Determine the processing order of the nodes in the DAG
         int_digits = floor(log10(len(processing_order))) + 1
         processing_order_index_map = {
-            node: f"a{index:0{int_digits}}"
-            for index, node in enumerate(processing_order)
+            node: f"a{index:0{int_digits}}" for index, node in enumerate(processing_order)
         }
+
         def tie_breaker_key(node):
             return processing_order_index_map.get(node, node.sort_key)
+
         rust_processing_order = _extract_nodes(dag.topological_op_nodes(key=tie_breaker_key), dag)
 
         # Run the star prerouting algorithm to obtain the new DAG and qubit mapping
-        *sabre_result, qubit_mapping = star_prerouting.star_preroute(sabre_dag, rust_blocks, rust_processing_order)
+        *sabre_result, qubit_mapping = star_prerouting.star_preroute(
+            sabre_dag, rust_blocks, rust_processing_order
+        )
 
         res_dag = _apply_sabre_result(
             dag.copy_empty_like(),
@@ -354,9 +358,10 @@ class StarPreRouting(TransformationPass):
 
         return res_dag, qubit_mapping
 
-def _extract_nodes(nodes, dag): 
-    """ Extracts and formats information from the nodes to align with the Rust representation.
-    
+
+def _extract_nodes(nodes, dag):
+    """Extracts and formats information from the nodes to align with the Rust representation.
+
     Each node is represented by a tuple containing:
     - Operation index (int)
     - List of involved qubit indices (list of int)
@@ -366,7 +371,7 @@ def _extract_nodes(nodes, dag):
     Args:
         nodes (list[DAGOpNode]): List of DAGOpNode objects containing the processing order.
         dag (DAGCircuit): DAGCircuit object containing the circuit information.
-    
+
     Returns:
         list [(int, list[int], set[int], bool)]
     """
