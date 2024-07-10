@@ -29,7 +29,7 @@ use hashbrown::HashSet;
 use pyo3::prelude::*;
 use numpy::IntoPyArray;
 use crate::nlayout::PhysicalQubit;
-use crate::sabre::sabre_dag::{SabreDAG, DAGNode};
+use crate::sabre::sabre_dag::SabreDAG;
 use crate::nlayout::VirtualQubit;
 use crate::sabre::swap_map::SwapMap;
 use crate::sabre::NodeBlockResults;
@@ -72,10 +72,10 @@ fn star_preroute(
             }
             // Mark the block as processed and process the entire block
             processed_block_ids.insert(block_id);
-            process_block(&mut qubit_mapping, dag, &blocks[block_id], last_2q_gate, &mut is_first_star, &mut gate_order, &mut out_map);
+            process_block(&mut qubit_mapping, &blocks[block_id], last_2q_gate, &mut is_first_star, &mut gate_order, &mut out_map);
         } else {
             // Apply operation for nodes not part of any block
-            apply_operation(&mut qubit_mapping, dag, &node, &mut gate_order, &mut out_map);
+            apply_operation(&node, &mut gate_order, &mut out_map);
         }
     }
 
@@ -91,6 +91,7 @@ fn star_preroute(
         res.node_block_results,
         qubit_mapping.into_pyarray_bound(py).into(),
     );
+
     final_res
 }
 
@@ -118,13 +119,13 @@ fn find_block_id(blocks: &[Block], node: &Nodes) -> Option<usize> {
 /// # Arguments
 /// 
 /// * `qubit_mapping` - A mutable reference to the qubit mapping vector.
-/// * `dag` - A mutable reference to the SabreDAG being modified.
 /// * `block` - A tuple containing a boolean indicating the presence of a center and a vector of nodes representing the star block.
 /// * `last_2q_gate` - The last two-qubit gate in the processing order.
 /// * `is_first_star` - A mutable reference to a boolean indicating if this is the first star block being processed.
+/// * `gate_order` - A mutable reference to the gate order vector.
+/// * `out_map` - A mutable reference to the output map.
 fn process_block(
     qubit_mapping: &mut Vec<usize>,
-    dag: &mut SabreDAG,
     block: &Block,
     last_2q_gate: Option<&Nodes>,
     is_first_star: &mut bool,
@@ -136,7 +137,7 @@ fn process_block(
     // If the block contains exactly 2 nodes, apply them directly
     if sequence.len() == 2 {
         for inner_node in sequence {
-            apply_operation(qubit_mapping, dag, inner_node, gate_order, out_map);
+            apply_operation(inner_node, gate_order, out_map);
         }
         return;
     }
@@ -148,20 +149,20 @@ fn process_block(
     for (i, inner_node) in sequence.iter().enumerate() {
         // Apply operation directly if it's a single-qubit operation or the same as previous qargs
         if inner_node.1.len() == 1 || prev_qargs == Some(&inner_node.1) {
-            apply_operation(qubit_mapping, dag, inner_node, gate_order, out_map);
+            apply_operation(inner_node, gate_order, out_map);
             continue;
         }
 
         // If this is the first star and no swap source has been identified, set swap_source
         if *is_first_star && !swap_source {
             swap_source = *has_center;
-            apply_operation(qubit_mapping, dag, inner_node, gate_order, out_map);
+            apply_operation( inner_node, gate_order, out_map);
             prev_qargs = Some(&inner_node.1);
             continue;
         }
 
         // Place 2q-gate and subsequent swap gate
-        apply_operation(qubit_mapping, dag, inner_node, gate_order, out_map);
+        apply_operation(inner_node, gate_order, out_map);
 
         if inner_node != last_2q_gate.unwrap() && inner_node.1.len() == 2 {
             if let Some(next_node) = sequence.get(i + 1).cloned() {
@@ -172,49 +173,24 @@ fn process_block(
 
         prev_qargs = Some(&inner_node.1);
     }
+    *is_first_star = false;
 
 }
 
-/// Applies an operation to the DAG using the current qubit mapping.
+/// Applies an operation to update the gate order and output map.
 /// 
 /// # Arguments
 /// 
-/// * `qubit_mapping` - A mutable reference to the qubit mapping vector.
-/// * `dag` - A mutable reference to the SabreDAG being modified.
 /// * `node` - The node representing the operation to be applied.
 /// * `gate_order` - A mutable reference to the gate order vector.
 /// * `out_map` - A mutable reference to the output map.
 fn apply_operation(
-    qubit_mapping: &mut Vec<usize>,
-    dag: &mut SabreDAG,
     node: &Nodes,
     gate_order: &mut Vec<usize>, 
     out_map: &mut HashMap<usize, Vec<[PhysicalQubit; 2]>>,
 ) {
-    // Remap the qubits based on the current qubit mapping
-    let mapped_qubits: Vec<VirtualQubit> = node.1.iter()
-    .map(|q| VirtualQubit::new(qubit_mapping[q.index()].try_into().unwrap()))
-    .collect();
-
-    // Create a new DAGNode with the mapped qubits
-    let new_node = DAGNode {
-        py_node_id: node.0,
-        qubits: mapped_qubits,
-        directive: node.3,
-    };
-
-    // Add the new node to the DAG
-    let new_index = dag.dag.add_node(new_node);
+    // Add the node ID to the gate order
     gate_order.push(node.0);
-
-    // Update edges based on the predecessors of the current qubits
-    for q in &node.1 {
-        if let Some(predecessor) = dag.dag.node_indices().find(|&i| {
-            dag.dag.node_weight(i).unwrap().qubits.contains(q)
-        }) {
-            dag.dag.add_edge(predecessor, new_index, ());
-        }
-    }
 
     // if out_map does not contain the node id, insert it with an empty vector
     out_map.entry(node.0).or_insert_with(Vec::new);
