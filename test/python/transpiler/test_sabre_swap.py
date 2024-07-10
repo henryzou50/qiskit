@@ -154,29 +154,6 @@ class TestSabreSwap(QiskitTestCase):
 
         self.assertEqual(new_qc, qc)
 
-    def test_10q_bv(self):
-        num_qubits = 10
-        qc = QuantumCircuit(num_qubits, num_qubits - 1)
-        qc.x(num_qubits - 1)
-        qc.h(qc.qubits)
-        for i in range(num_qubits - 1):
-            qc.cx(i, num_qubits - 1)
-        qc.barrier()
-        qc.h(qc.qubits[:-1])
-        for i in range(num_qubits - 1):
-            qc.measure(i, i)
-        
-        coupling = CouplingMap.from_line(num_qubits)
-
-        passmanager = PassManager(SabreSwap(coupling, "basic"))
-        new_qc = passmanager.run(qc)
-
-        qc.draw(output="mpl", filename="bv_circuit_orig.png")
-        new_qc.draw(output="mpl", filename="bv_circuit.png")
-        self.assertEqual(new_qc, qc)
-
-
-
     def test_trivial_with_target(self):
         """Test that an already mapped circuit is unchanged with target."""
         coupling = CouplingMap.from_ring(5)
@@ -264,7 +241,7 @@ class TestSabreSwap(QiskitTestCase):
         self.assertIsInstance(second_measure.operation, Measure)
         # Assert that the first measure is on the same qubit that the HGate was applied to, and the
         # second measurement is on a different qubit (though we don't care which exactly - that
-        # depends a little on the randomization of the pass).
+        # depends a little on the randomisation of the pass).
         self.assertEqual(last_h.qubits, first_measure.qubits)
         self.assertNotEqual(last_h.qubits, second_measure.qubits)
 
@@ -376,23 +353,6 @@ class TestSabreSwap(QiskitTestCase):
         expected.measure(2, 1)
         result = SabreSwap(CouplingMap.from_line(3), seed=12345)(qc)
         self.assertEqual(result, expected)
-
-    def test_ghz_circuit(self):
-        """ Test a GHZ circuit with 8 qubits """
-        num_qubits = 5
-        qc = QuantumCircuit(5)
-        qc.h(0)
-        for i in range(1, 5):
-            qc.cx(0, i)
-        coupling_map = CouplingMap.from_line(5)
-        routing_pass = PassManager(SabreSwap(coupling_map, seed=12345))
-        routed = routing_pass.run(qc)
-        routed_ops = routed.count_ops()
-        del routed_ops["swap"]
-        self.assertEqual(routed_ops, qc.count_ops())
-        routed.draw(output="mpl", filename="ghz_circuit.png")
-
-
 
     @ddt.data("basic", "lookahead", "decay")
     def test_deterministic(self, heuristic):
@@ -1369,9 +1329,9 @@ class TestSabreSwapRandomCircuitValidOutput(QiskitTestCase):
         super().setUpClass()
         cls.backend = Fake27QPulseV1()
         cls.backend.configuration().coupling_map = MUMBAI_CMAP
-        cls.backend.configuration().basis_gates += ["for_loop", "while_loop", "if_else"]
         cls.coupling_edge_set = {tuple(x) for x in cls.backend.configuration().coupling_map}
         cls.basis_gates = set(cls.backend.configuration().basis_gates)
+        cls.basis_gates.update(["for_loop", "while_loop", "if_else"])
 
     def assert_valid_circuit(self, transpiled):
         """Assert circuit complies with constraints of backend."""
@@ -1386,7 +1346,7 @@ class TestSabreSwapRandomCircuitValidOutput(QiskitTestCase):
                 qargs = tuple(qubit_mapping[x] for x in instruction.qubits)
                 if not isinstance(instruction.operation, ControlFlowOp):
                     if len(qargs) > 2 or len(qargs) < 0:
-                        raise RuntimeError("Invalid number of qargs for instruction")
+                        raise Exception("Invalid number of qargs for instruction")
                     if len(qargs) == 2:
                         self.assertIn(qargs, self.coupling_edge_set)
                     else:

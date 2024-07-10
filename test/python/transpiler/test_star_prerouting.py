@@ -18,7 +18,6 @@ import unittest
 from test import QiskitTestCase
 import ddt
 
-from qiskit import QuantumRegister
 from qiskit.circuit.library import QFT
 from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.converters import (
@@ -55,9 +54,6 @@ class TestStarPreRouting(QiskitTestCase):
         expected.swap(2, 3)
         expected.cx(3, 4)
         # expected.swap(3,4)
-
-        new_qc.draw("mpl", filename="ghz_star_prerouting.png")
-        expected.draw("mpl", filename="ghz_star_prerouting_expected.png")
 
         self.assertTrue(Operator(expected).equiv(Operator(new_qc)))
 
@@ -175,9 +171,6 @@ class TestStarPreRouting(QiskitTestCase):
         pm = generate_preset_pass_manager(optimization_level=3, seed_transpiler=42)
         pm.init += StarPreRouting()
         result = pm.run(qc)
-
-        qc.draw("mpl", filename="no_star.png")
-        result.draw("mpl", filename="no_star_result_after.png")
 
         self.assertTrue(Operator.from_circuit(result).equiv(qc))
 
@@ -332,10 +325,6 @@ class TestStarPreRouting(QiskitTestCase):
         expected.h(3)
         expected.cx(3, 4)
         # expected.swap(3, 4)
-
-        result.draw("mpl", filename="hadamard_star_prerouting.png")
-        expected.draw("mpl", filename="hadamard_star_prerouting_expected.png")
-
         self.assertEqual(expected, result)
 
     def test_count_1_stars_starting_center(self):
