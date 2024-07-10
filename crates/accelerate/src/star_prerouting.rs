@@ -10,8 +10,6 @@
 // copyright notice, and modified files need to carry a notice indicating
 // that they have been altered from the originals.
 
-#![allow(unused_variables)]
-#![warn(unused_mut)]
 /// Type alias for a node representation.
 /// Each node is represented as a tuple containing:
 /// - Operation index (usize)
@@ -53,7 +51,7 @@ fn star_preroute(
     // Set to keep track of processed block IDs
     let mut processed_block_ids: HashSet<usize> = HashSet::new();
     // Determine the last two-qubit gate in the processing order
-    let last_2q_gate = processing_order.iter().rev().find(|node| node.1.len() > 1).cloned();
+    let last_2q_gate = processing_order.iter().rev().find(|node| node.1.len() > 1);
 
     // Initialize the is_first_star flag
     let mut is_first_star = true;
@@ -64,7 +62,7 @@ fn star_preroute(
     let node_block_results: HashMap<usize, Vec<BlockResult>> = HashMap::new();
 
     // Process each node in the given processing order
-    for node in &processing_order 
+    for node in processing_order.iter()
     {
         // Directly match the result of find_block_id
         if let Some(block_id) = find_block_id(&blocks, &node) {
@@ -74,7 +72,7 @@ fn star_preroute(
             }
             // Mark the block as processed and process the entire block
             processed_block_ids.insert(block_id);
-            process_block(&mut qubit_mapping, dag, &blocks[block_id], last_2q_gate.as_ref(), &mut is_first_star, &mut gate_order, &mut out_map);
+            process_block(&mut qubit_mapping, dag, &blocks[block_id], last_2q_gate, &mut is_first_star, &mut gate_order, &mut out_map);
         } else {
             // Apply operation for nodes not part of any block
             apply_operation(&mut qubit_mapping, dag, &node, &mut gate_order, &mut out_map);
@@ -100,13 +98,13 @@ fn star_preroute(
 /// 
 /// # Arguments
 /// 
-/// * `blocks` - A vector of star blocks, where each block is represented by a tuple containing a boolean indicating the presence of a center and a list of nodes.
+/// * `blocks` - A vector of blocks to search for the node.
 /// * `node` - The node for which the block ID needs to be found.
 /// 
 /// # Returns
 /// 
 /// An option containing the block ID if the node is part of a block, otherwise None.
-fn find_block_id(blocks: &Vec<Block>, node: &Nodes) -> Option<usize> {
+fn find_block_id(blocks: &[Block], node: &Nodes) -> Option<usize> {
     for (i, block) in blocks.iter().enumerate() {
         if block.1.iter().any(|n| n.0 == node.0) {
             return Some(i);
@@ -168,12 +166,11 @@ fn process_block(
         if inner_node != last_2q_gate.unwrap() && inner_node.1.len() == 2 {
             if let Some(next_node) = sequence.get(i + 1).cloned() {
                 // Use the node ID of the next node in the sequence
-                apply_swap(qubit_mapping, dag, &inner_node.1, next_node.0, out_map);
+                apply_swap(qubit_mapping, &inner_node.1, next_node.0, out_map);
             }
         }
 
         prev_qargs = Some(&inner_node.1);
-        *is_first_star = false;
     }
 
 }
@@ -220,9 +217,7 @@ fn apply_operation(
     }
 
     // if out_map does not contain the node id, insert it with an empty vector
-    if !out_map.contains_key(&node.0) {
-        out_map.insert(node.0, vec![]);
-    }
+    out_map.entry(node.0).or_insert_with(Vec::new);
 }
 
 /// Applies a swap operation to the DAG and updates the qubit mapping.
@@ -231,13 +226,12 @@ fn apply_operation(
 /// 
 /// * `qubit_mapping` - A mutable reference to the qubit mapping vector.
 /// * `dag` - A mutable reference to the SabreDAG being modified.
-/// * `qargs` - The qubit arguments for the swap operation.
+/// * `qargs` - A slice containing the qubit indices for the swap operation.
 /// * `next_node_id` - The ID of the next node in the sequence.
 /// * `out_map` - A mutable reference to the output map.
 fn apply_swap(
     qubit_mapping: &mut Vec<usize>,
-    dag: &mut SabreDAG,
-    qargs: &Vec<VirtualQubit>,
+    qargs: &[VirtualQubit],
     next_node_id: usize,
     out_map: &mut HashMap<usize, Vec<[PhysicalQubit; 2]>>,
 ) {
