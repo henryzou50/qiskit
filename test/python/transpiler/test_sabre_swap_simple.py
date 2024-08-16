@@ -48,10 +48,13 @@ class SimplifiedTestSabreSwap(QiskitTestCase):
         # Create a GHZ circuit
         qr = QuantumRegister(num_qubits, "q")
         qc = QuantumCircuit(qr)
-        qc.h(0)
-        for i in range(1, num_qubits):
-            qc.cx(0, i)
+        # for i in range(1, num_qubits):
+        #     qc.cx(0, i)
         qc.cx(0,1)
+        qc.cx(1,2)
+        qc.cx(2,4)
+        qc.cx(3,5)
+        qc.cx(3,5)
 
         dag_orig = circuit_to_dag(qc)
 

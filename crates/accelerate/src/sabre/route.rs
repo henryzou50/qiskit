@@ -68,6 +68,7 @@ struct RoutingState<'a, 'b> {
     front_layer: FrontLayer,
     extended_set: ExtendedSet,
     decay: &'a mut [f64],
+    qubit_depths: &'a mut [f64],
     /// How many predecessors still need to be satisfied for each node index before it is at the
     /// front of the topological iteration through the nodes as they're routed.
     required_predecessors: &'a mut [u32],
@@ -103,19 +104,32 @@ impl<'a, 'b> RoutingState<'a, 'b> {
         })
     }
 
+    fn circuit_depth(&self) -> f64 {
+        *self.qubit_depths.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap()
+    }
+
     /// Update the system state as the given `nodes` are added to the routing order, preceded by
     /// the given `swaps`.  This involves updating the output values `gate_order` and `out_map`,
     /// but also the tracking objects `front_layer`, `extended_set` and `required_predecessors` by
     /// removing the routed nodes and adding any now-reachable ones.
     fn update_route(&mut self, nodes: &[NodeIndex], swaps: Vec<[PhysicalQubit; 2]>) {
+        // Update the depth for the inputed swap
+        for swap in swaps.iter() {
+            let new_depth = self.qubit_depths[swap[0].index()].max(self.qubit_depths[swap[1].index()]) + 1.0;
+            self.qubit_depths[swap[0].index()] = new_depth;
+            self.qubit_depths[swap[1].index()] = new_depth;
+        }
+
         // First node gets the swaps attached.  We don't add to the `gate_order` here because
         // `route_reachable_nodes` is responsible for that part.
         self.out_map
             .insert(self.dag.dag[nodes[0]].py_node_id, swaps);
+
         for node in nodes {
             self.front_layer.remove(node);
         }
         self.route_reachable_nodes(nodes);
+
         // Ideally we'd know how to mutate the extended set directly, but since its limited size
         // ties its construction strongly to the iteration order through the front layer, it's not
         // easy to do better than just emptying it and rebuilding.
@@ -171,6 +185,15 @@ impl<'a, 'b> RoutingState<'a, 'b> {
 
             // If we reach here, the node is routable.
             self.gate_order.push(node.py_node_id);
+            // Update the qubit depths for the gates in the dag
+            if let [a, b] = node.qubits[..] {
+                let qubit_a = a.to_phys(&self.layout).index();
+                let qubit_b = b.to_phys(&self.layout).index();
+                let new_depth = self.qubit_depths[qubit_a].max(self.qubit_depths[qubit_b]) + 1.0;
+                self.qubit_depths[qubit_a] = new_depth;
+                self.qubit_depths[qubit_b] = new_depth;
+            }
+
             for edge in dag.dag.edges_directed(node_id, Direction::Outgoing) {
                 let successor_node = edge.target();
                 let successor_index = successor_node.index();
@@ -533,6 +556,7 @@ pub fn swap_map_trial(
         front_layer: FrontLayer::new(num_qubits),
         extended_set: ExtendedSet::new(num_qubits),
         decay: &mut vec![1.; num_qubits as usize],
+        qubit_depths: &mut vec![0.; num_qubits as usize],
         required_predecessors: &mut vec![0; dag.dag.node_count()],
         layout: initial_layout.clone(),
         swap_scores: Vec::with_capacity(target.coupling.edge_count()),
