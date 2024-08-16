@@ -31,7 +31,7 @@ use rustworkx_core::token_swapper::token_swapper;
 use crate::getenv_use_multiple_threads;
 use crate::nlayout::{NLayout, PhysicalQubit};
 
-use super::heuristic::{BasicHeuristic, DecayHeuristic, Heuristic, LookaheadHeuristic, SetScaling};
+use super::heuristic::{BasicHeuristic, DecayHeuristic, DepthHeuristic, Heuristic, LookaheadHeuristic, SetScaling};
 use super::layer::{ExtendedSet, FrontLayer};
 use super::neighbor_table::NeighborTable;
 use super::sabre_dag::SabreDAG;
@@ -390,6 +390,13 @@ impl<'a, 'b> RoutingState<'a, 'b> {
             }
         }
 
+        if let Some(DepthHeuristic { .. }) = self.heuristic.depth {
+            for (swap, score) in self.swap_scores.iter_mut() {
+                *score = (absolute_score + *score)
+                    * self.decay[swap[0].index()].max(self.decay[swap[1].index()]);
+            }
+        }
+        
         let mut min_score = f64::INFINITY;
         let epsilon = self.heuristic.best_epsilon;
         for &(swap, score) in self.swap_scores.iter() {
@@ -570,6 +577,18 @@ pub fn swap_map_trial(
                     state.decay[best_swap[1].index()] += increment;
                 }
             }
+            
+            if let Some(DepthHeuristic { increment, reset }) = state.heuristic.depth {
+                num_search_steps += 1;
+                if num_search_steps >= reset {
+                    state.decay.fill(1.);
+                    num_search_steps = 0;
+                } else {
+                    state.decay[best_swap[0].index()] += increment;
+                    state.decay[best_swap[1].index()] += increment;
+                }
+            }
+
         }
         if routable_nodes.is_empty() {
             // If we exceeded the max number of heuristic-chosen swaps without making progress,
@@ -583,9 +602,10 @@ pub fn swap_map_trial(
             routable_nodes.push(force_routed);
         }
         state.update_route(&routable_nodes, current_swaps);
-        if state.heuristic.decay.is_some() {
+        if state.heuristic.decay.is_some() || state.heuristic.depth.is_some() {
             state.decay.fill(1.);
         }
+        
         routable_nodes.clear();
     }
     (
