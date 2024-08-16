@@ -28,10 +28,10 @@ use crate::nlayout::PhysicalQubit;
 /// extension, not for every swap trialled.
 pub struct FrontLayer {
     /// Map of the (index to the) node to the qubits it acts on.
-    nodes: IndexMap<NodeIndex, [PhysicalQubit; 2], ::ahash::RandomState>,
+    pub nodes: IndexMap<NodeIndex, [PhysicalQubit; 2], ::ahash::RandomState>,
     /// Map of each qubit to the node that acts on it and the other qubit that node acts on, if this
     /// qubit is active (otherwise `None`).
-    qubits: Vec<Option<(NodeIndex, PhysicalQubit)>>,
+    pub qubits: Vec<Option<(NodeIndex, PhysicalQubit)>>,
 }
 
 impl FrontLayer {
@@ -158,8 +158,8 @@ impl FrontLayer {
 /// worry about tracking gate indices or anything like that.  We track length manually just to
 /// avoid a summation.
 pub struct ExtendedSet {
-    qubits: Vec<Vec<PhysicalQubit>>,
-    len: usize,
+    pub qubits: Vec<Vec<PhysicalQubit>>,
+    pub len: usize,
 }
 
 impl ExtendedSet {

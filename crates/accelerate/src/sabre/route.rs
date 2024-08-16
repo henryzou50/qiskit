@@ -337,6 +337,7 @@ impl<'a, 'b> RoutingState<'a, 'b> {
         // swap if it involves at least one active qubit (i.e. it must affect the "basic"
         // heuristic), and if it involves two active qubits, we choose the `swap[0] < swap[1]` form
         // to make a canonical choice.
+
         self.swap_scores.clear();
         for &phys in self.front_layer.iter_active() {
             for &neighbor in self.target.neighbors[phys].iter() {
@@ -427,11 +428,13 @@ pub fn sabre_routing(
     seed: Option<u64>,
     run_in_parallel: Option<bool>,
 ) -> (SwapMap, PyObject, NodeBlockResults, PyObject) {
+
     let target = RoutingTargetView {
         neighbors: neighbor_table,
         coupling: &neighbor_table.coupling_graph(),
         distance: distance_matrix.as_array(),
     };
+
     let (res, final_layout) = swap_map(
         &target,
         dag,
@@ -441,6 +444,7 @@ pub fn sabre_routing(
         num_trials,
         run_in_parallel,
     );
+    
     (
         res.map,
         res.node_order.into_pyarray_bound(py).into(),
@@ -533,12 +537,15 @@ pub fn swap_map_trial(
         rng: Pcg64Mcg::seed_from_u64(seed),
         seed,
     };
+
     for node in dag.dag.node_indices() {
         for edge in dag.dag.edges(node) {
             state.required_predecessors[edge.target().index()] += 1;
         }
     }
+
     state.route_reachable_nodes(&dag.first_layer);
+
     state.populate_extended_set();
 
     // Main logic loop; the front layer only becomes empty when all nodes have been routed.  At
@@ -588,6 +595,7 @@ pub fn swap_map_trial(
         }
         routable_nodes.clear();
     }
+
     (
         SabreResult {
             map: SwapMap { map: state.out_map },
