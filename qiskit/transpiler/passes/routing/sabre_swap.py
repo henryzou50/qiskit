@@ -229,8 +229,7 @@ class SabreSwap(TransformationPass):
             heuristic = (
                 Heuristic(attempt_limit=10 * num_dag_qubits)
                 .with_basic(1.0, SetScaling.Size)
-                .with_lookahead(0.5, 20, SetScaling.Size)
-                .with_depth(0.001, 5)
+                .with_depth(0.5, SetScaling.Size)
             )
         else:
             raise TranspilerError(f"Heuristic {self.heuristic} not recognized.")

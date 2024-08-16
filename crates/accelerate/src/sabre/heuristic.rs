@@ -165,27 +165,27 @@ impl DecayHeuristic {
     }
 }
 
-/// Define the characteristics of the "depth" heuristic.  This is a placeholder heuristic that
-/// currently behaves the same as the decay heuristic for testing purposes.
+/// Define the characteristics of the "depth" heuristic. This is used to penalize swaps that increase the circuit depth.
 #[pyclass]
 #[pyo3(module = "qiskit._accelerate.sabre", frozen)]
 #[derive(Clone, Copy, PartialEq)]
 pub struct DepthHeuristic {
-    /// The amount to add onto the multiplier of a physical qubit when it is used.
-    pub increment: f64,
-    /// How frequently (in terms of swaps in the layer) to reset all qubit multipliers back to 1.0.
-    pub reset: usize,
+    /// The relative weighting of this heuristic to others.  Typically you should just set this to
+    /// 1.0 and define everything else in terms of this.
+    pub weight: f64,
+    /// Set the dynamic scaling of the weight based on the layer it is applying to.
+    pub scale: SetScaling,
 }
 
 #[pymethods]
 impl DepthHeuristic {
     #[new]
-    pub fn new(increment: f64, reset: usize) -> Self {
-        Self { increment, reset }
+    pub fn new(weight: f64, scale: SetScaling) -> Self {
+        Self { weight, scale }
     }
 
     pub fn __getnewargs__(&self, py: Python) -> Py<PyAny> {
-        (self.increment, self.reset).into_py(py)
+        (self.weight, self.scale).into_py(py)
     }
 
     pub fn __eq__(&self, py: Python, other: Py<PyAny>) -> bool {
@@ -197,9 +197,9 @@ impl DepthHeuristic {
     }
 
     pub fn __repr__(&self, py: Python) -> PyResult<Py<PyAny>> {
-        let fmt = "DepthHeuristic(increment={!r}, reset={!r})";
+        let fmt = "DepthHeuristic(weight={!r}, scale={!r})";
         Ok(PyString::new_bound(py, fmt)
-            .call_method1("format", (self.increment, self.reset))?
+            .call_method1("format", (self.weight, self.scale))?
             .into_py(py))
     }
 }
@@ -303,14 +303,13 @@ impl Heuristic {
 
     /// Set the multiplier increment and reset interval of the depth heuristic.  The reset interval
     /// must be non-zero.
-    pub fn with_depth(&self, increment: f64, reset: usize) -> PyResult<Self> {
-        if reset == 0 {
-            Err(PyValueError::new_err("depth reset interval cannot be zero"))
-        } else {
-            Ok(Self {
-                depth: Some(DepthHeuristic { increment, reset }),
-                ..self.clone()
-            })
+    pub fn with_depth(&self, weight: f64, scale: SetScaling) -> Self {
+        Self {
+            depth: Some(DepthHeuristic {
+                weight,
+                scale,
+            }),
+            ..self.clone()
         }
     }
 

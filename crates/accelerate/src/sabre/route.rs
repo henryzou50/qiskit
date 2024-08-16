@@ -114,10 +114,13 @@ impl<'a, 'b> RoutingState<'a, 'b> {
     /// removing the routed nodes and adding any now-reachable ones.
     fn update_route(&mut self, nodes: &[NodeIndex], swaps: Vec<[PhysicalQubit; 2]>) {
         // Update the depth for the inputed swap
-        for swap in swaps.iter() {
-            let new_depth = self.qubit_depths[swap[0].index()].max(self.qubit_depths[swap[1].index()]) + 1.0;
-            self.qubit_depths[swap[0].index()] = new_depth;
-            self.qubit_depths[swap[1].index()] = new_depth;
+        if self.heuristic.depth.is_some() {
+            for swap in swaps.iter() {
+                // Add 3 since swaps can be decomposed into 3 CNOTs
+                let new_depth = self.qubit_depths[swap[0].index()].max(self.qubit_depths[swap[1].index()]) + 3.0;
+                self.qubit_depths[swap[0].index()] = new_depth;
+                self.qubit_depths[swap[1].index()] = new_depth;
+            }
         }
 
         // First node gets the swaps attached.  We don't add to the `gate_order` here because
@@ -186,12 +189,14 @@ impl<'a, 'b> RoutingState<'a, 'b> {
             // If we reach here, the node is routable.
             self.gate_order.push(node.py_node_id);
             // Update the qubit depths for the gates in the dag
-            if let [a, b] = node.qubits[..] {
-                let qubit_a = a.to_phys(&self.layout).index();
-                let qubit_b = b.to_phys(&self.layout).index();
-                let new_depth = self.qubit_depths[qubit_a].max(self.qubit_depths[qubit_b]) + 1.0;
-                self.qubit_depths[qubit_a] = new_depth;
-                self.qubit_depths[qubit_b] = new_depth;
+            if self.heuristic.depth.is_some() {
+                if let [a, b] = node.qubits[..] {
+                    let qubit_a = a.to_phys(&self.layout).index();
+                    let qubit_b = b.to_phys(&self.layout).index();
+                    let new_depth = self.qubit_depths[qubit_a].max(self.qubit_depths[qubit_b]) + 1.0;
+                    self.qubit_depths[qubit_a] = new_depth;
+                    self.qubit_depths[qubit_b] = new_depth;
+                }
             }
 
             for edge in dag.dag.edges_directed(node_id, Direction::Outgoing) {
@@ -406,14 +411,28 @@ impl<'a, 'b> RoutingState<'a, 'b> {
             }
         }
 
-        if let Some(DecayHeuristic { .. }) = self.heuristic.decay {
+        if let Some(DepthHeuristic { .. }) = self.heuristic.depth {
+            let curr_depth = self.circuit_depth();
+
+            // Calculate the change in circuit depth for each swap
             for (swap, score) in self.swap_scores.iter_mut() {
-                *score = (absolute_score + *score)
-                    * self.decay[swap[0].index()].max(self.decay[swap[1].index()]);
+                // Calculate the new depth of the 2 wires after applying this swap
+                // Treats swaps as 3 CNOTs
+                let qubit_a = swap[0].index();
+                let qubit_b = swap[1].index();
+                let wires_depth = self.qubit_depths[qubit_a].max(self.qubit_depths[qubit_b]) + 3.0;
+                
+                // Calculate the change in depth if the swap leads to a new max depth
+                let depth_increase = if wires_depth > curr_depth {
+                    wires_depth - curr_depth
+                } else {
+                    0.0
+                };
+                *score += depth_increase;
             }
         }
 
-        if let Some(DepthHeuristic { .. }) = self.heuristic.depth {
+        if let Some(DecayHeuristic { .. }) = self.heuristic.decay {
             for (swap, score) in self.swap_scores.iter_mut() {
                 *score = (absolute_score + *score)
                     * self.decay[swap[0].index()].max(self.decay[swap[1].index()]);
@@ -592,17 +611,6 @@ pub fn swap_map_trial(
                 routable_nodes.push(node);
             }
             if let Some(DecayHeuristic { increment, reset }) = state.heuristic.decay {
-                num_search_steps += 1;
-                if num_search_steps >= reset {
-                    state.decay.fill(1.);
-                    num_search_steps = 0;
-                } else {
-                    state.decay[best_swap[0].index()] += increment;
-                    state.decay[best_swap[1].index()] += increment;
-                }
-            }
-            
-            if let Some(DepthHeuristic { increment, reset }) = state.heuristic.depth {
                 num_search_steps += 1;
                 if num_search_steps >= reset {
                     state.decay.fill(1.);
