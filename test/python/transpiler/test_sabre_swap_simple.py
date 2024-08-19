@@ -42,7 +42,7 @@ class SimplifiedTestSabreSwap(QiskitTestCase):
         """Test that the SabreSwap pass with a fixed seed produces a specific 2 qubit gate depth for a GHZ circuit."""
         # Setup
         coupling = CouplingMap.from_line(num_qubits)
-        heuristic = "lookahead"
+        heuristic = "depth"
 
         # Create a GHZ circuit
         qr = QuantumRegister(num_qubits, "q")

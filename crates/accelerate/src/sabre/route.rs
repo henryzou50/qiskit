@@ -222,50 +222,74 @@ impl<'a, 'b> RoutingState<'a, 'b> {
     ///
     /// This function works similarly to `route_reachable_nodes` but does not alter the `RoutingState`.
     /// It returns a vector of node indices that would have been added to the `gate_order`.
-    fn reachable_nodes_trial(&self, nodes: &[NodeIndex]) -> Vec<usize> {
-        let mut gate_order = Vec::new();
+    fn reachable_nodes_trial(&self, nodes: &[NodeIndex]) -> f64 {
         let mut to_visit = nodes.to_vec();
         let mut i = 0;
         let dag = &self.dag;
+        
+        // Create a copies for simulation purposes
+        let mut simulated_qubit_depths = self.qubit_depths.to_vec();
+        let mut simulated_required_predecessors = self.required_predecessors.to_vec();
+
+        // Record the initial circuit depth
+        let initial_depth = *simulated_qubit_depths.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
+
         // Iterate through `to_visit`, except we often push new nodes onto the end of it.
         while i < to_visit.len() {
             let node_id = to_visit[i];
             let node = &dag.dag[node_id];
             i += 1;
-
-            // If the node is a directive that means it can be placed anywhere.
-            if !node.directive {
-                if let Some(blocks) = dag.node_blocks.get(&node.py_node_id) {
-                    for block in blocks {
-                        let (result, _) =
-                            swap_map_trial(self.target, block, self.heuristic, &self.layout, self.seed);
-                        gate_order.extend(result.node_order.iter().copied());
-                    }
-                } else {
-                    match node.qubits[..] {
-                        [a, b]
-                            if !self.target.coupling.contains_edge(
-                                NodeIndex::new(a.to_phys(&self.layout).index()),
-                                NodeIndex::new(b.to_phys(&self.layout).index()),
-                            ) =>
-                        {
-                            continue;
-                        }
-                        _ => {}
-                    }
+    
+            // If the node is a directive, skip further processing.
+            if node.directive {
+                continue;
+            }
+    
+            match node.qubits[..] {
+                // A gate op whose connectivity must match the device to be placed in the
+                // gate order.
+                [a, b]
+                    if !self.target.coupling.contains_edge(
+                        NodeIndex::new(a.to_phys(&self.layout).index()),
+                        NodeIndex::new(b.to_phys(&self.layout).index()),
+                    ) =>
+                {
+                    // 2Q op that cannot be placed. Simulate adding it to the front layer.
+                    continue;
+                }
+                _ => {}
+            }
+    
+            // If we reach here, the node is routable.
+            // Simulate updating the qubit depths for the gates in the dag
+            if self.heuristic.depth.is_some() {
+                if let [a, b] = node.qubits[..] {
+                    let qubit_a = a.to_phys(&self.layout).index();
+                    let qubit_b = b.to_phys(&self.layout).index();
+                    let new_depth =
+                        simulated_qubit_depths[qubit_a].max(simulated_qubit_depths[qubit_b]) + 1.0;
+                    simulated_qubit_depths[qubit_a] = new_depth;
+                    simulated_qubit_depths[qubit_b] = new_depth;
+                    // Do not actually update self.qubit_depths since this is a simulation.
                 }
             }
-            gate_order.push(node.py_node_id);
+    
             for edge in dag.dag.edges_directed(node_id, Direction::Outgoing) {
                 let successor_node = edge.target();
                 let successor_index = successor_node.index();
-                if self.required_predecessors[successor_index] == 1 {
+                simulated_required_predecessors[successor_index] -= 1;
+                if simulated_required_predecessors[successor_index] == 0 {
                     to_visit.push(successor_node);
                 }
             }
         }
-        println!("Trial gate_order: {:?}", gate_order);
-        gate_order
+        // Calculate the final maximum depth
+        let final_depth = *simulated_qubit_depths.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
+
+        // Return the change in depth
+        let delta_depth = final_depth - initial_depth;
+        println!("Delta depth: {:?}", delta_depth);
+        delta_depth
     }
 
     /// Inner worker to route a control-flow block.  Since control-flow blocks are routed to
@@ -645,6 +669,8 @@ pub fn swap_map_trial(
             state.required_predecessors[edge.target().index()] += 1;
         }
     }
+    println!("required_predecessors: {:?}", state.required_predecessors);
+
     println!("Prev gate_order: {:?}", state.gate_order);
     state.reachable_nodes_trial(&dag.first_layer);
 
