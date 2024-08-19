@@ -414,14 +414,21 @@ impl<'a, 'b> RoutingState<'a, 'b> {
             }
         }
 
-        if let Some(DepthHeuristic { .. }) = self.heuristic.depth {
+        if let Some(DepthHeuristic { weight, scale }) = self.heuristic.depth {
+            let weight = match scale {
+                SetScaling::Constant => weight,
+                SetScaling::Size => {
+                    if self.front_layer.is_empty() {
+                        0.0
+                    } else {
+                        weight / (self.front_layer.len() as f64)
+                    }
+                }
+            };
             let orig_depth = self.circuit_depth();
-            println!("      Orig depth: {:?}", orig_depth);
 
             // Calculate the change in circuit depth for each swap
             for (swap, score) in self.swap_scores.iter_mut() {
-                println!("      Swap: {:?} Score: {:?}", swap, score);
-                
                 // Update the qubit depths after directly applying the swap trial, treating swaps as 3 CNOTs
                 let mut trial_qubit_depths = self.qubit_depths.to_vec();
                 let new_depth = trial_qubit_depths[swap[0].index()]
@@ -434,8 +441,6 @@ impl<'a, 'b> RoutingState<'a, 'b> {
                 // Simulate the routing process to change in circuit depth if the nodes were routed
                 let mut trial_front_layer = self.front_layer.clone();
                 trial_front_layer.apply_swap(*swap);
-
-                println!("          Temp front layer: {:?}", trial_front_layer.nodes);
 
                 // Check if any nodes are routable
                 let mut routable_nodes = Vec::<NodeIndex>::with_capacity(2);
@@ -455,13 +460,11 @@ impl<'a, 'b> RoutingState<'a, 'b> {
                 }) {
                     routable_nodes.push(node);
                 }
-                println!("          Routable nodes: {:?}", routable_nodes);
                 // If there are routable nodes, simulate the routing process
                 if !routable_nodes.is_empty() {
                     let mut trial_layout = self.layout.clone();
                     let mut trial_required_predecessors = self.required_predecessors.to_vec();
                     trial_layout.swap_physical(swap[0], swap[1]);
-                    println!("          Temp front layer: {:?}", trial_front_layer.qubits());
                     
                     // Simulate routing the reachable nodes
                     let mut to_visit: Vec<NodeIndex> = trial_front_layer.iter_nodes().copied().collect();
@@ -521,11 +524,13 @@ impl<'a, 'b> RoutingState<'a, 'b> {
 
                 // Calculate the final maximum depth
                 let final_depth = *trial_qubit_depths.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
-                println!("          Final depth: {:?}", final_depth);
-                println!("          Qubit depths: {:?}", trial_qubit_depths);
-
                 let depth_increase = final_depth - orig_depth;
-                println!("          Depth increase: {:?}", depth_increase);
+                // Divide the increase in depth by 3 for how 1 swap is equivalent to 3 CNOTs
+                let depth_score = depth_increase / 3.0;
+                
+                
+                *score += weight * (self.front_layer.score(*swap, dist) + depth_score);
+
             }
         }
 
@@ -692,16 +697,13 @@ pub fn swap_map_trial(
     let mut routable_nodes = Vec::<NodeIndex>::with_capacity(2);
     let mut num_search_steps = 0;
 
-    println!("Front layer: {:?}", state.front_layer.nodes);
     while !state.front_layer.is_empty() {
         let mut current_swaps: Vec<[PhysicalQubit; 2]> = Vec::new();
         let qubit_depths_backup = state.qubit_depths.to_vec();
         // Swap-mapping loop.  This is the main part of the algorithm, which we repeat until we
         // either successfully route a node, or exceed the maximum number of attempts.
         while routable_nodes.is_empty() && current_swaps.len() <= state.heuristic.attempt_limit {
-            println!("Routable_nodes: {:?}", routable_nodes);
             let best_swap = state.choose_best_swap();
-            println!("Best swap: {:?}", best_swap);
             state.apply_swap(best_swap);
             current_swaps.push(best_swap);
             if let Some(node) = state.routable_node_on_qubit(best_swap[1]) {
@@ -720,7 +722,6 @@ pub fn swap_map_trial(
                     state.decay[best_swap[1].index()] += increment;
                 }
             }
-            println!("Current swaps: {:?}", current_swaps);
         }
         if routable_nodes.is_empty() {
             // If we exceeded the max number of heuristic-chosen swaps without making progress,
@@ -740,9 +741,7 @@ pub fn swap_map_trial(
             state.decay.fill(1.);
         }
         routable_nodes.clear();
-        println!("Front layer: {:?}", state.front_layer.nodes);
     }
-    println!("Circle depth: {:?}", state.circuit_depth());
     (
         SabreResult {
             map: SwapMap { map: state.out_map },
