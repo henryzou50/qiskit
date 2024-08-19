@@ -93,6 +93,14 @@ impl<'a, 'b> RoutingState<'a, 'b> {
         self.front_layer.apply_swap(swap);
         self.extended_set.apply_swap(swap);
         self.layout.swap_physical(swap[0], swap[1]);
+        if self.heuristic.depth.is_some() {
+            // Add 3 since swaps can be decomposed into 3 CNOTs
+            let new_depth = self.qubit_depths[swap[0].index()]
+                .max(self.qubit_depths[swap[1].index()])
+                + 3.0;
+            self.qubit_depths[swap[0].index()] = new_depth;
+            self.qubit_depths[swap[1].index()] = new_depth;
+        }
     }
 
     /// Return the node, if any, that is on this qubit and is routable with the current layout.
@@ -119,18 +127,6 @@ impl<'a, 'b> RoutingState<'a, 'b> {
     /// but also the tracking objects `front_layer`, `extended_set` and `required_predecessors` by
     /// removing the routed nodes and adding any now-reachable ones.
     fn update_route(&mut self, nodes: &[NodeIndex], swaps: Vec<[PhysicalQubit; 2]>) {
-        // Update the depth for the inputed swap
-        if self.heuristic.depth.is_some() {
-            for swap in swaps.iter() {
-                // Add 3 since swaps can be decomposed into 3 CNOTs
-                let new_depth = self.qubit_depths[swap[0].index()]
-                    .max(self.qubit_depths[swap[1].index()])
-                    + 3.0;
-                self.qubit_depths[swap[0].index()] = new_depth;
-                self.qubit_depths[swap[1].index()] = new_depth;
-            }
-        }
-
         // First node gets the swaps attached.  We don't add to the `gate_order` here because
         // `route_reachable_nodes` is responsible for that part.
         self.out_map
@@ -215,81 +211,6 @@ impl<'a, 'b> RoutingState<'a, 'b> {
                 }
             }
         }
-    }
-
-    /// Simulate the routing process and return the gates that would have been added to `gate_order`
-    /// without actually modifying the `RoutingState`.
-    ///
-    /// This function works similarly to `route_reachable_nodes` but does not alter the `RoutingState`.
-    /// It returns a vector of node indices that would have been added to the `gate_order`.
-    fn reachable_nodes_trial(&self, nodes: &[NodeIndex]) -> f64 {
-        let mut to_visit = nodes.to_vec();
-        let mut i = 0;
-        let dag = &self.dag;
-        
-        // Create a copies for simulation purposes
-        let mut simulated_qubit_depths = self.qubit_depths.to_vec();
-        let mut simulated_required_predecessors = self.required_predecessors.to_vec();
-
-        // Record the initial circuit depth
-        let initial_depth = *simulated_qubit_depths.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
-
-        // Iterate through `to_visit`, except we often push new nodes onto the end of it.
-        while i < to_visit.len() {
-            let node_id = to_visit[i];
-            let node = &dag.dag[node_id];
-            i += 1;
-    
-            // If the node is a directive, skip further processing.
-            if node.directive {
-                continue;
-            }
-    
-            match node.qubits[..] {
-                // A gate op whose connectivity must match the device to be placed in the
-                // gate order.
-                [a, b]
-                    if !self.target.coupling.contains_edge(
-                        NodeIndex::new(a.to_phys(&self.layout).index()),
-                        NodeIndex::new(b.to_phys(&self.layout).index()),
-                    ) =>
-                {
-                    // 2Q op that cannot be placed. Simulate adding it to the front layer.
-                    continue;
-                }
-                _ => {}
-            }
-    
-            // If we reach here, the node is routable.
-            // Simulate updating the qubit depths for the gates in the dag
-            if self.heuristic.depth.is_some() {
-                if let [a, b] = node.qubits[..] {
-                    let qubit_a = a.to_phys(&self.layout).index();
-                    let qubit_b = b.to_phys(&self.layout).index();
-                    let new_depth =
-                        simulated_qubit_depths[qubit_a].max(simulated_qubit_depths[qubit_b]) + 1.0;
-                    simulated_qubit_depths[qubit_a] = new_depth;
-                    simulated_qubit_depths[qubit_b] = new_depth;
-                    // Do not actually update self.qubit_depths since this is a simulation.
-                }
-            }
-    
-            for edge in dag.dag.edges_directed(node_id, Direction::Outgoing) {
-                let successor_node = edge.target();
-                let successor_index = successor_node.index();
-                simulated_required_predecessors[successor_index] -= 1;
-                if simulated_required_predecessors[successor_index] == 0 {
-                    to_visit.push(successor_node);
-                }
-            }
-        }
-        // Calculate the final maximum depth
-        let final_depth = *simulated_qubit_depths.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
-
-        // Return the change in depth
-        let delta_depth = final_depth - initial_depth;
-        println!("Delta depth: {:?}", delta_depth);
-        delta_depth
     }
 
     /// Inner worker to route a control-flow block.  Since control-flow blocks are routed to
@@ -494,23 +415,117 @@ impl<'a, 'b> RoutingState<'a, 'b> {
         }
 
         if let Some(DepthHeuristic { .. }) = self.heuristic.depth {
-            let curr_depth = self.circuit_depth();
+            let orig_depth = self.circuit_depth();
+            println!("      Orig depth: {:?}", orig_depth);
 
             // Calculate the change in circuit depth for each swap
             for (swap, score) in self.swap_scores.iter_mut() {
-                // Calculate the new depth of the 2 wires after applying this swap
-                // Treats swaps as 3 CNOTs
-                let qubit_a = swap[0].index();
-                let qubit_b = swap[1].index();
-                let wires_depth = self.qubit_depths[qubit_a].max(self.qubit_depths[qubit_b]) + 3.0;
+                println!("      Swap: {:?} Score: {:?}", swap, score);
+                
+                // Update the qubit depths after directly applying the swap trial, treating swaps as 3 CNOTs
+                let mut trial_qubit_depths = self.qubit_depths.to_vec();
+                let new_depth = trial_qubit_depths[swap[0].index()]
+                    .max(trial_qubit_depths[swap[1].index()]) 
+                    + 3.0;
+                trial_qubit_depths[swap[0].index()] = new_depth;
+                trial_qubit_depths[swap[1].index()] = new_depth;
 
-                // Calculate the change in depth if the swap leads to a new max depth
-                let depth_increase = if wires_depth > curr_depth {
-                    wires_depth - curr_depth
-                } else {
-                    0.0
-                };
-                *score += depth_increase;
+
+                // Simulate the routing process to change in circuit depth if the nodes were routed
+                let mut trial_front_layer = self.front_layer.clone();
+                trial_front_layer.apply_swap(*swap);
+
+                println!("          Temp front layer: {:?}", trial_front_layer.nodes);
+
+                // Check if any nodes are routable
+                let mut routable_nodes = Vec::<NodeIndex>::with_capacity(2);
+                if let Some(node) = trial_front_layer.qubits()[swap[0].index()].and_then(|(node, other)| {
+                    self.target
+                        .coupling
+                        .contains_edge(NodeIndex::new(swap[0].index()), NodeIndex::new(other.index()))
+                        .then_some(node)
+                }) {
+                    routable_nodes.push(node);
+                }
+                if let Some(node) = trial_front_layer.qubits()[swap[1].index()].and_then(|(node, other)| {
+                    self.target
+                        .coupling
+                        .contains_edge(NodeIndex::new(swap[1].index()), NodeIndex::new(other.index()))
+                        .then_some(node)
+                }) {
+                    routable_nodes.push(node);
+                }
+                println!("          Routable nodes: {:?}", routable_nodes);
+                // If there are routable nodes, simulate the routing process
+                if !routable_nodes.is_empty() {
+                    let mut trial_layout = self.layout.clone();
+                    let mut trial_required_predecessors = self.required_predecessors.to_vec();
+                    trial_layout.swap_physical(swap[0], swap[1]);
+                    println!("          Temp front layer: {:?}", trial_front_layer.qubits());
+                    
+                    // Simulate routing the reachable nodes
+                    let mut to_visit: Vec<NodeIndex> = trial_front_layer.iter_nodes().copied().collect();
+                    let mut i = 0;
+                    let dag = &self.dag;
+                    
+                    // Iterate through `to_visit`, except we often push new nodes onto the end of it.
+                    while i < to_visit.len() {
+                        let node_id = to_visit[i];
+                        let node = &dag.dag[node_id];
+                        i += 1;
+                
+                        // If the node is a directive, skip further processing.
+                        if node.directive {
+                            continue;
+                        }
+                
+                        match node.qubits[..] {
+                            // A gate op whose connectivity must match the device to be placed in the
+                            // gate order.
+                            [a, b]
+                                if !self.target.coupling.contains_edge(
+                                    NodeIndex::new(a.to_phys(&trial_layout).index()),
+                                    NodeIndex::new(b.to_phys(&trial_layout).index()),
+                                ) =>
+                            {
+                                // 2Q op that cannot be placed. Simulate adding it to the front layer.
+                                continue;
+                            }
+                            _ => {}
+                        }
+                
+                        // If we reach here, the node is routable.
+                        // Simulate updating the qubit depths for the gates in the dag
+                        if self.heuristic.depth.is_some() {
+                            if let [a, b] = node.qubits[..] {
+                                let qubit_a = a.to_phys(&trial_layout).index();
+                                let qubit_b = b.to_phys(&trial_layout).index();
+                                let new_depth =
+                                    trial_qubit_depths[qubit_a].max(trial_qubit_depths[qubit_b]) + 1.0;
+                                trial_qubit_depths[qubit_a] = new_depth;
+                                trial_qubit_depths[qubit_b] = new_depth;
+                                // Do not actually update self.qubit_depths since this is a simulation.
+                            }
+                        }
+                
+                        for edge in dag.dag.edges_directed(node_id, Direction::Outgoing) {
+                            let successor_node = edge.target();
+                            let successor_index = successor_node.index();
+                            trial_required_predecessors[successor_index] -= 1;
+                            if trial_required_predecessors[successor_index] == 0 {
+                                to_visit.push(successor_node);
+                            }
+                        }
+                    }
+                }
+
+                // Calculate the final maximum depth
+                let final_depth = *trial_qubit_depths.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
+                println!("          Final depth: {:?}", final_depth);
+                println!("          Qubit depths: {:?}", trial_qubit_depths);
+
+                let depth_increase = final_depth - orig_depth;
+                println!("          Depth increase: {:?}", depth_increase);
             }
         }
 
@@ -669,15 +684,7 @@ pub fn swap_map_trial(
             state.required_predecessors[edge.target().index()] += 1;
         }
     }
-    println!("required_predecessors: {:?}", state.required_predecessors);
-
-    println!("Prev gate_order: {:?}", state.gate_order);
-    state.reachable_nodes_trial(&dag.first_layer);
-
     state.route_reachable_nodes(&dag.first_layer);
-
-    println!("Post gate_order: {:?}", state.gate_order);
-
     state.populate_extended_set();
 
     // Main logic loop; the front layer only becomes empty when all nodes have been routed.  At
@@ -685,12 +692,16 @@ pub fn swap_map_trial(
     let mut routable_nodes = Vec::<NodeIndex>::with_capacity(2);
     let mut num_search_steps = 0;
 
+    println!("Front layer: {:?}", state.front_layer.nodes);
     while !state.front_layer.is_empty() {
         let mut current_swaps: Vec<[PhysicalQubit; 2]> = Vec::new();
+        let qubit_depths_backup = state.qubit_depths.to_vec();
         // Swap-mapping loop.  This is the main part of the algorithm, which we repeat until we
         // either successfully route a node, or exceed the maximum number of attempts.
         while routable_nodes.is_empty() && current_swaps.len() <= state.heuristic.attempt_limit {
+            println!("Routable_nodes: {:?}", routable_nodes);
             let best_swap = state.choose_best_swap();
+            println!("Best swap: {:?}", best_swap);
             state.apply_swap(best_swap);
             current_swaps.push(best_swap);
             if let Some(node) = state.routable_node_on_qubit(best_swap[1]) {
@@ -709,11 +720,14 @@ pub fn swap_map_trial(
                     state.decay[best_swap[1].index()] += increment;
                 }
             }
+            println!("Current swaps: {:?}", current_swaps);
         }
         if routable_nodes.is_empty() {
             // If we exceeded the max number of heuristic-chosen swaps without making progress,
             // unwind to the last progress point and greedily swap to bring a ndoe together.
             // Efficiency doesn't matter much; this path never gets taken unless we're unlucky.
+            // Reset the qubit depths to the backup
+            state.qubit_depths.copy_from_slice(&qubit_depths_backup);
             current_swaps
                 .drain(..)
                 .rev()
@@ -726,7 +740,9 @@ pub fn swap_map_trial(
             state.decay.fill(1.);
         }
         routable_nodes.clear();
+        println!("Front layer: {:?}", state.front_layer.nodes);
     }
+    println!("Circle depth: {:?}", state.circuit_depth());
     (
         SabreResult {
             map: SwapMap { map: state.out_map },

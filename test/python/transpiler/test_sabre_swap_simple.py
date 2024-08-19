@@ -60,8 +60,8 @@ class SimplifiedTestSabreSwap(QiskitTestCase):
         new_qc = pm.run(qc)
 
         # Decompose the swap gates in the circuits to cx gates
-        #qc = qc.decompose()
-        #new_qc = new_qc.decompose()
+        qc = qc.decompose()
+        new_qc = new_qc.decompose()
 
         # Optional: Save the circuits to files
         qc.draw(output='mpl', filename=f'.images/ghz_{num_qubits}_old_circuit.png')
