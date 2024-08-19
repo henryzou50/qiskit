@@ -640,7 +640,7 @@ pub fn swap_map(
                     swap_map_trial(target, dag, heuristic, initial_layout, seed_trial),
                 )
             })
-            .min_by_key(|(index, (result, _))| {
+            .max_by_key(|(index, (result, _))| {
                 [
                     result.map.map.values().map(|x| x.len()).sum::<usize>(),
                     *index,
@@ -652,7 +652,7 @@ pub fn swap_map(
         seed_vec
             .into_iter()
             .map(|seed_trial| swap_map_trial(target, dag, heuristic, initial_layout, seed_trial))
-            .min_by_key(|(result, _)| result.map.map.values().map(|x| x.len()).sum::<usize>())
+            .max_by_key(|(result, _)| result.map.map.values().map(|x| x.len()).sum::<usize>())
             .unwrap()
     }
 }
