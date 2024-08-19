@@ -217,6 +217,57 @@ impl<'a, 'b> RoutingState<'a, 'b> {
         }
     }
 
+    /// Simulate the routing process and return the gates that would have been added to `gate_order`
+    /// without actually modifying the `RoutingState`.
+    ///
+    /// This function works similarly to `route_reachable_nodes` but does not alter the `RoutingState`.
+    /// It returns a vector of node indices that would have been added to the `gate_order`.
+    fn reachable_nodes_trial(&self, nodes: &[NodeIndex]) -> Vec<usize> {
+        let mut gate_order = Vec::new();
+        let mut to_visit = nodes.to_vec();
+        let mut i = 0;
+        let dag = &self.dag;
+        // Iterate through `to_visit`, except we often push new nodes onto the end of it.
+        while i < to_visit.len() {
+            let node_id = to_visit[i];
+            let node = &dag.dag[node_id];
+            i += 1;
+
+            // If the node is a directive that means it can be placed anywhere.
+            if !node.directive {
+                if let Some(blocks) = dag.node_blocks.get(&node.py_node_id) {
+                    for block in blocks {
+                        let (result, _) =
+                            swap_map_trial(self.target, block, self.heuristic, &self.layout, self.seed);
+                        gate_order.extend(result.node_order.iter().copied());
+                    }
+                } else {
+                    match node.qubits[..] {
+                        [a, b]
+                            if !self.target.coupling.contains_edge(
+                                NodeIndex::new(a.to_phys(&self.layout).index()),
+                                NodeIndex::new(b.to_phys(&self.layout).index()),
+                            ) =>
+                        {
+                            continue;
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            gate_order.push(node.py_node_id);
+            for edge in dag.dag.edges_directed(node_id, Direction::Outgoing) {
+                let successor_node = edge.target();
+                let successor_index = successor_node.index();
+                if self.required_predecessors[successor_index] == 1 {
+                    to_visit.push(successor_node);
+                }
+            }
+        }
+        println!("Trial gate_order: {:?}", gate_order);
+        gate_order
+    }
+
     /// Inner worker to route a control-flow block.  Since control-flow blocks are routed to
     /// restore the layout at the end of themselves, and the recursive calls spawn their own
     /// tracking states, this does not affect our own state.
@@ -594,7 +645,13 @@ pub fn swap_map_trial(
             state.required_predecessors[edge.target().index()] += 1;
         }
     }
+    println!("Prev gate_order: {:?}", state.gate_order);
+    state.reachable_nodes_trial(&dag.first_layer);
+
     state.route_reachable_nodes(&dag.first_layer);
+
+    println!("Post gate_order: {:?}", state.gate_order);
+
     state.populate_extended_set();
 
     // Main logic loop; the front layer only becomes empty when all nodes have been routed.  At
