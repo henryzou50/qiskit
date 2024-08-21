@@ -3,6 +3,7 @@ from qiskit.transpiler import PassManager
 from qiskit.transpiler.passes import ApplyLayout, FullAncillaAllocation, \
                                      EnlargeWithAncilla
 from qiskit import QuantumCircuit
+from qiskit.circuit.library import QFT 
 import ast
 import os
 from os import listdir
@@ -75,6 +76,25 @@ def create_and_save_ghz_circuits(num_qubits_list, save_dir="ghz"):
             dump(qc, f)
     
     print(f"GHZ circuits saved to {save_dir}")
+
+def create_and_save_qft_circuits(num_qubits_list, save_dir="qft"):
+    # Create the save directory if it doesn't exist
+    os.makedirs(save_dir, exist_ok=True)
+    
+    for i in num_qubits_list:
+        # Create a QFT circuit with i qubits
+        qc = QFT(i).decompose()
+        
+        # Define the filename for saving
+        filename = f"qft_{i}.qasm"
+        filepath = os.path.join(save_dir, filename)
+        
+        # Save the circuit as a QASM file
+        with open(filepath, "w") as f:
+            dump(qc, f)
+    
+    print(f"QFT circuits saved to {save_dir}")
+
 
 
 def build_pass_manager(coupling_map, layout_pass, routing_pass):
