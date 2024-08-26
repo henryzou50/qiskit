@@ -225,6 +225,18 @@ class SabreSwap(TransformationPass):
                 .with_lookahead(0.5, 20, SetScaling.Size)
                 .with_decay(0.001, 5)
             )
+        elif self.heuristic == "depth":
+            heuristic = (
+                Heuristic(attempt_limit=10 * num_dag_qubits)
+                .with_basic(1.0, SetScaling.Size)
+                .with_depth(0.5, SetScaling.Size)
+            )
+        elif self.heuristic == "critical":
+            heuristic = (
+                Heuristic(attempt_limit=10 * num_dag_qubits)
+                .with_basic(1.0, SetScaling.Size)
+                .with_critical(0.5, SetScaling.Size)
+            )
         else:
             raise TranspilerError(f"Heuristic {self.heuristic} not recognized.")
         disjoint_utils.require_layout_isolated_to_component(
@@ -372,7 +384,7 @@ def _apply_sabre_result(
         empty.add_clbits(block.clbits)
         for creg in block.cregs:
             empty.add_creg(creg)
-        empty.global_phase = block.global_phase
+        empty._global_phase = block.global_phase
         return empty
 
     def apply_swaps(dest_dag, swaps, layout):
@@ -388,7 +400,7 @@ def _apply_sabre_result(
         the virtual qubit in the root source DAG that it is bound to."""
         swap_map, node_order, node_block_results = result
         for node_id in node_order:
-            node = source_dag.node(node_id)
+            node = source_dag._multi_graph[node_id]
             if node_id in swap_map:
                 apply_swaps(dest_dag, swap_map[node_id], layout)
             if not node.is_control_flow():
