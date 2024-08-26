@@ -71,9 +71,6 @@ struct RoutingState<'a, 'b> {
     extended_set: ExtendedSet,
     decay: &'a mut [f64],
     qubit_depths: &'a mut [f64],
-    /// Map from the node id to the ranking of the node in terms of the number of descendants.
-    /// Ranking of 1 means the node has the most descendants.
-    descendants_rank: HashMap<NodeIndex, usize>,
     /// How many predecessors still need to be satisfied for each node index before it is at the
     /// front of the topological iteration through the nodes as they're routed.
     required_predecessors: &'a mut [u32],
@@ -260,39 +257,6 @@ impl<'a, 'b> RoutingState<'a, 'b> {
         BlockResult {
             result,
             swap_epilogue,
-        }
-    }
-
-    /// Populate the `descendants_rank` map for the critical heuristic.
-    ///
-    /// This function calculates the number of descendants for each node in the DAG,
-    /// then ranks the nodes by the number of descendants, assigning a rank where
-    /// 1 represents the node with the most descendants.
-    /// The results are stored in the `descendants_rank` map, where each node ID maps to its rank.
-    /// This map is used by the critical heuristic to prioritize routing decisions.
-    fn populate_descendants_rank_map(&mut self) {
-        let mut node_id_to_descendants: HashMap<NodeIndex, usize> = HashMap::new();
-
-        // First, populate the number of descendants for each node.
-        for node in self.dag.dag.node_indices() {
-            let mut stack = vec![node];
-            let mut count = 0;
-            while let Some(n) = stack.pop() {
-                count += 1;
-                for edge in self.dag.dag.edges(n) {
-                    stack.push(edge.target());
-                }
-            }
-            node_id_to_descendants.insert(node, count);
-        }
-
-        // Sort nodes by the number of descendants and assign rankings.
-        let mut desc_list: Vec<_> = node_id_to_descendants.iter().collect();
-        desc_list.sort_by(|a, b| b.1.cmp(a.1)); // Sort in descending order of descendants
-
-        // Populate the `descendants_rank` map with rankings.
-        for (rank, (node_id, _)) in desc_list.into_iter().enumerate() {
-            self.descendants_rank.insert(*node_id, rank + 1);
         }
     }
 
@@ -581,10 +545,10 @@ impl<'a, 'b> RoutingState<'a, 'b> {
             let weight = match scale {
                 SetScaling::Constant => weight,
                 SetScaling::Size => {
-                    if self.descendants_rank.is_empty() {
+                    if self.front_layer.is_empty() {
                         0.0
                     } else {
-                        weight / (self.descendants_rank.len() as f64)
+                        weight / (self.front_layer.len() as f64)
                     }
                 }
             };
@@ -622,11 +586,9 @@ impl<'a, 'b> RoutingState<'a, 'b> {
                     routable_nodes.push(node);
                 }
 
-                // For each routable node, substract 10^{-rank} from the score to prioritize routing in tie cases
+                // For each routable node, subtract the weight from the score
                 for node in routable_nodes {
-                    if let Some(rank) = self.descendants_rank.get(&node) {
-                        *score -= weight / 10.0_f64.powi(*rank as i32);
-                    }
+                    *score -= weight;
                 }
             }
         }
@@ -768,7 +730,6 @@ pub fn swap_map_trial(
         extended_set: ExtendedSet::new(num_qubits),
         decay: &mut vec![1.; num_qubits as usize],
         qubit_depths: &mut vec![0.; num_qubits as usize],
-        descendants_rank: HashMap::new(),
         required_predecessors: &mut vec![0; dag.dag.node_count()],
         layout: initial_layout.clone(),
         swap_scores: Vec::with_capacity(target.coupling.edge_count()),
@@ -780,10 +741,6 @@ pub fn swap_map_trial(
         for edge in dag.dag.edges(node) {
             state.required_predecessors[edge.target().index()] += 1;
         }
-    }
-
-    if heuristic.critical.is_some() {
-        state.populate_descendants_rank_map();
     }
 
 
