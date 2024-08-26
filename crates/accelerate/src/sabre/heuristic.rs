@@ -204,6 +204,45 @@ impl DepthHeuristic {
     }
 }
 
+/// Define the characteristics of the "critical" heuristic. This is used to prioritize the gates in the critical path.
+#[pyclass]
+#[pyo3(module = "qiskit._accelerate.sabre", frozen)]
+#[derive(Clone, Copy, PartialEq)]
+pub struct CriticalHeuristic {
+    /// The relative weighting of this heuristic to others.  Typically you should just set this to
+    /// 1.0 and define everything else in terms of this.
+    pub weight: f64,
+    /// Set the dynamic scaling of the weight based on the layer it is applying to.
+    pub scale: SetScaling,
+}
+
+#[pymethods]
+impl CriticalHeuristic {
+    #[new]
+    pub fn new(weight: f64, scale: SetScaling) -> Self {
+        Self { weight, scale }
+    }
+
+    pub fn __getnewargs__(&self, py: Python) -> Py<PyAny> {
+        (self.weight, self.scale).into_py(py)
+    }
+
+    pub fn __eq__(&self, py: Python, other: Py<PyAny>) -> bool {
+        if let Ok(other) = other.extract::<Self>(py) {
+            self == &other
+        } else {
+            false
+        }
+    }
+
+    pub fn __repr__(&self, py: Python) -> PyResult<Py<PyAny>> {
+        let fmt = "CriticalHeuristic(weight={!r}, scale={!r})";
+        Ok(PyString::new_bound(py, fmt)
+            .call_method1("format", (self.weight, self.scale))?
+            .into_py(py))
+    }
+}
+
 /// A complete description of the heuristic that Sabre will use.  See the individual elements for a
 /// greater description.
 #[pyclass]
@@ -214,6 +253,7 @@ pub struct Heuristic {
     pub lookahead: Option<LookaheadHeuristic>,
     pub decay: Option<DecayHeuristic>,
     pub depth: Option<DepthHeuristic>,
+    pub critical: Option<CriticalHeuristic>,
     pub best_epsilon: f64,
     pub attempt_limit: usize,
 }
@@ -234,12 +274,13 @@ impl Heuristic {
     ///     best_epsilon (float): the floating-point epsilon to use when comparing scores to find
     ///         the best value.
     #[new]
-    #[pyo3(signature = (basic=None, lookahead=None, decay=None, depth=None, attempt_limit=1000, best_epsilon=1e-10))]
+    #[pyo3(signature = (basic=None, lookahead=None, decay=None, depth=None, critical=None, attempt_limit=1000, best_epsilon=1e-10))]
     pub fn new(
         basic: Option<BasicHeuristic>,
         lookahead: Option<LookaheadHeuristic>,
         decay: Option<DecayHeuristic>,
         depth: Option<DepthHeuristic>,
+        critical: Option<CriticalHeuristic>,
         attempt_limit: Option<usize>,
         best_epsilon: f64,
     ) -> Self {
@@ -248,6 +289,7 @@ impl Heuristic {
             lookahead,
             decay,
             depth,
+            critical,
             best_epsilon,
             attempt_limit: attempt_limit.unwrap_or(usize::MAX),
         }
@@ -259,6 +301,7 @@ impl Heuristic {
             self.lookahead,
             self.decay,
             self.depth,
+            self.critical,
             self.attempt_limit,
             self.best_epsilon,
         )
@@ -310,6 +353,14 @@ impl Heuristic {
         }
     }
 
+    /// Set the multiplier increment and reset interval of the critical heuristic.
+    pub fn with_critical(&self, weight: f64, scale: SetScaling) -> Self {
+        Self {
+            critical: Some(CriticalHeuristic { weight, scale }),
+            ..self.clone()
+        }
+    }
+
     pub fn __eq__(&self, py: Python, other: Py<PyAny>) -> bool {
         if let Ok(other) = other.extract::<Self>(py) {
             self == &other
@@ -328,6 +379,7 @@ impl Heuristic {
                     self.lookahead,
                     self.decay,
                     self.depth,
+                    self.critical,
                     self.attempt_limit,
                     self.best_epsilon,
                 ),
