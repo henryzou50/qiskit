@@ -1,2 +1,3 @@
 swap_count,depth,runtime,num_qubits,heuristic,cmap,trials,seed
-10789,3710,6.919709205627441,107,decay,heavy_hex_127.txt,1,42
+10789,3710,6.3587870597839355,107,decay,heavy_hex_127.txt,1,42
+6998,1455,24707.362388134003,107,decay,heavy_hex_127.txt,464,42
