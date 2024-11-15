@@ -17,7 +17,7 @@ import rustworkx
 from qiskit import QuantumRegister, QuantumCircuit
 from qiskit.circuit import ControlFlowOp
 from qiskit.circuit.library import CXGate, XGate
-from qiskit.transpiler import CouplingMap, Layout, TranspilerError
+from qiskit.transpiler import CouplingMap, Layout, TranspilerError, generate_preset_pass_manager
 from qiskit.transpiler.passes.layout.vf2_post_layout import VF2PostLayout, VF2PostLayoutStopReason
 from qiskit.converters import circuit_to_dag
 from qiskit.providers.fake_provider import Fake5QV1, GenericBackendV2
@@ -578,6 +578,31 @@ class TestVF2PostLayoutUndirected(QiskitTestCase):
             qargs = (physical_q0, physical_q1)
             self.assertTrue(target.instruction_supported(gate.name, qargs))
 
+    def assertGivenLayoutV2(self, dag, target, property_set, layout):
+        """Checks if the circuit in dag was a perfect layout in property_set for the given
+        coupling_map, given a layout"""
+        self.assertEqual(
+            property_set["VF2PostLayout_stop_reason"], VF2PostLayoutStopReason.SOLUTION_FOUND
+        )
+
+        def run(dag, wire_map):
+            for gate in dag.two_qubit_ops():
+                with self.assertWarns(DeprecationWarning):
+                    if dag.has_calibration_for(gate) or isinstance(gate.op, ControlFlowOp):
+                        continue
+                physical_q0 = wire_map[gate.qargs[0]]
+                physical_q1 = wire_map[gate.qargs[1]]
+                qargs = (physical_q0, physical_q1)
+                self.assertTrue(target.instruction_supported(gate.name, qargs))
+            for node in dag.op_nodes(ControlFlowOp):
+                for block in node.op.blocks:
+                    inner_wire_map = {
+                        inner: wire_map[outer] for outer, inner in zip(node.qargs, block.qubits)
+                    }
+                    run(circuit_to_dag(block), inner_wire_map)
+
+        run(dag, {bit: layout[bit] for bit in dag.qubits if bit in layout})
+
     def test_no_constraints(self):
         """Test we raise at runtime if no target or coupling graph specified."""
         qc = QuantumCircuit(2)
@@ -813,3 +838,54 @@ class TestVF2PostLayoutUndirected(QiskitTestCase):
         pass_.run(dag)
         self.assertLayoutV2(dag, backend.target, pass_.property_set)
         self.assertNotEqual(pass_.property_set["post_layout"], initial_layout)
+
+    def test_all_layouts(self):
+        """Test that we can obtain all of the isomorphic layouts form Vf2PostLayout
+        and that those layouts are valid"""
+        seed = 42
+        num_qubits = 5
+
+        # Define backend
+        backend = GenericBackendV2(
+            num_qubits=num_qubits,
+            basis_gates=["cx", "id", "rz", "sx", "x"],
+            coupling_map=[
+                [0, 1],
+                [0, 2],
+                [1, 0],
+                [1, 2],
+                [2, 0],
+                [2, 1],
+                [2, 3],
+                [2, 4],
+                [3, 2],
+                [3, 4],
+                [4, 2],
+                [4, 3],
+            ],
+            seed=42,
+        )
+        # Create a ghz circuit
+        qr = QuantumRegister(num_qubits)
+        qc = QuantumCircuit(qr)
+        qc.h(qr[0])
+        for i in range(num_qubits - 1):
+            qc.cx(qr[i], qr[i + 1])
+        pm = generate_preset_pass_manager(backend=backend, seed_transpiler=seed)
+        tqc = pm.run(qc)
+
+        # Convert to dag and run the pass
+        dag = circuit_to_dag(tqc)
+        pass_ = VF2PostLayout(target=backend.target, seed=seed)
+        pass_.run(dag)
+
+        # Receive the isomorphic layout (if it exists)
+        all_layouts = pass_.property_set["all_isomorphic_layouts"]
+
+        # Check that the number of isomorphic layouts greater than 1
+        self.assertGreater(len(all_layouts), 1)
+
+        # Check that each isomorphic layout is valid
+        for layout in all_layouts:
+            print(layout)
+            self.assertGivenLayoutV2(dag, backend.target, pass_.property_set, layout)

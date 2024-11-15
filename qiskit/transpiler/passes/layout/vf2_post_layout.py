@@ -294,14 +294,14 @@ class VF2PostLayout(AnalysisPass):
 
         start_time = time.time()
         trials = 0
+        all_layouts = []
         for mapping in mappings:
             trials += 1
             logger.debug("Running trial: %s", trials)
             layout_mapping = {im_i: cm_nodes[cm_i] for cm_i, im_i in mapping.items()}
+            layout = Layout({reverse_im_graph_node_map[k]: v for k, v in layout_mapping.items()})
+            all_layouts.append(layout)
             if self.strict_direction:
-                layout = Layout(
-                    {reverse_im_graph_node_map[k]: v for k, v in layout_mapping.items()}
-                )
                 layout_score = self._score_layout(
                     layout, im_graph_node_map, reverse_im_graph_node_map, im_graph
                 )
@@ -318,9 +318,6 @@ class VF2PostLayout(AnalysisPass):
                 )
             logger.debug("Trial %s has score %s", trials, layout_score)
             if layout_score < chosen_layout_score:
-                layout = Layout(
-                    {reverse_im_graph_node_map[k]: v for k, v in layout_mapping.items()}
-                )
                 logger.debug(
                     "Found layout %s has a lower score (%s) than previous best %s (%s)",
                     layout,
@@ -373,6 +370,7 @@ class VF2PostLayout(AnalysisPass):
                 stop_reason = VF2PostLayoutStopReason.NO_SOLUTION_FOUND
             # else the initial layout is optimal -> don't set post_layout, return 'no better solution'
         self.property_set["VF2PostLayout_stop_reason"] = stop_reason
+        self.property_set["all_isomorphic_layouts"] = all_layouts
 
     def _score_layout(self, layout, bit_map, reverse_bit_map, im_graph):
         bits = layout.get_virtual_bits()
